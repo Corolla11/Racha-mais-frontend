@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   Check,
@@ -8,15 +9,14 @@ import {
   Star,
   User,
 } from "lucide-react";
+import OrangeButton from "../components/orange-button";
 
 export default function Cadastro() {
-  // Controla se a senha está visível
-  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const navigate = useNavigate();
 
-  // Controla se a confirmação da senha está visível
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false);
 
-  // Dados do formulário
   const [formulario, setFormulario] = useState({
     nome: "",
     email: "",
@@ -25,7 +25,6 @@ export default function Cadastro() {
     termos: false,
   });
 
-  // Altera os dados do formulário
   function handleChange(
     campo: keyof typeof formulario,
     valor: string | boolean
@@ -36,26 +35,74 @@ export default function Cadastro() {
     }));
   }
 
-  // Envia o formulário
+  function calcularForcaSenha(senha: string) {
+    if (!senha) {
+      return 0;
+    }
+
+    let pontos = 0;
+
+    if (senha.length >= 6) pontos++;
+    if (senha.length >= 10) pontos++;
+    if (/[a-z]/.test(senha)) pontos++;
+    if (/[A-Z]/.test(senha)) pontos++;
+    if (/[0-9]/.test(senha)) pontos++;
+    if (/[^A-Za-z0-9]/.test(senha)) pontos++;
+
+    if (pontos <= 2) return 1;
+    if (pontos <= 4) return 2;
+
+    return 3;
+  }
+
+  function getTextoForcaSenha(forca: number) {
+    if (forca === 1) return "Fraca";
+    if (forca === 2) return "Média";
+    if (forca === 3) return "Forte";
+
+    return "";
+  }
+
+  const forcaSenha = calcularForcaSenha(formulario.senha);
+
+  const forcaConfirmacao = calcularForcaSenha(
+    formulario.confirmarSenha
+  );
+
+  const senhasPreenchidas =
+    formulario.senha.length > 0 &&
+    formulario.confirmarSenha.length > 0;
+
+  const senhasIguais =
+    formulario.senha === formulario.confirmarSenha;
+
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    if (!senhasIguais) {
+      alert("As senhas não são iguais.");
+      return;
+    }
+
+    if (!formulario.termos) {
+      alert("Você precisa aceitar os termos de uso.");
+      return;
+    }
+
     console.log("Dados do cadastro:", formulario);
+
+    navigate("/home");
   }
 
   return (
     <main className="min-h-screen bg-background font-jakarta">
-
-      {/* =====================================================
-          CONTAINER PRINCIPAL
-      ====================================================== */}
 
       <div
         className="
           mx-auto
           flex
           min-h-screen
-          max-w-[1440px]
+          max-w-360
           overflow-hidden
           bg-surface
           shadow-sm
@@ -64,9 +111,7 @@ export default function Cadastro() {
         "
       >
 
-        {/* =====================================================
-            LADO ESQUERDO
-        ====================================================== */}
+        {/* LADO ESQUERDO */}
 
         <section
           className="
@@ -83,8 +128,6 @@ export default function Cadastro() {
           "
         >
 
-          {/* Decoração superior */}
-
           <div
             className="
               absolute
@@ -96,8 +139,6 @@ export default function Cadastro() {
               bg-white/40
             "
           />
-
-          {/* Decoração inferior */}
 
           <div
             className="
@@ -111,11 +152,7 @@ export default function Cadastro() {
             "
           />
 
-          {/* Conteúdo */}
-
           <div className="relative z-10">
-
-            {/* Badge */}
 
             <div
               className="
@@ -137,12 +174,9 @@ export default function Cadastro() {
               Cadastro sem burocracia
             </div>
 
-
-            {/* Título */}
-
             <h1
               className="
-                max-w-[440px]
+                max-w-110
                 text-4xl
                 font-bold
                 leading-[1.18]
@@ -157,7 +191,7 @@ export default function Cadastro() {
                 className="
                   text-tertiary
                   underline
-                  decoration-[2px]
+                  decoration-2
                   underline-offset-4
                 "
               >
@@ -165,13 +199,10 @@ export default function Cadastro() {
               </span>
             </h1>
 
-
-            {/* Descrição */}
-
             <p
               className="
                 mt-5
-                max-w-[470px]
+                max-w-117.5
                 text-sm
                 leading-6
                 text-text-secondary
@@ -181,13 +212,6 @@ export default function Cadastro() {
               e convivência harmoniosa em um único painel transparente e
               descomplicado.
             </p>
-
-
-            {/* =================================================
-                BENEFÍCIOS
-            ================================================== */}
-
-            {/* Benefício 1 */}
 
             <div className="mt-7 flex items-center gap-3">
 
@@ -216,9 +240,6 @@ export default function Cadastro() {
 
             </div>
 
-
-            {/* Benefício 2 */}
-
             <div className="mt-4 flex items-center gap-3">
 
               <div
@@ -245,9 +266,6 @@ export default function Cadastro() {
               </span>
 
             </div>
-
-
-            {/* Benefício 3 */}
 
             <div className="mt-4 flex items-center gap-3">
 
@@ -278,10 +296,7 @@ export default function Cadastro() {
 
           </div>
 
-
-          {/* =====================================================
-              DEPOIMENTO
-          ====================================================== */}
+          {/* DEPOIMENTO */}
 
           <div
             className="
@@ -294,8 +309,6 @@ export default function Cadastro() {
               shadow-sm
             "
           >
-
-            {/* Estrelas */}
 
             <div className="mb-3 flex items-center gap-1 text-primary">
 
@@ -311,9 +324,6 @@ export default function Cadastro() {
 
             </div>
 
-
-            {/* Depoimento */}
-
             <p
               className="
                 text-sm
@@ -325,9 +335,6 @@ export default function Cadastro() {
               “Mudou a convivência na nossa república. Ninguém mais fica
               cobrando ninguém no WhatsApp.”
             </p>
-
-
-            {/* Autor */}
 
             <div className="mt-4 flex items-center gap-3">
 
@@ -366,10 +373,7 @@ export default function Cadastro() {
 
         </section>
 
-
-        {/* =====================================================
-            LADO DIREITO
-        ====================================================== */}
+        {/* LADO DIREITO */}
 
         <section
           className="
@@ -387,10 +391,6 @@ export default function Cadastro() {
         >
 
           <div>
-
-            {/* =================================================
-                CABEÇALHO
-            ================================================== */}
 
             <div className="mb-7 flex items-center justify-between">
 
@@ -418,9 +418,6 @@ export default function Cadastro() {
 
             </div>
 
-
-            {/* Título */}
-
             <div className="mb-5">
 
               <h2
@@ -447,10 +444,7 @@ export default function Cadastro() {
 
             </div>
 
-
-            {/* =================================================
-                BOTÃO GOOGLE
-            ================================================== */}
+            {/* GOOGLE */}
 
             <button
               type="button"
@@ -471,19 +465,14 @@ export default function Cadastro() {
                 hover:bg-neutral/10
               "
             >
-
               <span className="text-lg font-bold text-[#4285F4]">
                 G
               </span>
 
               Continuar com Google
-
             </button>
 
-
-            {/* =================================================
-                DIVISOR
-            ================================================== */}
+            {/* DIVISOR */}
 
             <div className="my-5 flex items-center gap-3">
 
@@ -504,19 +493,14 @@ export default function Cadastro() {
 
             </div>
 
-
-            {/* =================================================
-                FORMULÁRIO
-            ================================================== */}
+            {/* FORMULÁRIO */}
 
             <form
               onSubmit={handleSubmit}
               className="space-y-4"
             >
 
-              {/* =================================================
-                  NOME
-              ================================================== */}
+              {/* NOME */}
 
               <div>
 
@@ -539,6 +523,7 @@ export default function Cadastro() {
                     id="nome"
                     type="text"
                     placeholder="Mariana Silva"
+                    required
                     value={formulario.nome}
                     onChange={(event) =>
                       handleChange("nome", event.target.value)
@@ -578,10 +563,7 @@ export default function Cadastro() {
 
               </div>
 
-
-              {/* =================================================
-                  EMAIL
-              ================================================== */}
+              {/* EMAIL */}
 
               <div>
 
@@ -604,6 +586,7 @@ export default function Cadastro() {
                     id="email"
                     type="email"
                     placeholder="mariana.silva@exemplo.com"
+                    required
                     value={formulario.email}
                     onChange={(event) =>
                       handleChange("email", event.target.value)
@@ -643,10 +626,7 @@ export default function Cadastro() {
 
               </div>
 
-
-              {/* =================================================
-                  SENHAS
-              ================================================== */}
+              {/* SENHAS */}
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 
@@ -667,15 +647,23 @@ export default function Cadastro() {
                       Criar senha
                     </label>
 
-                    <span
-                      className="
-                        text-[10px]
-                        font-semibold
-                        text-tertiary
-                      "
-                    >
-                      • Forte
-                    </span>
+                    {forcaSenha > 0 && (
+                      <span
+                        className={`
+                          text-[10px]
+                          font-semibold
+                          ${
+                            forcaSenha === 1
+                              ? "text-red-500"
+                              : forcaSenha === 2
+                              ? "text-tertiary"
+                              : "text-green-600"
+                          }
+                        `}
+                      >
+                        • {getTextoForcaSenha(forcaSenha)}
+                      </span>
+                    )}
 
                   </div>
 
@@ -684,6 +672,7 @@ export default function Cadastro() {
                     <input
                       id="senha"
                       type={mostrarSenha ? "text" : "password"}
+                      required
                       value={formulario.senha}
                       onChange={(event) =>
                         handleChange("senha", event.target.value)
@@ -736,21 +725,37 @@ export default function Cadastro() {
 
                   </div>
 
+                  <div className="mt-2 flex h-0.75 gap-1">
 
-                  {/* Barra de força */}
+                    <span
+                      className={`flex-1 rounded-full ${
+                        forcaSenha >= 1
+                          ? forcaSenha === 1
+                            ? "bg-red-500"
+                            : "bg-primary"
+                          : "bg-neutral/20"
+                      }`}
+                    />
 
-                  <div className="mt-2 flex h-[3px] gap-1">
+                    <span
+                      className={`flex-1 rounded-full ${
+                        forcaSenha >= 2
+                          ? "bg-primary"
+                          : "bg-neutral/20"
+                      }`}
+                    />
 
-                    <span className="flex-1 rounded-full bg-primary" />
-
-                    <span className="flex-1 rounded-full bg-primary" />
-
-                    <span className="flex-1 rounded-full bg-tertiary" />
+                    <span
+                      className={`flex-1 rounded-full ${
+                        forcaSenha >= 3
+                          ? "bg-tertiary"
+                          : "bg-neutral/20"
+                      }`}
+                    />
 
                   </div>
 
                 </div>
-
 
                 {/* CONFIRMAR SENHA */}
 
@@ -770,13 +775,22 @@ export default function Cadastro() {
                     </label>
 
                     <span
-                      className="
+                      className={`
                         text-[10px]
                         font-semibold
-                        text-secondary
-                      "
+                        ${
+                          formulario.confirmarSenha &&
+                          !senhasIguais
+                            ? "text-red-500"
+                            : "text-secondary"
+                        }
+                      `}
                     >
-                      Correspondente
+                      {formulario.confirmarSenha
+                        ? senhasIguais
+                          ? "Correspondente"
+                          : "Não corresponde"
+                        : "Correspondente"}
                     </span>
 
                   </div>
@@ -790,6 +804,7 @@ export default function Cadastro() {
                           ? "text"
                           : "password"
                       }
+                      required
                       value={formulario.confirmarSenha}
                       onChange={(event) =>
                         handleChange(
@@ -797,12 +812,11 @@ export default function Cadastro() {
                           event.target.value
                         )
                       }
-                      className="
+                      className={`
                         h-11
                         w-full
                         rounded-xl
                         border
-                        border-transparent
                         bg-input
                         px-4
                         pr-11
@@ -811,9 +825,14 @@ export default function Cadastro() {
                         outline-none
                         transition
                         duration-200
-                        focus:border-primary
                         focus:bg-surface
-                      "
+                        ${
+                          formulario.confirmarSenha &&
+                          !senhasIguais
+                            ? "border-red-400 focus:border-red-400"
+                            : "border-transparent focus:border-primary"
+                        }
+                      `}
                     />
 
                     <button
@@ -847,19 +866,47 @@ export default function Cadastro() {
 
                   </div>
 
+                  <div className="mt-2 flex h-0.75 gap-1">
 
-                  {/* Barra */}
+                    <span
+                      className={`flex-1 rounded-full ${
+                        forcaConfirmacao >= 1
+                          ? forcaConfirmacao === 1
+                            ? "bg-red-500"
+                            : "bg-primary"
+                          : "bg-neutral/20"
+                      }`}
+                    />
 
-                  <div className="mt-2 h-[3px] rounded-full bg-primary" />
+                    <span
+                      className={`flex-1 rounded-full ${
+                        forcaConfirmacao >= 2
+                          ? "bg-primary"
+                          : "bg-neutral/20"
+                      }`}
+                    />
+
+                    <span
+                      className={`flex-1 rounded-full ${
+                        forcaConfirmacao >= 3
+                          ? "bg-tertiary"
+                          : "bg-neutral/20"
+                      }`}
+                    />
+
+                  </div>
+
+                  {senhasPreenchidas && !senhasIguais && (
+                    <p className="mt-1 text-[10px] font-semibold text-red-500">
+                      As senhas não coincidem
+                    </p>
+                  )}
 
                 </div>
 
               </div>
 
-
-              {/* =================================================
-                  TERMOS
-              ================================================== */}
+              {/* TERMOS */}
 
               <label
                 htmlFor="termos"
@@ -883,13 +930,12 @@ export default function Cadastro() {
                     )
                   }
                   className="sr-only"
+                  required
                 />
-
-                {/* Checkbox visual */}
 
                 <span
                   className={`
-                    mt-[1px]
+                    mt-px
                     flex
                     h-4
                     w-4
@@ -907,7 +953,6 @@ export default function Cadastro() {
                     }
                   `}
                 >
-
                   {formulario.termos && (
                     <Check
                       size={12}
@@ -915,9 +960,7 @@ export default function Cadastro() {
                       className="text-white"
                     />
                   )}
-
                 </span>
-
 
                 <span
                   className="
@@ -930,6 +973,9 @@ export default function Cadastro() {
 
                   <a
                     href="#"
+                    onClick={(event) =>
+                      event.stopPropagation()
+                    }
                     className="
                       font-medium
                       text-secondary
@@ -943,6 +989,9 @@ export default function Cadastro() {
 
                   <a
                     href="#"
+                    onClick={(event) =>
+                      event.stopPropagation()
+                    }
                     className="
                       font-medium
                       text-secondary
@@ -953,39 +1002,13 @@ export default function Cadastro() {
                   </a>{" "}
 
                   do Racha+.
-
                 </span>
 
               </label>
 
+              {/* BOTÃO REUTILIZÁVEL */}
 
-              {/* =================================================
-                  BOTÃO CRIAR CONTA
-              ================================================== */}
-
-              <button
-                type="submit"
-                className="
-                  group
-                  flex
-                  h-12
-                  w-full
-                  items-center
-                  justify-center
-                  gap-2
-                  rounded-xl
-                  bg-primary
-                  text-sm
-                  font-bold
-                  text-text-primary
-                  shadow-sm
-                  transition
-                  duration-200
-                  hover:bg-tertiary
-                  active:scale-[0.99]
-                "
-              >
-
+              <OrangeButton type="submit">
                 Criar minha conta
 
                 <ArrowRight
@@ -996,17 +1019,13 @@ export default function Cadastro() {
                     group-hover:translate-x-1
                   "
                 />
-
-              </button>
+              </OrangeButton>
 
             </form>
 
           </div>
 
-
-          {/* =====================================================
-              RODAPÉ
-          ====================================================== */}
+          {/* RODAPÉ */}
 
           <div className="mt-8 text-center">
 
@@ -1014,8 +1033,9 @@ export default function Cadastro() {
 
               Já tem uma conta?{" "}
 
-              <a
-                href="#"
+              <button
+                type="button"
+                onClick={() => navigate("/login")}
                 className="
                   font-semibold
                   text-tertiary
@@ -1023,7 +1043,7 @@ export default function Cadastro() {
                 "
               >
                 Entrar agora
-              </a>
+              </button>
 
             </p>
 
