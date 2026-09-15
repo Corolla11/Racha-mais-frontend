@@ -1,7 +1,7 @@
-import Cadastro from "./pages/cadastro";
+import Login from "./pages/login";
 
 function App() {
-  return <Cadastro />;
+  return <Login />;
 }
 
 export default App;
