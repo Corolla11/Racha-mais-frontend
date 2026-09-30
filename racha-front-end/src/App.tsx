@@ -5,7 +5,6 @@ import Login from "./pages/login";
 import Home from "./pages/home";
 import Grupo from "./pages/grupo";
 
-
 function App() {
   return (
     <BrowserRouter>
