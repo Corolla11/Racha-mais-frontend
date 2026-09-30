@@ -345,7 +345,7 @@ export default function CriarGrupo() {
         <nav className="hidden items-center gap-6 md:flex">
           <button
             type="button"
-            onClick={() => navigate("/home")}
+            onClick={() => navigate("/meus-grupos")}
             className="text-xs text-gray-700 transition hover:text-secondary"
           >
             Meus Grupos
@@ -434,7 +434,7 @@ export default function CriarGrupo() {
             >
               <button
                 type="button"
-                onClick={() => navigate("/home")}
+                onClick={() => navigate("/meus-grupos")}
                 className="transition hover:text-secondary"
               >
                 Meus Grupos

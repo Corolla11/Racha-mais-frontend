@@ -6,6 +6,7 @@ import Home from "./pages/home";
 import Perfil from "./pages/perfil";
 import Grupo from "./pages/grupo";
 import CriarGrupo from "./pages/criar-grupo";
+import MeusGrupos from "./pages/meus-grupos";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/perfil" element={<Perfil />} />
         <Route path="/grupo" element={<Grupo />} />
         <Route path="/criar-grupo" element={<CriarGrupo />} />
+        <Route path="/meus-grupos" element={<MeusGrupos />} />
       </Routes>
     </BrowserRouter>
   );
