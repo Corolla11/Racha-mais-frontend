@@ -4,7 +4,7 @@ import Cadastro from "./pages/cadastro";
 import Login from "./pages/login";
 import Home from "./pages/home";
 import Perfil from "./pages/perfil";
-
+import Grupo from "./pages/grupo";
 
 function App() {
   return (
@@ -15,6 +15,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/home" element={<Home />} />
         <Route path="/perfil" element={<Perfil />} />
+        <Route path="/grupo" element={<Grupo />} />
       </Routes>
     </BrowserRouter>
   );
