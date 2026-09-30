@@ -61,8 +61,11 @@ function Home() {
             Histórico & Pix
           </button>
 
-          <button className="text-xs text-gray-700 hover:text-[#1D4ED8]">
-            Perfil
+          <button
+           onClick={() => navigate("/perfil")}
+            className="text-xs text-gray-700 hover:text-[#1D4ED8]"
+           >
+           Perfil
           </button>
         </nav>
 
