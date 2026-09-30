@@ -319,7 +319,7 @@ export default function CriarGrupo() {
 
     console.log("Novo grupo:", grupo);
 
-    navigate("/grupo");
+    navigate("/grupo-criado");
   }
 
   return (

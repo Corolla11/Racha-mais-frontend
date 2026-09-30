@@ -7,6 +7,7 @@ import Perfil from "./pages/perfil";
 import Grupo from "./pages/grupo";
 import CriarGrupo from "./pages/criar-grupo";
 import MeusGrupos from "./pages/meus-grupos";
+import GrupoCriado from "./pages/grupo-criado";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         <Route path="/grupo" element={<Grupo />} />
         <Route path="/criar-grupo" element={<CriarGrupo />} />
         <Route path="/meus-grupos" element={<MeusGrupos />} />
+        <Route path="/grupo-criado" element={<GrupoCriado />} />
       </Routes>
     </BrowserRouter>
   );
