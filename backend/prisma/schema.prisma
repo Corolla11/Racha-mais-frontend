@@ -22,6 +22,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+  membros       Membro[]
 
   @@unique([email])
   @@map("user")
@@ -73,4 +74,32 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+enum Funcao {
+  dono
+  membro
+}
+
+model Grupo {
+  id        String   @id @default(cuid())
+  nome      String
+  descricao String   @default("")
+  membros   Membro[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("grupo")
+}
+
+model Membro {
+  idUser  String
+  idGrupo String
+  funcao  Funcao @default(membro)
+  user    User   @relation(fields: [idUser], references: [id], onDelete: Cascade)
+  grupo   Grupo  @relation(fields: [idGrupo], references: [id], onDelete: Cascade)
+
+  @@id([idUser, idGrupo])
+  @@index([idGrupo])
+  @@map("membro")
 }
