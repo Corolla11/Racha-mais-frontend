@@ -9,9 +9,7 @@ export default defineConfig({
   },
 
   datasource: {
-    url: env("postgresql://postgres:10332007mi@localhost:5432/racha_mais"),
-    shadowDatabaseUrl: env(
-      "postgresql://postgres:10332007mi@localhost:5432/racha_mais_shadow",
-    ),
+    url: env("DATABASE_URL"),
+    shadowDatabaseUrl: env("SHADOW_DATABASE_URL"),
   },
 });
