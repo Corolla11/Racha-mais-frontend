@@ -113,7 +113,12 @@ function MeusGruposVazio() {
             Novo Grupo
           </button>
 
-          <button type="button" className="relative text-gray-600">
+          <button
+            type="button"
+            aria-label="Notificações"
+            onClick={() => navigate("/notificacoes")}
+            className="relative text-gray-600"
+          >
             <Bell size={17} />
 
             <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-primary" />

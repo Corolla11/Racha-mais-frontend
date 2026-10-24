@@ -8,6 +8,7 @@ import Grupo from "./pages/grupo";
 import CriarGrupo from "./pages/criar-grupo";
 import MeusGrupos from "./pages/meus-grupos";
 import MeusGruposVazio from "./pages/meus-grupos-vazio";
+import Notificacoes from "./pages/notificacoes";
 import GrupoCriado from "./pages/grupo-criado";
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
         <Route path="/criar-grupo" element={<CriarGrupo />} />
         <Route path="/meus-grupos" element={<MeusGrupos />} />
         <Route path="/meus-grupos-vazio" element={<MeusGruposVazio />} />
+        <Route path="/notificacoes" element={<Notificacoes />} />
         <Route path="/grupo-criado"element={<GrupoCriado />} />
       </Routes>
     </BrowserRouter>
