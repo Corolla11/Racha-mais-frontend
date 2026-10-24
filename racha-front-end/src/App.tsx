@@ -7,6 +7,7 @@ import Perfil from "./pages/perfil";
 import Grupo from "./pages/grupo";
 import CriarGrupo from "./pages/criar-grupo";
 import MeusGrupos from "./pages/meus-grupos";
+import MeusGruposVazio from "./pages/meus-grupos-vazio";
 import GrupoCriado from "./pages/grupo-criado";
 
 function App() {
@@ -21,7 +22,8 @@ function App() {
         <Route path="/grupo" element={<Grupo />} />
         <Route path="/criar-grupo" element={<CriarGrupo />} />
         <Route path="/meus-grupos" element={<MeusGrupos />} />
-        <Route path="/grupo-criado" element={<GrupoCriado />} />
+        <Route path="/meus-grupos-vazio" element={<MeusGruposVazio />} />
+        <Route path="/grupo-criado"element={<GrupoCriado />} />
       </Routes>
     </BrowserRouter>
   );
