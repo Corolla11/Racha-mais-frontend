@@ -2,7 +2,8 @@ import express from "express";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
-import { grupoRoutes } from "./modules/grupos/grupo.routes.js";
+import { grupoRoutes } from "./api/grupos/grupo.routes.js";
+import { tarefaRoutes } from "./api/tarefas/tarefa.routes.js";
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.get("/health", (req, res) => {
 });
 
 app.use("/grupos", grupoRoutes);
+app.use("/tarefas", tarefaRoutes);
 
 app.use(errorHandler);
 
