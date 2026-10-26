@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   User,
   KeyRound,
@@ -7,12 +9,27 @@ import {
   CircleHelp,
   LogOut,
 } from "lucide-react";
+import { useAuth } from "../auth/auth-context";
 
-interface AbaProps {
-  onLogout: () => void;
-}
+function Aba() {
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const [erroLogout, setErroLogout] = useState("");
+  const [saindo, setSaindo] = useState(false);
 
-function Aba({ onLogout }: AbaProps) {
+  async function encerrarSessao() {
+    setErroLogout("");
+    setSaindo(true);
+    try {
+      await signOut();
+      navigate("/login", { replace: true });
+    } catch {
+      setErroLogout("Não foi possível encerrar a sessão. Tente novamente.");
+    } finally {
+      setSaindo(false);
+    }
+  }
+
   return (
     <div className="absolute right-0 top-full z-50 mt-2 w-70 overflow-hidden rounded-xl bg-white shadow-lg">
 
@@ -20,29 +37,35 @@ function Aba({ onLogout }: AbaProps) {
       <div className="p-4">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <img
-              src="https://i.pravatar.cc/100?img=47"
-              alt="Foto de perfil"
-              className="h-10 w-10 rounded-full object-cover"
-            />
+            {user?.image ? (
+              <img
+                src={user.image}
+                alt=""
+                className="h-10 w-10 rounded-full object-cover"
+              />
+            ) : (
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-800">
+                {user?.name.slice(0, 1).toUpperCase() ?? "?"}
+              </span>
+            )}
 
             <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-green-500" />
           </div>
 
           <div>
             <p className="text-sm font-semibold text-[#111827]">
-              Mariana Silva
+              {user?.name ?? "Usuário"}
             </p>
 
             <p className="text-xs text-gray-500">
-              mariana.silva@email.com
+              {user?.email ?? ""}
             </p>
           </div>
         </div>
 
         <div className="mt-2 flex justify-end">
           <span className="text-[10px] font-medium text-green-600">
-            ONLINE
+            AUTENTICADO
           </span>
         </div>
       </div>
@@ -151,13 +174,19 @@ function Aba({ onLogout }: AbaProps) {
 
       {/* Sair */}
       <div className="border-t border-gray-100">
+        {erroLogout && (
+          <p role="alert" className="px-4 py-2 text-xs text-red-700">
+            {erroLogout}
+          </p>
+        )}
         <button
           type="button"
-          onClick={onLogout}
-          className="flex w-full items-center gap-3 px-4 py-3 text-left text-xs font-medium text-red-600 transition hover:bg-red-50"
+          onClick={() => void encerrarSessao()}
+          disabled={saindo}
+          className="flex w-full items-center gap-3 px-4 py-3 text-left text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <LogOut size={15} />
-          Encerrar Sessão
+          {saindo ? "Encerrando..." : "Encerrar Sessão"}
         </button>
       </div>
 

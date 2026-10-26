@@ -314,7 +314,7 @@ function GrupoCriado() {
               />
             </button>
 
-            {abaAberta && <Aba onLogout={() => navigate("/login")} />}
+            {abaAberta && <Aba />}
           </div>
         </div>
       </header>

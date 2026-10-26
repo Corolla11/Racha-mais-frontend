@@ -3,6 +3,7 @@ interface OrangeButtonProps {
   type?: "button" | "submit" | "reset";
   onClick?: () => void;
   className?: string;
+  disabled?: boolean;
 }
 
 export default function OrangeButton({
@@ -10,11 +11,13 @@ export default function OrangeButton({
   type = "button",
   onClick,
   className = "",
+  disabled = false,
 }: OrangeButtonProps) {
   return (
     <button
       type={type}
       onClick={onClick}
+      disabled={disabled}
       className={`
         group
         flex
@@ -34,6 +37,8 @@ export default function OrangeButton({
         duration-200
         hover:bg-tertiary
         active:scale-[0.99]
+        disabled:cursor-not-allowed
+        disabled:opacity-60
         ${className}
       `}
     >

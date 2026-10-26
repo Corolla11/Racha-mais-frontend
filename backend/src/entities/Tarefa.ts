@@ -1,16 +1,16 @@
 export enum TipoTarefa {
-    comum,
-    contribuinte,
-    meta,
-    recorrente
+    comum = "comum",
+    contribuinte = "contribuinte",
+    meta = "meta",
+    recorrente = "recorrente"
 }
 
 export enum StatusAndamento {
-    AGENDADA,
-    EM_ANDAMENTO,
-    FINALIZADA,
-    ATRASADA,
-    CANCELADA
+    AGENDADA = "AGENDADA",
+    EM_ANDAMENTO = "EM_ANDAMENTO",
+    FINALIZADA = "FINALIZADA",
+    ATRASADA = "ATRASADA",
+    CANCELADA = "CANCELADA"
 }
 
 export class Tarefa {

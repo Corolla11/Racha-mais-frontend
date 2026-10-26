@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
@@ -12,6 +13,8 @@ import {
   TrendingUp,
   User,
 } from "lucide-react";
+import { useAuth } from "../auth/auth-context";
+import { ApiError } from "../lib/api";
 
 /* =====================================================
    TOKENS DO DESIGN
@@ -91,8 +94,13 @@ const FUNCIONALIDADES = [
 ];
 
 export default function Login() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { signIn } = useAuth();
   // Controla se a senha está visível
   const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState("");
 
   // Destaca visualmente o campo em foco
   const [campoFocado, setCampoFocado] = useState<string | null>(null);
@@ -116,10 +124,29 @@ export default function Login() {
   }
 
   // Envia o formulário
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    console.log("Dados do login:", formulario);
+    setErro("");
+    setEnviando(true);
+    try {
+      await signIn(formulario.email.trim(), formulario.senha, formulario.lembrar);
+      const origem = (location.state as { from?: { pathname?: unknown } } | null)
+        ?.from?.pathname;
+      navigate(
+        typeof origem === "string" && origem.startsWith("/")
+          ? origem
+          : "/home",
+        { replace: true },
+      );
+    } catch (error) {
+      setErro(
+        error instanceof ApiError
+          ? error.message
+          : "Não foi possível entrar. Tente novamente.",
+      );
+    } finally {
+      setEnviando(false);
+    }
   }
 
   // Estilo compartilhado pelos campos de texto
@@ -183,19 +210,19 @@ export default function Login() {
               <ArrowLeft className="h-[18px] w-[18px]" />
               Voltar à Landing Page
             </a>
-            <a
-              href="#"
+            <Link
+              to="/cadastro"
               className={`${T.labelLg} rounded-lg px-3 py-2 transition-colors hover:bg-[#ecf4ff] hover:text-[#121d26]`}
               style={{ color: C.onSurfaceVariant }}
             >
               Criar Conta
-            </a>
+            </Link>
           </nav>
 
           {/* Ações */}
           <div className="flex items-center gap-3">
-            <a
-              href="#"
+            <Link
+              to="/cadastro"
               className={`${T.labelLg} hidden items-center justify-center rounded-xl px-5 py-2 transition-all hover:brightness-95 md:inline-flex`}
               style={{
                 backgroundColor: C.primaryContainer,
@@ -203,7 +230,7 @@ export default function Login() {
               }}
             >
               Começar grátis
-            </a>
+            </Link>
             <div
               className="flex h-8 w-8 items-center justify-center rounded-full"
               style={{ backgroundColor: C.primary }}
@@ -266,7 +293,9 @@ export default function Login() {
                 {/* Login social */}
                 <button
                   type="button"
-                  className={`${T.labelMd} mb-6 flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl px-4 py-3 shadow-sm transition-all duration-200 hover:brightness-95`}
+                  disabled
+                  title="Login com Google ainda não está configurado."
+                  className={`${T.labelMd} mb-6 flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-xl px-4 py-3 opacity-60 shadow-sm`}
                   style={{
                     backgroundColor: C.surfaceLow,
                     color: C.onSurface,
@@ -292,6 +321,15 @@ export default function Login() {
                     ou entre com seu e-mail
                   </span>
                 </div>
+
+                {erro && (
+                  <p
+                    role="alert"
+                    className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800"
+                  >
+                    {erro}
+                  </p>
+                )}
 
                 {/* Formulário */}
                 <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
@@ -329,13 +367,13 @@ export default function Login() {
                       <label htmlFor="senha" className={`${T.labelMd} block`}>
                         Sua senha
                       </label>
-                      <a
-                        href="#"
+                      <span
+                        title="A recuperação de senha ainda não está configurada."
                         className={`${T.labelSm} transition-opacity hover:opacity-70`}
                         style={{ color: C.primary }}
                       >
                         Esqueceu sua senha?
-                      </a>
+                      </span>
                     </div>
                     <div className="relative flex items-center">
                       <Lock
@@ -346,6 +384,7 @@ export default function Login() {
                         id="senha"
                         type={mostrarSenha ? "text" : "password"}
                         required
+                        minLength={8}
                         value={formulario.senha}
                         onChange={(event) =>
                           handleChange("senha", event.target.value)
@@ -389,20 +428,21 @@ export default function Login() {
                       className={`${T.bodySm} cursor-pointer select-none`}
                       style={{ color: C.onSurfaceVariant }}
                     >
-                      Lembrar de mim por 30 dias
+                      Manter sessão neste dispositivo
                     </label>
                   </div>
 
                   {/* Botão principal */}
                   <button
                     type="submit"
+                    disabled={enviando}
                     className={`${T.labelLg} mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 shadow-md transition-all hover:shadow-lg hover:brightness-95`}
                     style={{
                       backgroundColor: C.primaryContainer,
                       color: C.onPrimary,
                     }}
                   >
-                    <span>Entrar na minha conta</span>
+                    <span>{enviando ? "Entrando..." : "Entrar na minha conta"}</span>
                     <ArrowRight className="h-[18px] w-[18px]" />
                   </button>
                 </form>
@@ -415,13 +455,13 @@ export default function Login() {
                   style={{ color: C.onSurfaceVariant }}
                 >
                   Ainda não tem uma conta no Racha+?
-                  <a
-                    href="#"
+                  <Link
+                    to="/cadastro"
                     className="ml-1 font-semibold transition-opacity hover:opacity-70"
                     style={{ color: C.primary }}
                   >
                     Cadastre-se gratuitamente
-                  </a>
+                  </Link>
                 </div>
                 <div
                   className={`${T.labelSm} flex items-center justify-center gap-2 rounded-lg px-3 py-2 normal-case`}

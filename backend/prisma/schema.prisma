@@ -13,16 +13,18 @@ datasource db {
 }
 
 model User {
-  id            String    @id
-  name          String
-  email         String
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-  membros       Membro[]
+  id             String    @id
+  name           String
+  email          String
+  emailVerified  Boolean   @default(false)
+  image          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  sessions       Session[]
+  accounts       Account[]
+  membros        Membro[]
+  tarefasCriadas Tarefa[]  @relation("TarefaCriador")
+  partes         Parte[]
 
   @@unique([email])
   @@map("user")
@@ -86,6 +88,7 @@ model Grupo {
   nome      String
   descricao String   @default("")
   membros   Membro[]
+  tarefas   Tarefa[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -102,4 +105,58 @@ model Membro {
   @@id([idUser, idGrupo])
   @@index([idGrupo])
   @@map("membro")
+}
+
+enum TipoTarefa {
+  comum
+  contribuinte
+  meta
+  recorrente
+}
+
+enum StatusAndamento {
+  AGENDADA
+  EM_ANDAMENTO
+  FINALIZADA
+  ATRASADA
+  CANCELADA
+}
+
+model Tarefa {
+  id              String          @id @default(cuid())
+  idGrupo         String
+  idUser          String
+  nome            String
+  descricao       String          @default("")
+  valorTotal      Decimal         @db.Decimal(12, 2)
+  dataInicio      DateTime
+  dataFinal       DateTime
+  tipoTarefa      TipoTarefa
+  statusAndamento StatusAndamento @default(AGENDADA)
+  grupo           Grupo           @relation(fields: [idGrupo], references: [id], onDelete: Cascade)
+  criador         User            @relation("TarefaCriador", fields: [idUser], references: [id], onDelete: Cascade)
+  partes          Parte[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([idGrupo])
+  @@index([idUser])
+  @@map("tarefa")
+}
+
+model Parte {
+  id        String          @id @default(cuid())
+  idUser    String
+  idTarefa  String
+  descricao String          @default("")
+  valor     Decimal         @db.Decimal(12, 2)
+  status    StatusAndamento @default(AGENDADA)
+  user      User            @relation(fields: [idUser], references: [id], onDelete: Cascade)
+  tarefa    Tarefa          @relation(fields: [idTarefa], references: [id], onDelete: Cascade)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([idUser])
+  @@index([idTarefa])
+  @@map("parte")
 }

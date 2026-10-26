@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -10,12 +10,17 @@ import {
   User,
 } from "lucide-react";
 import OrangeButton from "../components/orange-button";
+import { useAuth } from "../auth/auth-context";
+import { ApiError } from "../lib/api";
 
 export default function Cadastro() {
   const navigate = useNavigate();
+  const { signUp } = useAuth();
 
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState("");
 
   const [formulario, setFormulario] = useState({
     nome: "",
@@ -76,22 +81,41 @@ export default function Cadastro() {
   const senhasIguais =
     formulario.senha === formulario.confirmarSenha;
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setErro("");
 
     if (!senhasIguais) {
-      alert("As senhas não são iguais.");
+      setErro("As senhas não são iguais.");
       return;
     }
 
     if (!formulario.termos) {
-      alert("Você precisa aceitar os termos de uso.");
+      setErro("Você precisa aceitar os termos de uso.");
+      return;
+    }
+    if (!formulario.nome.trim()) {
+      setErro("Informe seu nome.");
       return;
     }
 
-    console.log("Dados do cadastro:", formulario);
-
-    navigate("/home");
+    setEnviando(true);
+    try {
+      await signUp(
+        formulario.nome.trim(),
+        formulario.email.trim(),
+        formulario.senha,
+      );
+      navigate("/home", { replace: true });
+    } catch (error) {
+      setErro(
+        error instanceof ApiError
+          ? error.message
+          : "Não foi possível criar a conta. Tente novamente.",
+      );
+    } finally {
+      setEnviando(false);
+    }
   }
 
   return (
@@ -448,6 +472,8 @@ export default function Cadastro() {
 
             <button
               type="button"
+              disabled
+              title="Login com Google ainda não está configurado."
               className="
                 flex
                 h-11
@@ -463,13 +489,15 @@ export default function Cadastro() {
                 transition
                 duration-200
                 hover:bg-neutral/10
+                disabled:cursor-not-allowed
+                disabled:opacity-60
               "
             >
               <span className="text-lg font-bold text-[#4285F4]">
                 G
               </span>
 
-              Continuar com Google
+              Google (indisponível)
             </button>
 
             {/* DIVISOR */}
@@ -494,6 +522,14 @@ export default function Cadastro() {
             </div>
 
             {/* FORMULÁRIO */}
+            {erro && (
+              <p
+                role="alert"
+                className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800"
+              >
+                {erro}
+              </p>
+            )}
 
             <form
               onSubmit={handleSubmit}
@@ -673,6 +709,8 @@ export default function Cadastro() {
                       id="senha"
                       type={mostrarSenha ? "text" : "password"}
                       required
+                      minLength={8}
+                      autoComplete="new-password"
                       value={formulario.senha}
                       onChange={(event) =>
                         handleChange("senha", event.target.value)
@@ -805,6 +843,8 @@ export default function Cadastro() {
                           : "password"
                       }
                       required
+                      minLength={8}
+                      autoComplete="new-password"
                       value={formulario.confirmarSenha}
                       onChange={(event) =>
                         handleChange(
@@ -1008,8 +1048,8 @@ export default function Cadastro() {
 
               {/* BOTÃO REUTILIZÁVEL */}
 
-              <OrangeButton type="submit">
-                Criar minha conta
+              <OrangeButton type="submit" disabled={enviando}>
+                {enviando ? "Criando conta..." : "Criar minha conta"}
 
                 <ArrowRight
                   size={18}

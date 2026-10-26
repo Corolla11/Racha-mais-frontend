@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -20,6 +20,13 @@ import {
 } from "lucide-react";
 
 import Aba from "../components/aba-perfil";
+import { ApiError, apiRequest } from "../lib/api";
+
+type GrupoApi = {
+  id: string;
+  nome: string;
+  descricao: string;
+};
 
 type Filtro =
   | "todos"
@@ -230,10 +237,38 @@ const iconesSaldo = {
 function MeusGrupos() {
   const navigate = useNavigate();
 
+  const [gruposApi, setGruposApi] = useState<GrupoApi[]>([]);
+  const [carregandoGruposApi, setCarregandoGruposApi] = useState(true);
+  const [erroGruposApi, setErroGruposApi] = useState("");
+  const [tentativaGruposApi, setTentativaGruposApi] = useState(0);
   const [abaAberta, setAbaAberta] = useState(false);
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [ordenacao, setOrdenacao] = useState<Ordenacao>("recentes");
+
+  useEffect(() => {
+    let ativo = true;
+
+    apiRequest<GrupoApi[]>("/grupos")
+      .then((resultado) => {
+        if (ativo) setGruposApi(resultado);
+      })
+      .catch((error: unknown) => {
+        if (!ativo) return;
+        setErroGruposApi(
+          error instanceof ApiError
+            ? error.message
+            : "Não foi possível carregar seus grupos.",
+        );
+      })
+      .finally(() => {
+        if (ativo) setCarregandoGruposApi(false);
+      });
+
+    return () => {
+      ativo = false;
+    };
+  }, [tentativaGruposApi]);
 
   const gruposVisiveis = useMemo(() => {
     const termo = busca.trim().toLowerCase();
@@ -354,7 +389,7 @@ function MeusGrupos() {
               />
             </button>
 
-            {abaAberta && <Aba onLogout={() => navigate("/login")} />}
+            {abaAberta && <Aba />}
           </div>
         </div>
       </header>
@@ -402,6 +437,96 @@ function MeusGrupos() {
               <Users size={15} />+ Novo Grupo Manual
             </button>
           </div>
+        </div>
+
+        <section
+          aria-labelledby="grupos-reais-heading"
+          className="rounded-xl border border-secondary/15 bg-white p-5 shadow-sm sm:p-6"
+        >
+          <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+            <div>
+              <h2
+                id="grupos-reais-heading"
+                className="text-xl font-bold text-text-primary"
+              >
+                Seus grupos
+              </h2>
+              <p className="mt-1 text-sm text-text-secondary">
+                Grupos carregados da sua conta. Abra um grupo para gerenciar
+                seus membros.
+              </p>
+            </div>
+            <span className="text-xs text-text-secondary">
+              {gruposApi.length} {gruposApi.length === 1 ? "grupo" : "grupos"}
+            </span>
+          </div>
+
+          {carregandoGruposApi ? (
+            <p role="status" className="mt-5 text-sm text-text-secondary">
+              Carregando seus grupos...
+            </p>
+          ) : erroGruposApi ? (
+            <div className="mt-5 rounded-lg bg-red-50 p-4">
+              <p role="alert" className="text-sm text-red-800">
+                {erroGruposApi}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setErroGruposApi("");
+                  setCarregandoGruposApi(true);
+                  setTentativaGruposApi((tentativa) => tentativa + 1);
+                }}
+                className="mt-2 text-sm font-semibold text-red-800 underline"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          ) : gruposApi.length === 0 ? (
+            <p className="mt-5 rounded-lg bg-input p-4 text-sm text-text-secondary">
+              Você ainda não participa de nenhum grupo.
+            </p>
+          ) : (
+            <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+              {gruposApi.map((grupo) => (
+                <li
+                  key={grupo.id}
+                  className="flex flex-col justify-between gap-4 rounded-xl border border-slate-200 p-4"
+                >
+                  <div className="min-w-0">
+                    <h3 className="truncate font-semibold text-text-primary">
+                      {grupo.nome}
+                    </h3>
+                    {grupo.descricao && (
+                      <p className="mt-1 line-clamp-2 text-sm text-text-secondary">
+                        {grupo.descricao}
+                      </p>
+                    )}
+                    <p className="mt-2 break-all text-xs text-text-secondary">
+                      ID: {grupo.id}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate(
+                        `/grupo/${encodeURIComponent(grupo.id)}/membros`,
+                        { state: { nomeGrupo: grupo.nome } },
+                      )
+                    }
+                    className="w-full rounded-lg bg-secondary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-secondary/90"
+                  >
+                    Gerenciar membros
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          Abaixo há uma prévia visual com dados demonstrativos; ela ainda não
+          está conectada aos grupos reais da API.
         </div>
 
         {/* RESUMO FINANCEIRO */}

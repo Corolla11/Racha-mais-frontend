@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Bell,
   ChevronDown,
@@ -26,17 +25,11 @@ import {
 import Aba from "../components/aba-perfil";
 
 function Perfil() {
-  const navigate = useNavigate();
-
   const [abaAberta, setAbaAberta] = useState(false);
 
   const [lembreteWhatsApp, setLembreteWhatsApp] = useState(true);
   const [notificarDespesas, setNotificarDespesas] = useState(true);
   const [resumoSemanal, setResumoSemanal] = useState(false);
-
-  function handleLogout() {
-    navigate("/login");
-  }
 
   return (
     <div className="min-h-screen bg-[#F5F8FE] text-[#111827]">
@@ -123,7 +116,7 @@ function Perfil() {
             </button>
 
             {abaAberta && (
-              <Aba onLogout={handleLogout} />
+              <Aba />
             )}
           </div>
         </div>
