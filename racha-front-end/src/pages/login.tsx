@@ -330,7 +330,7 @@ export default function Login() {
                         Sua senha
                       </label>
                       <a
-                        href="#"
+                        href="/esqueceu-senha"
                         className={`${T.labelSm} transition-opacity hover:opacity-70`}
                         style={{ color: C.primary }}
                       >
