@@ -367,8 +367,8 @@ export default function Login() {
                       <label htmlFor="senha" className={`${T.labelMd} block`}>
                         Sua senha
                       </label>
-                      <span
-                        title="A recuperação de senha ainda não está configurada."
+                      <a
+                        href="/esqueceu-senha"
                         className={`${T.labelSm} transition-opacity hover:opacity-70`}
                         style={{ color: C.primary }}
                       >

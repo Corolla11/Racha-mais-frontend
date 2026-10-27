@@ -12,6 +12,10 @@ import Perfil from "./pages/perfil";
 import Grupo from "./pages/grupo";
 import CriarGrupo from "./pages/criar-grupo";
 import MeusGrupos from "./pages/meus-grupos";
+import MeusGruposVazio from "./pages/meus-grupos-vazio";
+import Notificacoes from "./pages/notificacoes";
+import Faq from "./pages/faq";
+import EsqueceuSenha from "./pages/esqueceu-senha";
 import GrupoCriado from "./pages/grupo-criado";
 import Membros from "./pages/membros";
 import Partes from "./pages/partes";
@@ -32,6 +36,10 @@ function App() {
             <Route path="/grupo" element={<Grupo />} />
             <Route path="/criar-grupo" element={<CriarGrupo />} />
             <Route path="/meus-grupos" element={<MeusGrupos />} />
+            <Route path="/meus-grupos-vazio" element={<MeusGruposVazio />} />
+            <Route path="/notificacoes" element={<Notificacoes />} />
+            <Route path="/faq" element={<Faq />} />
+            <Route path="/esqueceu-senha" element={<EsqueceuSenha />} />
             <Route path="/grupo-criado" element={<GrupoCriado />} />
             <Route path="/grupo/:idGrupo/membros" element={<Membros />} />
             <Route path="/tarefas/:idTarefa/partes" element={<Partes />} />
