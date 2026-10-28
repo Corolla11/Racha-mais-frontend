@@ -22,6 +22,12 @@ npm run dev
 `db:migrate` aplica as migrations pendentes e gera novas migrations quando o
 schema muda. Em ambientes de implantação, use `npm run db:deploy`.
 
+O envio de redefinição de senha usa a API do Resend. Configure
+`RESEND_API_KEY` e `RESET_PASSWORD_EMAIL_FROM` no `backend/.env`, com um
+remetente verificado no Resend. Configure `FRONTEND_URL` com a origem do
+front-end. Sem essas credenciais, a solicitação de redefinição retorna erro em
+vez de simular o envio.
+
 ### Integração front-end / back-end
 
 O front-end usa `racha-front-end/.env` (copie de `.env.example`) para configurar
@@ -37,9 +43,8 @@ cross-origin ainda não está implementada.
 
 O helper `src/lib/api.ts` centraliza requests JSON, cookies de sessão e erros
 HTTP. Login, cadastro, consulta de sessão, logout e proteção das páginas do
-front-end usam as rotas BetterAuth existentes. O CRUD de Tarefas ainda não está
-implementado no backend; a migration que relaciona Parte e Tarefa precisa ser
-alinhada com a pessoa responsável por esse CRUD antes de ser aplicada.
+front-end usam as rotas BetterAuth existentes. O backend também oferece CRUD
+autenticado para tarefas, membros, partes, chaves Pix e consulta de usuários.
 
 Para desenvolvimento, inicie `npm run dev` tanto em `backend` quanto em
 `racha-front-end`. As rotas de grupos, membros e partes exigem sessão autenticada.

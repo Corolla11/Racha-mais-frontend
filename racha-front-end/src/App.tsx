@@ -19,6 +19,7 @@ import EsqueceuSenha from "./pages/esqueceu-senha";
 import GrupoCriado from "./pages/grupo-criado";
 import Membros from "./pages/membros";
 import Partes from "./pages/partes";
+import RedefinirSenha from "./pages/redefinir-senha";
 
 function App() {
   return (
@@ -29,7 +30,9 @@ function App() {
             <Route path="/" element={<Login />} />
             <Route path="/login" element={<Login />} />
             <Route path="/cadastro" element={<Cadastro />} />
+            <Route path="/esqueceu-senha" element={<EsqueceuSenha />} />
           </Route>
+          <Route path="/redefinir-senha" element={<RedefinirSenha />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/home" element={<Home />} />
             <Route path="/perfil" element={<Perfil />} />
@@ -39,7 +42,6 @@ function App() {
             <Route path="/meus-grupos-vazio" element={<MeusGruposVazio />} />
             <Route path="/notificacoes" element={<Notificacoes />} />
             <Route path="/faq" element={<Faq />} />
-            <Route path="/esqueceu-senha" element={<EsqueceuSenha />} />
             <Route path="/grupo-criado" element={<GrupoCriado />} />
             <Route path="/grupo/:idGrupo/membros" element={<Membros />} />
             <Route path="/tarefas/:idTarefa/partes" element={<Partes />} />

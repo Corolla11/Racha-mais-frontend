@@ -373,7 +373,7 @@ export default function Login() {
                         style={{ color: C.primary }}
                       >
                         Esqueceu sua senha?
-                      </span>
+                      </a>
                     </div>
                     <div className="relative flex items-center">
                       <Lock
