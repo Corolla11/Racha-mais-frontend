@@ -418,7 +418,7 @@ export default function CriarGrupo() {
               />
             </button>
 
-            {abaAberta && <Aba onLogout={() => navigate("/login")} />}
+            {abaAberta && <Aba />}
           </div>
         </div>
       </header>

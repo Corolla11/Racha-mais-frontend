@@ -1,280 +1,254 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Bell,
-  ChevronDown,
-  Sparkles,
-  ListChecks,
-  SlidersHorizontal,
-  ShieldCheck,
-  Zap,
   ArrowRight,
+  ArrowUpRight,
+  Check,
+  ClipboardList,
+  Menu,
+  Plus,
+  UserRound,
+  UsersRound,
+  X,
 } from "lucide-react";
 
 import Aba from "../components/aba-perfil";
+import BrandLogo from "../components/brand-logo";
 
 function Home() {
   const navigate = useNavigate();
-
   const [abaAberta, setAbaAberta] = useState(false);
+  const [menuMobileAberto, setMenuMobileAberto] = useState(false);
 
-  function handleLogout() {
-    navigate("/login");
+  function irPara(caminho: string) {
+    setMenuMobileAberto(false);
+    navigate(caminho);
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F8FE] text-[#111827]">
+    <div className="min-h-screen bg-background text-text-primary">
+      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex h-[76px] max-w-7xl items-center justify-between px-5 sm:px-8">
+          <button
+            type="button"
+            onClick={() => irPara("/home")}
+            className="rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+            aria-label="Ir para o início do Racha+"
+          >
+            <BrandLogo />
+          </button>
 
-      {/* HEADER */}
-      <header className="flex h-16 items-center justify-between border-b border-gray-100 bg-white px-6">
+          <nav className="hidden items-center gap-8 md:flex" aria-label="Navegação principal">
+            <button
+              type="button"
+              onClick={() => irPara("/meus-grupos")}
+              className="text-sm font-semibold text-secondary transition hover:text-tertiary"
+            >
+              Meus grupos
+            </button>
+            <button
+              type="button"
+              onClick={() => irPara("/perfil")}
+              className="text-sm font-medium text-text-secondary transition hover:text-secondary"
+            >
+              Meu perfil
+            </button>
+          </nav>
 
-        {/* Logo */}
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F3F6FA]">
-            <span className="text-xs font-bold text-[#1D4ED8]">
-              R+
-            </span>
+          <div className="hidden items-center gap-3 md:flex">
+            <button
+              type="button"
+              onClick={() => irPara("/criar-grupo")}
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-secondary shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              <Plus size={17} />
+              Criar grupo
+            </button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setAbaAberta((aberta) => !aberta)}
+                aria-expanded={abaAberta}
+                aria-label="Abrir opções do perfil"
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-sm font-bold text-white ring-4 ring-background transition hover:ring-primary/20"
+              >
+                M
+                <span className="sr-only">Abrir perfil</span>
+              </button>
+              {abaAberta && (
+                <div className="absolute right-0 top-14 z-40">
+                  <Aba />
+                </div>
+              )}
+            </div>
           </div>
-
-          <div>
-            <p className="text-sm font-semibold text-[#111827]">
-              Racha+
-            </p>
-
-            <p className="text-[9px] text-gray-500">
-              Divisão Inteligente
-            </p>
-          </div>
-        </div>
-
-        {/* Navegação */}
-        <nav className="flex items-center gap-6">
-          <button className="text-xs text-gray-700 hover:text-[#1D4ED8]">
-            Meus Grupos
-          </button>
-
-          <button className="text-xs text-gray-700 hover:text-[#1D4ED8]">
-            Criar com IA
-          </button>
-
-          <button className="text-xs text-gray-700 hover:text-[#1D4ED8]">
-            Histórico & Pix
-          </button>
 
           <button
-           onClick={() => navigate("/perfil")}
-            className="text-xs text-gray-700 hover:text-[#1D4ED8]"
-           >
-           Perfil
+            type="button"
+            onClick={() => setMenuMobileAberto((aberto) => !aberto)}
+            aria-expanded={menuMobileAberto}
+            aria-label={menuMobileAberto ? "Fechar menu" : "Abrir menu"}
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-secondary md:hidden"
+          >
+            {menuMobileAberto ? <X size={21} /> : <Menu size={21} />}
           </button>
-        </nav>
+        </div>
 
-        {/* Ações do usuário */}
-        <div className="flex items-center gap-4">
+        {menuMobileAberto && (
+          <nav className="border-t border-slate-100 bg-white px-5 py-4 md:hidden" aria-label="Navegação móvel">
+            <div className="mx-auto flex max-w-7xl flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => irPara("/meus-grupos")}
+                className="flex items-center justify-between rounded-xl px-3 py-3 text-left text-sm font-semibold text-secondary hover:bg-background"
+              >
+                Meus grupos <ArrowRight size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => irPara("/perfil")}
+                className="flex items-center justify-between rounded-xl px-3 py-3 text-left text-sm font-semibold text-secondary hover:bg-background"
+              >
+                Meu perfil <ArrowRight size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => irPara("/criar-grupo")}
+                className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-secondary"
+              >
+                <Plus size={17} /> Criar grupo
+              </button>
+            </div>
+          </nav>
+        )}
+      </header>
 
-          <button className="rounded-lg bg-[#F5A623] px-4 py-2 text-xs font-medium text-[#111827] transition hover:brightness-95">
-            + Novo Grupo
-          </button>
+      <main className="mx-auto max-w-7xl px-5 pb-16 pt-8 sm:px-8 sm:pt-12">
+        <section className="relative isolate overflow-hidden rounded-[2rem] bg-secondary px-6 py-10 text-white shadow-xl shadow-secondary/10 sm:px-10 sm:py-14 lg:px-16">
+          <div aria-hidden="true" className="absolute -right-20 -top-32 -z-10 h-96 w-96 rounded-full border-[50px] border-white/5" />
+          <div aria-hidden="true" className="absolute -bottom-28 right-1/4 -z-10 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
+          <div className="max-w-2xl">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold tracking-wide text-white/80">
+              <span className="h-2 w-2 rounded-full bg-primary" />
+              ORGANIZE SEM COMPLICAÇÃO
+            </span>
+            <h1 className="mt-6 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+              Bons momentos ficam melhores quando <span className="text-primary">todo mundo combina.</span>
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-7 text-white/70 sm:text-lg">
+              Reúna pessoas, organize tarefas e deixe as despesas mais claras para o grupo inteiro.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => irPara("/criar-grupo")}
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-extrabold text-secondary transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              >
+                Criar meu grupo <ArrowRight size={17} />
+              </button>
+              <button
+                type="button"
+                onClick={() => irPara("/meus-grupos")}
+                className="inline-flex h-12 items-center justify-center rounded-xl border border-white/20 px-6 text-sm font-bold text-white transition hover:bg-white/10"
+              >
+                Explorar meus grupos
+              </button>
+            </div>
+          </div>
+          <div className="mt-10 grid max-w-2xl grid-cols-1 gap-3 border-t border-white/10 pt-6 text-sm text-white/75 sm:grid-cols-3">
+            <span className="flex items-center gap-2"><Check size={16} className="text-primary" /> Planos em um só lugar</span>
+            <span className="flex items-center gap-2"><Check size={16} className="text-primary" /> Tarefas compartilhadas</span>
+            <span className="flex items-center gap-2"><Check size={16} className="text-primary" /> Despesas organizadas</span>
+          </div>
+        </section>
 
-          <button className="relative text-gray-600">
-            <Bell size={17} />
+        <section className="mt-12 sm:mt-16" aria-labelledby="atalhos-titulo">
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-tertiary">Seu próximo passo</p>
+              <h2 id="atalhos-titulo" className="mt-2 text-2xl font-extrabold tracking-tight text-secondary sm:text-3xl">
+                O que vamos organizar?
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => irPara("/meus-grupos")}
+              className="inline-flex items-center gap-1 self-start text-sm font-bold text-secondary hover:text-tertiary sm:self-auto"
+            >
+              Ver meus grupos <ArrowUpRight size={16} />
+            </button>
+          </div>
 
-            <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-[#F5A623]" />
-          </button>
-
-          {/* Perfil */}
-          <div className="relative">
+          <div className="mt-6 grid gap-5 lg:grid-cols-3">
+            <button
+              type="button"
+              onClick={() => irPara("/criar-grupo")}
+              className="group rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:border-primary/60 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-tertiary transition group-hover:bg-primary group-hover:text-secondary">
+                <UsersRound size={22} />
+              </span>
+              <span className="mt-5 block text-lg font-extrabold text-secondary">Planejar um encontro</span>
+              <span className="mt-2 block text-sm leading-6 text-text-secondary">Crie um grupo para uma viagem, festa, jogo ou qualquer plano compartilhado.</span>
+              <span className="mt-6 inline-flex items-center gap-2 text-sm font-extrabold text-secondary">Criar grupo <ArrowRight size={16} className="transition group-hover:translate-x-1" /></span>
+            </button>
 
             <button
               type="button"
-              onClick={() => setAbaAberta(!abaAberta)}
-              className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition hover:bg-gray-50"
+              onClick={() => irPara("/meus-grupos")}
+              className="group rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:border-primary/60 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
-              <img
-                src="https://i.pravatar.cc/100?img=47"
-                alt="Foto de perfil"
-                className="h-9 w-9 rounded-full object-cover"
-              />
-
-              <div className="text-left">
-                <p className="text-xs font-semibold">
-                  Mariana S.
-                </p>
-
-                <p className="text-[9px] text-gray-500">
-                  Ativa agora
-                </p>
-              </div>
-
-              <ChevronDown
-                size={15}
-                className={`text-gray-500 transition-transform ${
-                  abaAberta ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            {/* Aba do perfil */}
-            {abaAberta && (
-              <Aba onLogout={handleLogout} />
-            )}
-
-          </div>
-
-        </div>
-      </header>
-
-      {/* CONTEÚDO */}
-      <main className="mx-auto max-w-5xl px-6 py-10">
-
-        {/* Título */}
-        <div className="text-center">
-
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#F5A623]" />
-
-            <span className="text-[10px] font-medium uppercase tracking-wide text-[#1D4ED8]">
-              Novo começo
-            </span>
-          </div>
-
-          <h1 className="text-3xl font-semibold leading-tight">
-            Olá, Mariana! Tudo
-            <br />
-            pronto para começar.
-          </h1>
-
-          <p className="mt-2 text-sm text-gray-500">
-            Escolha como deseja criar o seu primeiro grupo:
-          </p>
-
-        </div>
-
-        {/* Cards */}
-        <div className="mt-8 grid grid-cols-2 gap-5">
-
-          {/* IA */}
-          <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-
-            <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
-              <Sparkles
-                size={18}
-                className="text-[#1D4ED8]"
-              />
-            </div>
-
-            <h2 className="text-base font-semibold">
-              Criar com IA ✨
-            </h2>
-
-            <p className="mt-2 text-xs leading-5 text-gray-500">
-              Descreva em linguagem natural e deixe a inteligência
-              montar os itens e participantes.
-            </p>
-
-            <div className="mt-4 flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-3">
-              <span className="text-xs text-[#1D4ED8]">
-                💬
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary/10 text-secondary transition group-hover:bg-secondary group-hover:text-white">
+                <ClipboardList size={22} />
               </span>
-
-              <p className="text-[10px] italic text-gray-500">
-                "Aluguel de praia com Lucas e Ana..."
-              </p>
-            </div>
-
-            <button className="mt-8 flex w-full items-center justify-center gap-2 rounded-lg bg-[#F5A623] py-2.5 text-xs font-medium text-[#111827]">
-              Usar IA
-              <ArrowRight size={14} />
+              <span className="mt-5 block text-lg font-extrabold text-secondary">Acompanhar meus grupos</span>
+              <span className="mt-2 block text-sm leading-6 text-text-secondary">Acesse os grupos, tarefas e informações que você já compartilha.</span>
+              <span className="mt-6 inline-flex items-center gap-2 text-sm font-extrabold text-secondary">Abrir grupos <ArrowRight size={16} className="transition group-hover:translate-x-1" /></span>
             </button>
 
-          </div>
-
-          {/* Manual */}
-          <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-
-            <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
-              <ListChecks
-                size={18}
-                className="text-[#1D4ED8]"
-              />
-            </div>
-
-            <h2 className="text-base font-semibold">
-              Criar manualmente
-            </h2>
-
-            <p className="mt-2 text-xs leading-5 text-gray-500">
-              Configure passo a passo membros, categorias
-              e despesas.
-            </p>
-
-            <div className="mt-4 flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-3">
-              <SlidersHorizontal
-                size={14}
-                className="text-[#1D4ED8]"
-              />
-
-              <p className="text-[10px] text-gray-500">
-                Controle total de pesos, percentuais e categorias
-                personalizadas.
-              </p>
-            </div>
-
-            <button className="mt-8 flex w-full items-center justify-center gap-2 rounded-lg bg-blue-100 py-2.5 text-xs font-medium text-[#111827]">
-              Configurar Manualmente
-              <ArrowRight size={14} />
+            <button
+              type="button"
+              onClick={() => irPara("/perfil")}
+              className="group rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:border-primary/60 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-tertiary transition group-hover:bg-primary group-hover:text-secondary">
+                <UserRound size={22} />
+              </span>
+              <span className="mt-5 block text-lg font-extrabold text-secondary">Revisar meu perfil</span>
+              <span className="mt-2 block text-sm leading-6 text-text-secondary">Mantenha seus dados atualizados para participar dos próximos planos.</span>
+              <span className="mt-6 inline-flex items-center gap-2 text-sm font-extrabold text-secondary">Ver meu perfil <ArrowRight size={16} className="transition group-hover:translate-x-1" /></span>
             </button>
-
           </div>
+        </section>
 
-        </div>
-
-        {/* Benefícios */}
-        <div className="mt-7 flex justify-center gap-8">
-
-          <div className="flex items-center gap-2">
-            <ShieldCheck size={13} className="text-[#1D4ED8]" />
-
-            <span className="text-[10px] text-gray-500">
-              Transações Pix protegidas
-            </span>
+        <section className="mt-8 flex flex-col items-start justify-between gap-5 rounded-3xl border border-primary/20 bg-primary/10 p-6 sm:flex-row sm:items-center sm:p-8">
+          <div>
+            <p className="text-sm font-extrabold text-secondary">Cada pessoa sabe o que combinar.</p>
+            <p className="mt-1 text-sm leading-6 text-text-secondary">Comece pelo grupo e ajuste os detalhes conforme o plano de vocês.</p>
           </div>
-
-          <div className="flex items-center gap-2">
-            <Zap size={13} className="text-[#1D4ED8]" />
-
-            <span className="text-[10px] text-gray-500">
-              Sem taxas ocultas
-            </span>
-          </div>
-
-        </div>
-
+          <button
+            type="button"
+            onClick={() => irPara("/criar-grupo")}
+            className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-secondary px-5 text-sm font-bold text-white transition hover:bg-secondary/90"
+          >
+            Começar agora <ArrowRight size={16} />
+          </button>
+        </section>
       </main>
 
-      {/* FOOTER */}
-      <footer className="border-t border-gray-100 bg-white px-6 py-5">
-
-        <div className="flex items-center justify-between">
-
-          <p className="text-xs text-gray-500">
-            <span className="font-semibold text-[#1D4ED8]">
-              Racha+
-            </span>
-            {" "}• Organização descomplicada de despesas e tarefas coletivas
-          </p>
-
-          <div className="flex gap-5 text-[10px] text-gray-500">
-            <button>Sobre</button>
-            <button>Segurança Pix</button>
-            <button>Privacidade</button>
-            <span>© 2025 Racha+. Todos os direitos reservados.</span>
-          </div>
-
+      <footer className="border-t border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <BrandLogo compact />
+          <p className="text-xs text-text-secondary">Racha+ · Mais leve juntos.</p>
+          <button
+            type="button"
+            onClick={() => irPara("/perfil")}
+            className="self-start text-xs font-bold text-secondary hover:text-tertiary sm:self-auto"
+          >
+            Minha conta
+          </button>
         </div>
-
       </footer>
-
     </div>
   );
 }

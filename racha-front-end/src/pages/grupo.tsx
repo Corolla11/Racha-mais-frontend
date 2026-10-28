@@ -395,7 +395,7 @@ export default function Grupo() {
         </nav>
 
         <div className="border-t border-slate-100 p-4">
-          <AbaPerfil onLogout={() => navigate("/login")} />
+          <AbaPerfil />
         </div>
       </aside>
 

@@ -13,17 +13,19 @@ datasource db {
 }
 
 model User {
-  id            String     @id
-  name          String
-  email         String
-  emailVerified Boolean    @default(false)
-  image         String?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-  membros       Membro[]
-  chavesPix     ChavePix[]
+  id             String     @id
+  name           String
+  email          String
+  emailVerified  Boolean    @default(false)
+  image          String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  sessions       Session[]
+  accounts       Account[]
+  membros        Membro[]
+  tarefasCriadas Tarefa[]   @relation("TarefaCriador")
+  partes         Parte[]
+  chavesPix      ChavePix[]
 
   @@unique([email])
   @@map("user")
@@ -129,7 +131,7 @@ model Tarefa {
   idUser          String
   nome            String
   descricao       String          @default("")
-  valorTotal      Decimal         @default(0.0) @db.Decimal(10, 2)
+  valorTotal      Decimal         @default(0.0) @db.Decimal(12, 2)
   dataInicio      DateTime
   dataFinal       DateTime
   tipoTarefa      TipoTarefa
@@ -137,29 +139,33 @@ model Tarefa {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
-  grupo  Grupo   @relation(fields: [idGrupo], references: [id], onDelete: Cascade)
-  membro Membro  @relation(fields: [idUser, idGrupo], references: [idUser, idGrupo], onDelete: Cascade)
-  partes Parte[]
+  grupo   Grupo   @relation(fields: [idGrupo], references: [id], onDelete: Cascade)
+  criador User    @relation("TarefaCriador", fields: [idUser], references: [id], onDelete: Cascade)
+  membro  Membro  @relation(fields: [idUser, idGrupo], references: [idUser, idGrupo], onDelete: Cascade)
+  partes  Parte[]
 
   @@index([idGrupo])
+  @@index([idUser])
   @@index([idUser, idGrupo])
   @@map("tarefa")
 }
 
 model Parte {
+  id        String          @id @default(cuid())
   idUser    String
-  idGrupo   String
+  idGrupo   String?
   idTarefa  String
   descricao String          @default("")
-  valor     Decimal         @db.Decimal(10, 2)
+  valor     Decimal         @db.Decimal(12, 2)
   status    StatusAndamento @default(AGENDADA)
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
 
-  membro Membro @relation(fields: [idUser, idGrupo], references: [idUser, idGrupo], onDelete: Cascade)
-  tarefa Tarefa @relation(fields: [idTarefa], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [idUser], references: [id], onDelete: Cascade)
+  membro Membro? @relation(fields: [idUser, idGrupo], references: [idUser, idGrupo], onDelete: Cascade)
+  tarefa Tarefa  @relation(fields: [idTarefa], references: [id], onDelete: Cascade)
 
-  @@id([idUser, idTarefa])
+  @@index([idUser])
   @@index([idTarefa])
   @@index([idUser, idGrupo])
   @@map("parte")

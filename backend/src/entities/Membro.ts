@@ -1,6 +1,6 @@
 export enum Funcao {
-    dono,
-    membro
+    dono = "dono",
+    membro = "membro"
 }
 
 export class Membro {
