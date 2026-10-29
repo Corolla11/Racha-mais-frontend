@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useAppNavigate as useNavigate } from "../lib/navigation";
 
 import {
   ArrowRight,
@@ -113,6 +113,20 @@ const populares = [
 
 const grupos: GrupoFaq[] = [
   {
+    id: "fluxos-revisados",
+    titulo: "Tarefas, pagamentos e encerramento",
+    icone: <CircleCheckBig size={19}/>,
+    corIcone: "text-secondary",
+    categorias: ["grupos", "pix"],
+    itens: [
+      { id: "revisao-criar", pergunta: "Como criar um grupo e convidar participantes?", texto: "criar grupo manual IA convidar participantes membros", conteudo: <p>Em Meus grupos, escolha Novo Racha e a criação manual ou assistida. Revise os dados antes de criar. Dentro do grupo, use Membros para preparar convites e gerenciar permissões.</p> },
+      { id: "revisao-tarefa", pergunta: "Como criar tarefas e dividir os valores?", texto: "tarefas despesa rateio igual participantes valor individual", conteudo: <p>Use Nova tarefa para informar título, responsável, prazo, participantes e a despesa opcional em um único formulário. Toda despesa pertence a uma tarefa. O valor é dividido igualmente entre os participantes selecionados; diferenças de centavos são distribuídas para preservar o total.</p> },
+      { id: "revisao-pagar", pergunta: "Informar pagamento significa que minha cota está quitada?", texto: "pagamento informado confirmado pendente contestado comprovante", conteudo: <p>Não. Abra os pagamentos da tarefa, consulte o recebedor, anexe um comprovante se desejar e informe o pagamento. A cota fica aguardando confirmação. Somente o responsável confirma o recebimento; ele pode contestar o pagamento com um motivo.</p> },
+      { id: "revisao-encerrar", pergunta: "Quando posso encerrar um grupo?", texto: "encerrar grupo pendencias tarefas concluidas quitada historico", conteudo: <p>O administrador deve concluir as atividades e resolver todos os pagamentos pendentes, informados ou contestados. A auditoria bloqueia o encerramento enquanto houver pendências. Depois de confirmar o encerramento, o resumo e o histórico ficam em modo somente leitura.</p> },
+      { id: "revisao-conta", pergunta: "Como alterar minha conta e gerenciar o plano?", texto: "conta perfil seguranca pix assinatura cancelar pro planos", conteudo: <p>Em Configurações, acesse Perfil, Segurança e Conta, Pagamentos e Pix ou Minha assinatura. Os planos são Grátis, Pro (R$ 12 por mês ou R$ 80 por ano) e Pro+ (R$ 20 por mês ou R$ 200 por ano). Na prévia, as alterações e cobranças são simuladas.</p> },
+    ],
+  },
+  {
     id: "g1",
     titulo: "1. Primeiros Passos e Criação de Grupos",
     icone: <UserPlus size={19} />,
@@ -143,7 +157,7 @@ const grupos: GrupoFaq[] = [
             </p>
             <div className="flex items-center gap-3 rounded-xl bg-input p-4">
               <Zap size={22} className="shrink-0 text-secondary" />
-              <span className="text-[13px] text-text-primary">
+              <span className="text-ui-label text-text-primary">
                 Zero fricção: sem baixar app na hora, sem formulários cansativos
                 ou cadastros com senhas.
               </span>
@@ -213,13 +227,13 @@ const grupos: GrupoFaq[] = [
                   key={etapa}
                   className="flex flex-col gap-1 rounded-xl bg-input p-3 text-center"
                 >
-                  <span className="text-[11px] font-semibold uppercase text-secondary">
+                  <span className="text-ui-caption font-semibold uppercase text-secondary">
                     {etapa}
                   </span>
                   <span className="text-sm font-semibold text-text-primary">
                     {titulo}
                   </span>
-                  <span className="text-[13px]">{texto}</span>
+                  <span className="text-ui-label">{texto}</span>
                 </div>
               ))}
             </div>
@@ -273,23 +287,23 @@ const grupos: GrupoFaq[] = [
           "pagamento conciliação comprovante upload open finance bacen baixa confirmação organizador recebido taxa escondida",
         conteudo: (
           <>
-            <p>Existem 3 formas ultra-rápidas de conciliação no sistema:</p>
+            <p>O pagamento passa por informação, conferência e confirmação:</p>
             <div className="flex flex-col gap-3">
               {[
                 [
                   <ScanLine key="i" size={19} />,
                   "Upload de Comprovante:",
-                  "O pagador envia o print ou PDF do comprovante bancário no link. Nossa IA lê o ID de transação Pix e valida instantaneamente.",
+                  "O participante informa o pagamento e pode anexar JPG, PNG ou PDF. O comprovante fica disponível para conferência; o envio não quita a cota.",
                 ],
                 [
                   <Hand key="i" size={19} />,
                   "Confirmação em 1 Toque pelo Organizador:",
-                  'O organizador recebe uma notificação instantânea e pode marcar como "Recebido" direto no app ou pelo WhatsApp.',
+                  'O responsável confere o recebimento e confirma no painel. Se houver divergência, contesta o pagamento e informa o motivo.',
                 ],
                 [
                   <Repeat key="i" size={19} />,
-                  "Open Finance Bacen (Opcional):",
-                  "Para quem conectar a conta bancária via Open Finance, a baixa é 100% automatizada e imediata no painel.",
+                  "Quitação da tarefa:",
+                  "A tarefa só fica quitada quando todos os pagamentos forem confirmados. A conclusão da atividade é um estado separado.",
                 ],
               ].map(([icone, titulo, texto]) => (
                 <div key={titulo as string} className="flex items-start gap-3">
@@ -298,7 +312,7 @@ const grupos: GrupoFaq[] = [
                     <strong className="font-semibold text-text-primary">
                       {titulo}
                     </strong>
-                    <p className="text-[13px]">{texto}</p>
+                    <p className="text-ui-label">{texto}</p>
                   </div>
                 </div>
               ))}
@@ -329,15 +343,15 @@ const grupos: GrupoFaq[] = [
             </p>
             <div className="flex flex-col gap-2 rounded-xl bg-input p-4 text-text-primary">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold uppercase text-secondary">
+                <span className="text-ui-caption font-semibold uppercase text-secondary">
                   Exemplo de Notificação Real
                 </span>
-                <span className="text-[11px] text-text-secondary">
+                <span className="text-ui-caption text-text-secondary">
                   WhatsApp Oficial
                 </span>
               </div>
 
-              <div className="flex flex-col gap-2 rounded-xl bg-surface p-4 text-[13px] shadow-sm">
+              <div className="flex flex-col gap-2 rounded-xl bg-surface p-4 text-ui-label shadow-sm">
                 <p>
                   "Oi Leo! Tudo bem? Aqui é o bot do <strong>Racha+</strong> 🍕
                   Passando rapidinho para avisar que a cota da pizza de sexta
@@ -452,7 +466,7 @@ function Faq() {
           <div>
             <p className="text-sm font-semibold text-text-primary">Racha+</p>
 
-            <p className="text-[9px] text-text-secondary">
+            <p className="text-ui-caption text-text-secondary">
               Divisão Inteligente
             </p>
           </div>
@@ -495,7 +509,7 @@ function Faq() {
           <button
             type="button"
             onClick={() => navigate("/criar-grupo")}
-            className="hidden items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-text-primary transition hover:bg-tertiary hover:text-white sm:flex"
+            className="ui-button ui-button--md hidden items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-text-primary transition hover:bg-tertiary hover:text-white sm:flex"
           >
             <Plus size={14} />
             Novo Grupo
@@ -516,7 +530,7 @@ function Faq() {
             <button
               type="button"
               onClick={() => setAbaAberta(!abaAberta)}
-              className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition hover:bg-gray-50"
+              className="ui-button ui-button--md flex items-center gap-2 rounded-xl px-2 py-1.5 transition hover:bg-gray-50"
             >
               <img
                 src="https://i.pravatar.cc/100?img=47"
@@ -527,7 +541,7 @@ function Faq() {
               <div className="hidden text-left xl:block">
                 <p className="text-xs font-semibold">Mariana S.</p>
 
-                <p className="text-[9px] text-text-secondary">Online</p>
+                <p className="text-ui-caption text-text-secondary">Online</p>
               </div>
 
               <ChevronDown
@@ -538,7 +552,7 @@ function Faq() {
               />
             </button>
 
-            {abaAberta && <Aba onLogout={() => navigate("/login")} />}
+            {abaAberta && <Aba onClose={() => setAbaAberta(false)}/>}
           </div>
         </div>
       </header>
@@ -571,12 +585,12 @@ function Faq() {
             </nav>
 
             <div className="flex flex-col items-center gap-3">
-              <div className="inline-flex items-center gap-2 rounded-full bg-surface px-3 py-1 text-[11px] font-semibold text-secondary shadow-sm">
+              <div className="inline-flex items-center gap-2 rounded-full bg-surface px-3 py-1 text-ui-caption font-semibold text-secondary shadow-sm">
                 <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
                 Central de Conhecimento Racha+ 2.0
               </div>
 
-              <h1 className="text-4xl font-bold leading-tight tracking-tight md:text-5xl">
+              <h1 className="text-ui-page-title font-bold leading-tight tracking-tight text-ui-page-title">
                 Como podemos ajudar você hoje?
               </h1>
 
@@ -599,17 +613,17 @@ function Faq() {
                 }}
                 aria-label="Buscar na central de ajuda"
                 placeholder="Buscar por dúvida, funcionalidade ou palavra-chave... ex: taxa, Pix, recibo..."
-                className="w-full bg-transparent px-3 py-2 text-sm outline-none placeholder:text-gray-400"
+                className="ui-control w-full bg-transparent px-3 py-2 text-sm outline-none placeholder:text-gray-400"
               />
 
               <div className="hidden items-center gap-2 pr-2 sm:flex">
-                <span className="whitespace-nowrap rounded-lg bg-input px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+                <span className="whitespace-nowrap rounded-lg bg-input px-2 py-1 text-ui-caption font-semibold uppercase tracking-wider text-text-secondary">
                   ESC para limpar
                 </span>
 
                 <button
                   type="button"
-                  className="rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white active:scale-95"
+                  className="ui-button ui-button--md rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white active:scale-95"
                 >
                   Buscar
                 </button>
@@ -625,11 +639,11 @@ function Faq() {
                     key={item.id}
                     type="button"
                     onClick={() => setCategoria(item.id)}
-                    className={`rounded-full px-4 py-2 text-xs font-semibold shadow-sm transition ${
+                    className={`ui-button ui-button--md ${`rounded-full px-4 py-2 text-xs font-semibold shadow-sm transition ${
                       ativo
                         ? "bg-secondary text-white"
                         : "bg-surface text-text-secondary hover:bg-input hover:text-text-primary"
-                    }`}
+                    }`}`}
                   >
                     {item.nome}
                   </button>
@@ -644,12 +658,12 @@ function Faq() {
               <div className="flex items-center gap-2">
                 <Zap size={22} className="fill-primary text-primary" />
 
-                <h2 className="text-xl font-semibold tracking-tight">
+                <h2 className="text-ui-section-title font-semibold tracking-tight">
                   Tópicos mais consultados
                 </h2>
               </div>
 
-              <span className="rounded-full bg-input px-3 py-1 text-[11px] font-semibold text-text-secondary">
+              <span className="rounded-full bg-input px-3 py-1 text-ui-caption font-semibold text-text-secondary">
                 Atualizado em tempo real
               </span>
             </div>
@@ -660,7 +674,7 @@ function Faq() {
                   key={card.alvo}
                   type="button"
                   onClick={() => irPara(card.alvo)}
-                  className="group relative flex flex-col justify-between overflow-hidden rounded-xl bg-surface p-6 text-left shadow-sm transition hover:shadow-md"
+                  className="ui-button ui-button--md group relative flex flex-col justify-between overflow-hidden rounded-xl bg-surface p-6 text-left shadow-sm transition hover:shadow-md"
                 >
                   <div
                     className={`absolute -bottom-4 -right-4 h-20 w-20 rounded-full transition-transform group-hover:scale-150 ${card.bolha}`}
@@ -673,11 +687,11 @@ function Faq() {
                       {card.icone}
                     </div>
 
-                    <h3 className="line-clamp-2 text-[17px] font-semibold">
+                    <h3 className="line-clamp-2 text-ui-card-title font-semibold">
                       {card.titulo}
                     </h3>
 
-                    <p className="text-[13px] text-text-secondary">
+                    <p className="text-ui-label text-text-secondary">
                       {card.texto}
                     </p>
                   </div>
@@ -741,9 +755,9 @@ function Faq() {
                             type="button"
                             aria-expanded={aberto}
                             onClick={() => alternar(item.id)}
-                            className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left transition hover:bg-input/60"
+                            className="ui-button ui-button--md flex w-full items-center justify-between gap-4 px-6 py-5 text-left transition hover:bg-input/60"
                           >
-                            <span className="text-[17px] font-semibold">
+                            <span className="text-ui-card-title font-semibold">
                               {item.pergunta}
                             </span>
 
@@ -777,10 +791,10 @@ function Faq() {
                   </div>
 
                   <div className="flex flex-col">
-                    <h3 className="text-[17px] font-semibold">
+                    <h3 className="text-ui-card-title font-semibold">
                       Não encontrou o que procurava?
                     </h3>
-                    <span className="text-[11px] text-text-secondary">
+                    <span className="text-ui-caption text-text-secondary">
                       Nosso time humano responde rápido
                     </span>
                   </div>
@@ -811,7 +825,7 @@ function Faq() {
 
                       <div className="flex flex-col">
                         <span className="leading-none">suporte@racha.plus</span>
-                        <span className="mt-0.5 text-[11px] font-normal text-text-secondary">
+                        <span className="mt-0.5 text-ui-caption font-normal text-text-secondary">
                           Resposta em ~15 minutos
                         </span>
                       </div>
@@ -829,7 +843,7 @@ function Faq() {
                     <button
                       key={link.nome}
                       type="button"
-                      className="flex items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold text-text-secondary transition hover:bg-input hover:text-text-primary"
+                      className="ui-button ui-button--md flex items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold text-text-secondary transition hover:bg-input hover:text-text-primary"
                     >
                       <span className="flex items-center gap-2">
                         <span className="text-secondary">{link.icone}</span>
@@ -847,17 +861,17 @@ function Faq() {
                   <div className="flex items-center gap-2">
                     <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#2E7D32]" />
 
-                    <span className="text-[11px] font-semibold uppercase tracking-wider">
+                    <span className="text-ui-caption font-semibold uppercase tracking-wider">
                       Status do Ecossistema
                     </span>
                   </div>
 
-                  <span className="rounded-full bg-[#E8F5E9] px-2 py-0.5 text-[11px] font-semibold text-[#2E7D32]">
+                  <span className="rounded-full bg-[#E8F5E9] px-2 py-0.5 text-ui-caption font-semibold text-[#2E7D32]">
                     100% Operacional
                   </span>
                 </div>
 
-                <div className="flex flex-col gap-2 pt-1 text-[13px] text-text-secondary">
+                <div className="flex flex-col gap-2 pt-1 text-ui-label text-text-secondary">
                   {statusSistema.map((s) => (
                     <div key={s.nome} className="flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
@@ -879,7 +893,7 @@ function Faq() {
                   <span className="font-semibold">Dica Racha+ Pro</span>
                 </div>
 
-                <p className="text-[13px] text-text-secondary">
+                <p className="text-ui-label text-text-secondary">
                   Em viagens longas, adicione despesas à medida que ocorrem. Ao
                   final, a ferramenta calcula a{" "}
                   <strong>compensação mínima de transferências</strong>,
@@ -892,11 +906,11 @@ function Faq() {
           {/* FEEDBACK */}
           <section className="mt-4 flex flex-col items-center justify-between gap-4 rounded-xl bg-surface p-6 text-center shadow-sm sm:flex-row sm:text-left">
             <div className="flex flex-col gap-1">
-              <h4 className="text-[17px] font-semibold">
+              <h4 className="text-ui-card-title font-semibold">
                 Esta página foi útil para você?
               </h4>
 
-              <p className="text-[13px] text-text-secondary">
+              <p className="text-ui-label text-text-secondary">
                 Seu feedback nos ajuda a aprimorar as respostas e
                 funcionalidades do Racha+.
               </p>
@@ -913,7 +927,7 @@ function Faq() {
                   <button
                     type="button"
                     onClick={() => setFeedback(true)}
-                    className="inline-flex items-center gap-2 rounded-xl bg-input px-4 py-2 text-xs font-semibold transition hover:bg-background active:scale-95"
+                    className="ui-button ui-button--md inline-flex items-center gap-2 rounded-xl bg-input px-4 py-2 text-xs font-semibold transition hover:bg-background active:scale-95"
                   >
                     <ThumbsUp size={17} className="text-tertiary" />
                     Sim, ajudou
@@ -922,7 +936,7 @@ function Faq() {
                   <button
                     type="button"
                     onClick={() => setFeedback(true)}
-                    className="inline-flex items-center gap-2 rounded-xl bg-input px-4 py-2 text-xs font-semibold transition hover:bg-background active:scale-95"
+                    className="ui-button ui-button--md inline-flex items-center gap-2 rounded-xl bg-input px-4 py-2 text-xs font-semibold transition hover:bg-background active:scale-95"
                   >
                     <ThumbsDown size={17} className="text-text-secondary" />
                     Ainda tenho dúvidas

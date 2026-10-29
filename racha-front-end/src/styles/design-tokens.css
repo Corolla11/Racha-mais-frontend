@@ -1,0 +1,36 @@
+:root {
+  --ui-font-family: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+  --ui-font-meta: 0.6875rem;
+  --ui-font-caption: 0.75rem;
+  --ui-font-label: 0.8125rem;
+  --ui-font-body: 0.875rem;
+  --ui-font-lead: 1rem;
+  --ui-font-card-title: 1.125rem;
+  --ui-font-section-title: 1.25rem;
+  --ui-font-dialog-title: 1.5rem;
+  --ui-font-page-title: 2rem;
+  --ui-font-display: 2.5rem;
+  --ui-font-amount: 1.75rem;
+  --ui-line-body: 1.5;
+  --ui-line-heading: 1.25;
+  --ui-control-height: 2.75rem;
+  --ui-control-height-sm: 2.5rem;
+  --ui-control-height-lg: 3rem;
+  --ui-control-radius: 0.5rem;
+  --ui-card-radius: 0.75rem;
+  --ui-control-padding-x: 1rem;
+  --ui-card-padding: 1.5rem;
+  --ui-gap: 1rem;
+  --ui-section-gap: 1.5rem;
+  --ui-page-padding: 2rem;
+  --ui-content-width: 75rem;
+}
+
+@media (max-width: 760px) {
+  :root {
+    --ui-font-page-title: 1.75rem;
+    --ui-font-display: 2rem;
+    --ui-card-padding: 1.25rem;
+    --ui-page-padding: 1rem;
+  }
+}
