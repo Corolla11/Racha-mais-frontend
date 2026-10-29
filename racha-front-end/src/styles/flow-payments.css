@@ -1,0 +1,41 @@
+.racha-flows:has(.racha-payments-page) ~ section { display:none; }
+.racha-group-host:has(.racha-payments-page) .racha-group-intro,.racha-group-host:has(.racha-payments-page) .racha-role-preview { display:none; }
+.racha-payments-heading { display:flex; align-items:center; justify-content:space-between; gap:15px; margin:0 0 24px; }
+.racha-payments-heading h1 { font-size:var(--ui-font-page-title); font-weight:650; letter-spacing:-.7px; }
+.racha-payments-heading .racha-primary,.racha-payments-heading .racha-secondary {    white-space:nowrap; }
+.racha-payments-summary { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:18px; }
+.racha-payments-summary .racha-card { padding:19px; }
+.racha-payments-summary select { width:140px; border:0; border-radius:4px; padding:3px 6px; font-size:var(--ui-font-label); background:#eef2ff; color:#8691a8; }
+.racha-payments-summary h2 { font-size:var(--ui-font-section-title); }
+.racha-task-financials { display:flex; align-items:center; gap:24px; background:#eef2ff; border-radius:6px; padding:13px; margin-top:19px; }
+.racha-task-financials small { font-size:var(--ui-font-caption); color:#8d7d70; }
+.racha-task-financials strong { display:block; font-size:var(--ui-font-amount); font-weight:600; line-height:1.3; }
+.racha-task-financials > div:nth-child(2) { color:#b46c20; }
+.racha-task-financials > .racha-badge { margin-left:auto; font-size:var(--ui-font-meta); white-space:nowrap; }
+.racha-collection-progress { display:flex; justify-content:space-between; font-size:var(--ui-font-caption); color:#9a7e64; margin:14px 0 5px; }
+.racha-collection-bar { height:6px; background:#e7dfce; border-radius:5px; overflow:hidden; }
+.racha-collection-bar > i { display:block; height:100%; background:#ff873d; border-radius:5px; }
+.racha-collection-stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:13px; }
+.racha-collection-stats > div { padding:8px; border-radius:5px; background:#eef2ff; }
+.racha-collection-stats small { font-size:var(--ui-font-caption); color:#93816f; }
+.racha-collection-stats strong { display:block; font-size:var(--ui-font-amount); font-weight:600; line-height:1.4; }
+.racha-collection-stats > div:nth-child(2) strong { color:#c87a3f; }
+.racha-collection-stats span { font-size:var(--ui-font-caption); color:#9d8a78; display:block; }
+.racha-participant-ledger { padding:22px 19px 0; }
+.racha-participant-ledger .racha-card-heading { padding-bottom:13px; }
+.racha-ledger-row { display:flex; align-items:center; gap:11px; padding:21px 0; border-bottom:1px solid #e9ecf4; }
+.racha-ledger-row.informado { background:#fff4e3; padding:21px 15px; margin:0 -19px; }
+.racha-ledger-row > .racha-avatar { background:#e1ebff; color:#607fa0; }
+.racha-ledger-row > div:first-of-type { flex:1; }
+.racha-ledger-row > div > strong { display:flex; gap:7px; align-items:center; flex-wrap:wrap; font-size:var(--ui-font-caption); font-weight:600; margin-bottom:3px; }
+.racha-ledger-row > div > small { display:block; color:#a18771; font-size:var(--ui-font-caption); margin-top:4px; }
+.racha-ledger-row .racha-badge { font-size:var(--ui-font-meta); }
+.racha-ledger-amount { text-align:right; white-space:nowrap; }
+.racha-ledger-row .racha-ledger-amount > strong { display:block; font-size:var(--ui-font-amount); font-weight:550; letter-spacing:-.3px; margin-bottom:0; color:#ac6e32; }
+.racha-ledger-row.confirmado .racha-ledger-amount > strong { color:#102338; }
+.racha-ledger-row .racha-primary,.racha-ledger-row .racha-secondary {    white-space:nowrap; }
+.racha-ledger-footer { display:flex; align-items:center; gap:5px; margin:0 -19px; padding:10px 15px; border-radius:0 0 10px 10px; background:#eef2ff; color:#8a7c70; font-size:var(--ui-font-caption); }
+.racha-ledger-footer svg { color:#d69431; flex-shrink:0; }
+.racha-payments-footer { display:flex; justify-content:space-between; align-items:center; margin-top:24px; }
+@media(max-width:1100px) { .racha-payments-heading { flex-wrap:wrap; } .racha-ledger-row { flex-wrap:wrap; } .racha-ledger-row > div:first-of-type { min-width:220px; } .racha-ledger-row .racha-actions { margin-left:auto; } .racha-task-financials { flex-wrap:wrap; } .racha-task-financials > .racha-badge { margin-left:0; } }
+@media(max-width:760px) { .racha-payments-summary { grid-template-columns:1fr; } .racha-payments-heading h1 { font-size:var(--ui-font-page-title); } .racha-ledger-row > div:first-of-type { min-width:170px; } .racha-ledger-amount { margin-left:45px; text-align:left; } .racha-ledger-row .racha-actions { flex-wrap:wrap; } .racha-payments-footer { gap:12px; } }
