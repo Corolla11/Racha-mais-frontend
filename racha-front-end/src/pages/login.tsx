@@ -1,3 +1,4 @@
+import { typography as T } from "../lib/typography";
 import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -50,17 +51,7 @@ const C = {
 };
 
 // Escala tipográfica
-const T = {
-  headlineXl: "text-[36px] leading-[44px] tracking-[-0.02em] font-bold",
-  headlineLg: "text-[28px] leading-9 tracking-[-0.015em] font-semibold",
-  headlineMd: "text-[22px] leading-7 tracking-[-0.01em] font-semibold",
-  headlineSm: "text-[18px] leading-6 font-semibold",
-  bodyMd: "text-sm leading-5 font-normal",
-  bodySm: "text-[13px] leading-[18px] font-normal",
-  labelLg: "text-sm leading-5 font-semibold",
-  labelMd: "text-xs leading-4 tracking-[0.02em] font-semibold",
-  labelSm: "text-[11px] leading-[14px] tracking-[0.04em] font-semibold",
-};
+
 
 // Logo do Google usado no botão de login social
 function IconeGoogle() {
@@ -192,7 +183,7 @@ export default function Login() {
                 Racha<span style={{ color: C.primary }}>+</span>
               </span>
               <span
-                className="hidden text-[11px] leading-tight tracking-[0.04em] sm:inline-block"
+                className="hidden text-ui-caption leading-tight tracking-[0.04em] sm:inline-block"
                 style={{ color: C.onSurfaceVariant }}
               >
                 Você combina. O Racha+ organiza.
@@ -280,7 +271,7 @@ export default function Login() {
                     />
                     Acesso Seguro
                   </span>
-                  <h1 className={T.headlineXl}>Bem-vindo de volta!</h1>
+                  <h1 className={T.headlineLg}>Bem-vindo de volta!</h1>
                   <p
                     className={`${T.bodyMd} mt-1`}
                     style={{ color: C.onSurfaceVariant }}
@@ -355,7 +346,7 @@ export default function Login() {
                         onFocus={() => setCampoFocado("email")}
                         onBlur={() => setCampoFocado(null)}
                         placeholder="ex: mariana@email.com"
-                        className={`${T.bodyMd} h-11 w-full rounded-lg pl-11 pr-4 transition-all placeholder:text-[#857464] focus:outline-none`}
+                        className={`ui-control ui-control--leading ${`${T.bodyMd} h-11 w-full rounded-lg pl-11 pr-4 transition-all placeholder:text-[#857464] focus:outline-none`}`}
                         style={estiloCampo("email")}
                       />
                     </div>
@@ -373,7 +364,7 @@ export default function Login() {
                         style={{ color: C.primary }}
                       >
                         Esqueceu sua senha?
-                      </span>
+                      </a>
                     </div>
                     <div className="relative flex items-center">
                       <Lock
@@ -392,7 +383,7 @@ export default function Login() {
                         onFocus={() => setCampoFocado("senha")}
                         onBlur={() => setCampoFocado(null)}
                         placeholder="••••••••"
-                        className={`${T.bodyMd} h-11 w-full rounded-lg pl-11 pr-11 transition-all placeholder:text-[#857464] focus:outline-none`}
+                        className={`ui-control ui-control--leading ui-control--trailing ${`${T.bodyMd} h-11 w-full rounded-lg pl-11 pr-11 transition-all placeholder:text-[#857464] focus:outline-none`}`}
                         style={estiloCampo("senha")}
                       />
                       <button
@@ -436,7 +427,7 @@ export default function Login() {
                   <button
                     type="submit"
                     disabled={enviando}
-                    className={`${T.labelLg} mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 shadow-md transition-all hover:shadow-lg hover:brightness-95`}
+                    className={`ui-button ui-button--md ${`${T.labelLg} mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 shadow-md transition-all hover:shadow-lg hover:brightness-95`}`}
                     style={{
                       backgroundColor: C.primaryContainer,
                       color: C.onPrimary,

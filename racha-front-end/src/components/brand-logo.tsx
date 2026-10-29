@@ -32,7 +32,7 @@ function BrandLogo({ compact = false, light = false }: BrandLogoProps) {
             Racha<span className="text-primary">+</span>
           </span>
           <span
-            className={`mt-0.5 block text-[10px] font-medium tracking-wide ${
+            className={`mt-0.5 block text-ui-meta font-medium tracking-wide ${
               light ? "text-white/65" : "text-text-secondary"
             }`}
           >

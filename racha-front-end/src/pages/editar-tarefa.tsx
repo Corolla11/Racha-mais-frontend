@@ -38,10 +38,13 @@ export interface DadosTarefa {
   pagadorId: string;
   comprovante: string;
   concluida: boolean;
+  emAndamento?: boolean;
+  recorrencia?: "nenhuma" | "semanal" | "mensal";
 }
 
 interface EditarTarefaProps {
   tarefa: DadosTarefa;
+  modo?: "criar" | "editar";
   nomeGrupo?: string;
   onClose: () => void;
   onSave: (tarefa: DadosTarefa) => void;
@@ -74,6 +77,7 @@ function obterIniciais(nome: string) {
 
 export default function EditarTarefa({
   tarefa,
+  modo = "editar",
   nomeGrupo = "Viagem Florianópolis",
   onClose,
   onSave,
@@ -387,9 +391,9 @@ export default function EditarTarefa({
 
           <h2
             id="editar-tarefa-titulo"
-            className="text-2xl font-bold tracking-tight"
+            className="text-ui-dialog-title font-bold tracking-tight"
           >
-            Editar Tarefa
+            {modo === "criar" ? "Criar tarefa" : "Editar tarefa"}
           </h2>
 
           <p className="mt-1 text-sm leading-5 text-gray-500">
@@ -441,7 +445,7 @@ export default function EditarTarefa({
                       event.target.value
                     )
                   }
-                  className={estiloInput}
+                  className={`ui-control ${estiloInput}`}
                 />
               </div>
 
@@ -449,7 +453,7 @@ export default function EditarTarefa({
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <label
                     htmlFor="editar-descricao"
-                    className="text-sm font-semibold text-[#253047]"
+                    className="text-ui-label font-semibold text-[#253047]"
                   >
                     Descrição e Notas Adicionais
                   </label>
@@ -469,7 +473,7 @@ export default function EditarTarefa({
                       event.target.value
                     )
                   }
-                  className={`${estiloInput} resize-none leading-6`}
+                  className={`ui-control ${`${estiloInput} resize-none leading-6`}`}
                 />
               </div>
 
@@ -500,7 +504,7 @@ export default function EditarTarefa({
                           event.target.value
                         )
                       }
-                      className={`${estiloInput} pl-10`}
+                      className={`ui-control ui-control--leading ${`${estiloInput} pl-10`}`}
                     />
                   </div>
                 </div>
@@ -529,7 +533,7 @@ export default function EditarTarefa({
                           event.target.value
                         )
                       }
-                      className={`${estiloInput} pl-10`}
+                      className={`ui-control ui-control--leading ${`${estiloInput} pl-10`}`}
                     />
                   </div>
                 </div>
@@ -630,7 +634,7 @@ export default function EditarTarefa({
                         aria-pressed={
                           participante.selecionado
                         }
-                        className={`
+                        className={`ui-button ui-button--md ${`
                           flex
                           min-w-0
                           items-center
@@ -645,7 +649,7 @@ export default function EditarTarefa({
                               ? "border-[#FFDCC7] bg-[#FFF3EA]"
                               : "border-transparent bg-[#F0F4FF]"
                           }
-                        `}
+                        `}`}
                       >
                         <div
                           className={`
@@ -800,7 +804,7 @@ export default function EditarTarefa({
                               )
                             )
                           }
-                          className="w-full min-w-0 bg-transparent px-2 py-3 text-lg font-bold outline-none"
+                          className="ui-control w-full min-w-0 bg-transparent px-2 py-3 text-lg font-bold outline-none"
                         />
                       </div>
                     </div>
@@ -822,7 +826,7 @@ export default function EditarTarefa({
                             event.target.value
                           )
                         }
-                        className={estiloInput}
+                        className={`ui-control ${estiloInput}`}
                       >
                         {formulario.participantes.map(
                           (participante) => (
@@ -881,7 +885,7 @@ export default function EditarTarefa({
                           {formulario.comprovante}
                         </p>
 
-                        <label className="cursor-pointer rounded-lg bg-white px-3 py-2 text-xs font-semibold transition hover:bg-gray-50">
+                        <label className="cursor-pointer rounded-lg bg-white px-3 py-2 text-ui-label font-semibold transition hover:bg-gray-50">
                           Alterar
 
                           <input
@@ -909,7 +913,7 @@ export default function EditarTarefa({
                         </button>
                       </div>
                     ) : (
-                      <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 bg-[#F8FAFF] p-4 text-xs text-gray-500 transition hover:bg-[#F0F4FF]">
+                      <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 bg-[#F8FAFF] p-4 text-ui-label text-gray-500 transition hover:bg-[#F0F4FF]">
                         <Upload size={17} />
 
                         Adicionar comprovante
@@ -963,6 +967,11 @@ export default function EditarTarefa({
               />
             </section>
 
+            <div className="racha-two-col">
+              <label className="racha-label">Execução<select value={formulario.emAndamento ? "andamento" : "planejada"} onChange={event => atualizarCampo("emAndamento", event.target.value === "andamento")} className="ui-control"><option value="planejada">Planejada</option><option value="andamento">Em andamento</option></select></label>
+              <label className="racha-label">Recorrência<select value={formulario.recorrencia ?? "nenhuma"} onChange={event => atualizarCampo("recorrencia", event.target.value as DadosTarefa["recorrencia"])} className="ui-control"><option value="nenhuma">Não repetir</option><option value="semanal">Semanal</option><option value="mensal">Mensal</option></select></label>
+            </div>
+            <p className="racha-muted">A recorrência é uma configuração visual nesta prévia. Concluir a atividade não confirma os pagamentos.</p>
             {/* ERRO */}
 
             {erro && (
@@ -986,7 +995,7 @@ export default function EditarTarefa({
           <button
             type="button"
             onClick={onClose}
-            className="
+            className="ui-button ui-button--md
               rounded-xl
               bg-[#E5EDFF]
               px-5
@@ -1004,7 +1013,7 @@ export default function EditarTarefa({
           <button
             type="button"
             onClick={salvarAlteracoes}
-            className="
+            className="ui-button ui-button--md
               flex
               items-center
               justify-center
@@ -1021,7 +1030,7 @@ export default function EditarTarefa({
             "
           >
             <Check size={17} />
-            Salvar Alterações
+            {modo === "criar" ? "Criar tarefa" : "Salvar alterações"}
           </button>
         </footer>
       </aside>
