@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useAppNavigate as useNavigate } from "../lib/navigation";
 
 import {
   ArrowDown,
@@ -65,7 +65,7 @@ function MeusGruposVazio() {
           <div>
             <p className="text-sm font-semibold text-text-primary">Racha+</p>
 
-            <p className="text-[9px] text-text-secondary">
+            <p className="text-ui-caption text-text-secondary">
               Divisão Inteligente
             </p>
           </div>
@@ -74,7 +74,7 @@ function MeusGruposVazio() {
         <nav className="hidden items-center gap-6 md:flex">
           <button
             type="button"
-            className="rounded-lg bg-input px-3 py-1.5 text-xs font-semibold text-secondary"
+            className="ui-button ui-button--md rounded-lg bg-input px-3 py-1.5 text-xs font-semibold text-secondary"
           >
             Meus Grupos
           </button>
@@ -107,7 +107,7 @@ function MeusGruposVazio() {
           <button
             type="button"
             onClick={() => navigate("/criar-grupo")}
-            className="hidden items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-text-primary transition hover:bg-tertiary hover:text-white sm:flex"
+            className="ui-button ui-button--md hidden items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-text-primary transition hover:bg-tertiary hover:text-white sm:flex"
           >
             <Plus size={14} />
             Novo Grupo
@@ -128,7 +128,7 @@ function MeusGruposVazio() {
             <button
               type="button"
               onClick={() => setAbaAberta(!abaAberta)}
-              className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition hover:bg-gray-50"
+              className="ui-button ui-button--md flex items-center gap-2 rounded-xl px-2 py-1.5 transition hover:bg-gray-50"
             >
               <img
                 src="https://i.pravatar.cc/100?img=47"
@@ -139,7 +139,7 @@ function MeusGruposVazio() {
               <div className="hidden text-left xl:block">
                 <p className="text-xs font-semibold">Mariana S.</p>
 
-                <p className="text-[9px] text-text-secondary">Online</p>
+                <p className="text-ui-caption text-text-secondary">Online</p>
               </div>
 
               <ChevronDown
@@ -150,7 +150,7 @@ function MeusGruposVazio() {
               />
             </button>
 
-            {abaAberta && <Aba onLogout={() => navigate("/login")} />}
+            {abaAberta && <Aba onClose={() => setAbaAberta(false)}/>}
           </div>
         </div>
       </header>
@@ -163,12 +163,12 @@ function MeusGruposVazio() {
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-primary" />
 
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
+              <span className="text-ui-caption font-semibold uppercase tracking-wide text-text-secondary">
                 Visão Geral de Grupos • Junho 2025
               </span>
             </div>
 
-            <h1 className="text-4xl font-bold tracking-tight text-secondary">
+            <h1 className="text-ui-page-title font-bold tracking-tight text-secondary">
               Meus Grupos
             </h1>
 
@@ -182,7 +182,7 @@ function MeusGruposVazio() {
             <button
               type="button"
               onClick={() => navigate("/criar-grupo")}
-              className="flex items-center gap-2 rounded-xl bg-surface px-5 py-3 text-sm font-semibold text-secondary shadow-sm transition hover:bg-input"
+              className="ui-button ui-button--md flex items-center gap-2 rounded-xl bg-surface px-5 py-3 text-sm font-semibold text-secondary shadow-sm transition hover:bg-input"
             >
               <Sparkles size={18} className="fill-primary text-primary" />
               Criar com IA
@@ -191,7 +191,7 @@ function MeusGruposVazio() {
             <button
               type="button"
               onClick={() => navigate("/criar-grupo")}
-              className="flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white"
+              className="ui-button ui-button--md flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white"
             >
               <Plus size={18} />
               Novo Grupo Manual
@@ -248,7 +248,7 @@ function MeusGruposVazio() {
                   {card.valor}
                 </span>
 
-                <span className="mt-1 text-[11px] text-text-secondary">
+                <span className="mt-1 text-ui-caption text-text-secondary">
                   {card.legenda}
                 </span>
               </div>
@@ -268,14 +268,14 @@ function MeusGruposVazio() {
               <input
                 type="text"
                 placeholder="Buscar por grupo ou participante..."
-                className="h-11 w-full rounded-xl bg-input pl-11 pr-4 text-sm text-text-primary outline-none transition placeholder:text-text-secondary focus:ring-2 focus:ring-primary"
+                className="ui-control ui-control--leading h-11 w-full rounded-xl bg-input pl-11 pr-4 text-sm text-text-primary outline-none transition placeholder:text-text-secondary focus:ring-2 focus:ring-primary"
               />
             </div>
 
             <div className="flex items-center justify-end gap-3">
               <label
                 htmlFor="ordenar-grupos"
-                className="hidden text-[11px] text-text-secondary sm:inline"
+                className="hidden text-ui-label text-text-secondary sm:inline"
               >
                 Ordenar:
               </label>
@@ -283,7 +283,7 @@ function MeusGruposVazio() {
               <div className="relative">
                 <select
                   id="ordenar-grupos"
-                  className="cursor-pointer appearance-none rounded-xl bg-input py-2.5 pl-4 pr-10 text-xs font-semibold text-secondary outline-none transition hover:bg-background"
+                  className="ui-control ui-control--trailing cursor-pointer appearance-none rounded-xl bg-input py-2.5 pl-4 pr-10 text-xs font-semibold text-secondary outline-none transition hover:bg-background"
                 >
                   <option>Mais recentes primeiro</option>
                   <option>Maior valor total</option>
@@ -308,11 +308,11 @@ function MeusGruposVazio() {
                   key={nome}
                   type="button"
                   onClick={() => setFiltroAtivo(nome)}
-                  className={`whitespace-nowrap rounded-full px-4 py-1.5 text-xs font-semibold transition ${
+                  className={`ui-button ui-button--md ${`whitespace-nowrap rounded-full px-4 py-1.5 text-xs font-semibold transition ${
                     ativo
                       ? "bg-secondary text-white shadow-sm"
                       : "bg-input text-text-secondary hover:bg-background hover:text-text-primary"
-                  }`}
+                  }`}`}
                 >
                   {nome} (0)
                 </button>
@@ -338,7 +338,7 @@ function MeusGruposVazio() {
             </div>
           </div>
 
-          <h2 className="relative mb-3 max-w-xl text-2xl font-bold tracking-tight text-secondary">
+          <h2 className="relative mb-3 max-w-xl text-ui-dialog-title font-bold tracking-tight text-secondary">
             Você ainda não participa de nenhum grupo
           </h2>
 
@@ -352,7 +352,7 @@ function MeusGruposVazio() {
             <button
               type="button"
               onClick={() => navigate("/criar-grupo")}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white sm:w-auto"
+              className="ui-button ui-button--md flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white sm:w-auto"
             >
               <Sparkles size={18} className="fill-current" />
               Criar Primeiro Grupo com IA
@@ -361,7 +361,7 @@ function MeusGruposVazio() {
             <button
               type="button"
               onClick={() => navigate("/criar-grupo")}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-input px-6 py-3 text-sm font-semibold text-secondary transition hover:bg-background sm:w-auto"
+              className="ui-button ui-button--md flex w-full items-center justify-center gap-2 rounded-xl bg-input px-6 py-3 text-sm font-semibold text-secondary transition hover:bg-background sm:w-auto"
             >
               <Plus size={18} />
               Criar Manualmente
@@ -386,7 +386,7 @@ function MeusGruposVazio() {
                   key={modelo.titulo}
                   type="button"
                   onClick={() => navigate("/criar-grupo")}
-                  className="group flex flex-col justify-between rounded-xl bg-input p-5 text-left shadow-sm transition hover:bg-background"
+                  className="ui-button ui-button--md group flex flex-col justify-between rounded-xl bg-input p-5 text-left shadow-sm transition hover:bg-background"
                 >
                   <div className="mb-3 flex items-start justify-between">
                     <span className="text-2xl" role="img" aria-label={modelo.titulo}>
@@ -403,7 +403,7 @@ function MeusGruposVazio() {
                       {modelo.titulo}
                     </h3>
 
-                    <p className="mt-1 text-[13px] leading-snug text-text-secondary">
+                    <p className="mt-1 text-ui-label leading-snug text-text-secondary">
                       {modelo.descricao}
                     </p>
                   </div>
@@ -426,13 +426,13 @@ function MeusGruposVazio() {
                   Lembretes Automáticos Racha+
                 </h3>
 
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-input px-2.5 py-0.5 text-[11px] font-semibold text-secondary">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-input px-2.5 py-0.5 text-ui-caption font-semibold text-secondary">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                   Ativo em todos os grupos
                 </span>
               </div>
 
-              <p className="text-[13px] leading-relaxed text-text-secondary">
+              <p className="text-ui-label leading-relaxed text-text-secondary">
                 Nenhum constrangimento: avisamos os participantes com
                 pendências via WhatsApp de forma amigável e com link direto do
                 Pix quando faltar 24h para o vencimento.
@@ -443,7 +443,7 @@ function MeusGruposVazio() {
           <div className="flex w-full shrink-0 items-center justify-end gap-3 md:w-auto">
             <button
               type="button"
-              className="rounded-xl bg-input px-5 py-2.5 text-xs font-semibold text-secondary shadow-sm transition hover:bg-background"
+              className="ui-button ui-button--md rounded-xl bg-input px-5 py-2.5 text-xs font-semibold text-secondary shadow-sm transition hover:bg-background"
             >
               Configurar Regras
             </button>

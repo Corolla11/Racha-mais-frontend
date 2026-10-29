@@ -17,6 +17,7 @@ interface TarefaConcluidaProps {
   aberta: boolean;
   tarefa: Tarefa | null;
   onFechar: () => void;
+  onPagamento?: () => void;
   onReabrir?: (tarefa: Tarefa) => void;
 }
 
@@ -28,6 +29,7 @@ export default function TarefaConcluida({
   aberta,
   tarefa,
   onFechar,
+  onPagamento,
   onReabrir,
 }: TarefaConcluidaProps) {
   useEffect(() => {
@@ -72,7 +74,7 @@ export default function TarefaConcluida({
   const progresso = despesa && despesa.valorTotal > 0
     ? Math.min(Math.round((totalPago / despesa.valorTotal) * 100), 100)
     : 0;
-  const todosPagos = despesa ? progresso === 100 : true;
+  const todosPagos = despesa ? participantesRateio.every(p => p.statusPagamento === "pago") : true;
 
   return (
     <div
@@ -96,7 +98,7 @@ export default function TarefaConcluida({
               <X size={20} />
             </button>
           </div>
-          <h2 className="mb-4 text-xl font-bold text-slate-900 sm:text-2xl">{tarefa.titulo}</h2>
+          <h2 className="mb-4 text-ui-section-title font-bold text-slate-900 text-ui-section-title">{tarefa.titulo}</h2>
           <div className="flex items-center gap-3 rounded-xl border border-green-100 bg-white p-4">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600">
               <CheckCircle2 size={23} />
@@ -177,7 +179,7 @@ export default function TarefaConcluida({
                         <p className="truncate text-sm font-semibold text-slate-800">{participante.nome}</p>
                         <p className="text-xs text-slate-500">{moeda(valorIndividual)}</p>
                       </div>
-                      <span className={`rounded-md px-2 py-1 text-[11px] font-semibold ${participante.statusPagamento === "pago" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
+                      <span className={`rounded-md px-2 py-1 text-ui-caption font-semibold ${participante.statusPagamento === "pago" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
                         {participante.statusPagamento === "pago" ? "Pago" : participante.statusPagamento === "parcial" ? "Parcial" : "Pendente"}
                       </span>
                     </div>
@@ -214,10 +216,11 @@ export default function TarefaConcluida({
         </main>
 
         <footer className="flex shrink-0 flex-col-reverse gap-3 border-t border-slate-200 bg-[#EDF3FF] px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
-          <button type="button" onClick={() => onReabrir?.(tarefa)} disabled={!onReabrir} className="flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-white disabled:opacity-40">
+          {despesa && onPagamento && <button className="racha-primary" onClick={onPagamento}>Ver pagamentos / Pix</button>}
+          <button type="button" onClick={() => onReabrir?.(tarefa)} disabled={!onReabrir} className="ui-button ui-button--md flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-white disabled:opacity-40">
             <RotateCcw size={16} /> Reabrir tarefa
           </button>
-          <button type="button" onClick={onFechar} className="flex items-center justify-center gap-2 rounded-lg bg-[#F97316] px-6 py-3 text-sm font-semibold text-white hover:bg-[#EA580C]">
+          <button type="button" onClick={onFechar} className="ui-button ui-button--md flex items-center justify-center gap-2 rounded-lg bg-[#F97316] px-6 py-3 text-sm font-semibold text-white hover:bg-[#EA580C]">
             <ArrowLeft size={17} /> Voltar para o grupo
           </button>
         </footer>
