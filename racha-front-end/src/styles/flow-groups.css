@@ -1,0 +1,90 @@
+.racha-flows:has(.racha-audit-page) ~ section { display:none; }
+.racha-group-host:has(.racha-audit-page) .racha-group-intro { display:none; }
+.racha-group-host:has(.racha-audit-page) .racha-role-preview { display:none; }
+.racha-role-preview { display:flex; justify-content:flex-end; font-size:var(--ui-font-caption); color:#9b8c7e; margin:0 0 13px; }
+.racha-role-preview select { color:#667993; background:transparent; font-size:var(--ui-font-caption); }
+.racha-audit-title { display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin:3px 0 24px; }
+.racha-audit-title h1 { font-size:var(--ui-font-page-title); font-weight:650; letter-spacing:-.7px; }
+.racha-audit-grid { display:grid; grid-template-columns:320px minmax(0,1fr); gap:20px; align-items:start; }
+.racha-audit-group { padding:0; overflow:hidden; box-shadow:0 3px 4px #17233712; }
+.racha-audit-cover { height:182px; background-size:cover; background-position:center; padding:14px; display:flex; flex-direction:column; align-items:flex-start; justify-content:space-between; color:white; }
+.racha-audit-cover .racha-badge { background:#fff9ec; color:#a47b45; }
+.racha-audit-cover h2 { font-size:var(--ui-font-section-title); font-weight:650; color:white; }
+.racha-audit-cover > div > span { display:flex; gap:4px; align-items:center; font-size:var(--ui-font-caption); }
+.racha-audit-group-body { padding:18px; }
+.racha-audit-members { display:flex; align-items:center; gap:9px; background:#eef2ff; padding:11px; border-radius:6px; margin-bottom:18px; }
+.racha-audit-members small { display:block; color:#856d5d; font-size:var(--ui-font-caption); }
+.racha-audit-members strong { display:block; font-size:var(--ui-font-caption); font-weight:500; }
+.racha-audit-members .racha-avatar-stack { margin-left:auto; }
+.racha-audit-group dl > div { display:flex; justify-content:space-between; font-size:var(--ui-font-caption); line-height:1.9; gap:7px; }
+.racha-audit-group dt { color:#9d8878; }
+.racha-audit-group dd { display:flex; align-items:center; gap:2px; text-align:right; }
+.racha-audit-group .racha-notice { margin:18px 0 0; font-size:var(--ui-font-body); }
+.racha-audit-check { display:flex; align-items:center; gap:10px; background:#eef2ff; padding:12px; border-radius:6px; margin:8px 0; }
+.racha-audit-check > span { color:white; background:#ff873d; border-radius:50%; padding:7px; }
+.racha-audit-check:nth-of-type(3) > span { background:#b86706; }
+.racha-audit-check:nth-of-type(4) > span { background:#e3a300; }
+.racha-audit-check > div { flex:1; }
+.racha-audit-check strong { font-size:var(--ui-font-caption); font-weight:600; }
+.racha-audit-check small { display:block; color:#a18b7a; font-size:var(--ui-font-caption); }
+.racha-audit-check > b { font-size:var(--ui-font-caption); background:#dce7ff; color:#7282a3; padding:3px 5px; border-radius:4px; font-weight:500; }
+.racha-audit-money { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.racha-audit-money > .racha-card { padding:13px 11px; }
+.racha-audit-money .racha-card > span { display:flex; justify-content:space-between; gap:5px; color:#8a7768; font-size:var(--ui-font-body); }
+.racha-audit-money strong { display:block; font-size:var(--ui-font-amount); font-weight:500; letter-spacing:-.6px; margin:22px 0 0; }
+.racha-audit-money > .racha-card:nth-child(2) strong { color:#d77d30; }
+.racha-audit-money small { color:#a18b7a; font-size:var(--ui-font-caption); }
+.racha-audit-callout { display:flex; align-items:center; gap:10px; padding:19px; border-radius:9px; background:linear-gradient(100deg,#ffdac3,#eef2ff); }
+.racha-audit-callout > span { background:#ff873d; color:white; border-radius:9px; padding:8px; }
+.racha-audit-callout > div { flex:1; }
+.racha-audit-callout h3 { font-size:var(--ui-font-card-title); font-weight:600; line-height:1.25; }
+.racha-audit-callout p { font-size:var(--ui-font-caption); color:#9d7b65; margin-top:5px; }
+.racha-audit-callout > button { font-size:var(--ui-font-caption); flex-shrink:0; padding:10px; }
+.racha-invitation-scene { min-height:100dvh; }
+.racha-invitation-underlay { pointer-events:none; min-height:100dvh; }
+.racha-backdrop-cover { height:140px; background:linear-gradient(140deg,#c2dce0,#90b9ca,#f4dbbb); margin:-21px -21px 19px; border-radius:9px 9px 0 0; }
+.racha-invite-modal { background:#26314266; backdrop-filter:blur(5px); }
+.racha-invite-modal .racha-dialog { width:min(100%,540px); border-radius:10px; }
+.racha-invite-modal .racha-dialog > header { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip-path:inset(50%); }
+.racha-invite-modal .racha-dialog-body { padding:23px 21px 14px; }
+.racha-invite-content { text-align:center; }
+.racha-invite-icon { display:inline-flex; padding:13px; background:linear-gradient(130deg,#ff9c50,#bb5305); color:white; border-radius:50%; box-shadow:0 3px 8px #c2781833; margin:0 0 9px; }
+.racha-invite-content > h1 { font-size:var(--ui-font-page-title); letter-spacing:-.5px; font-weight:650; margin:0 0 4px; }
+.racha-invite-content > p { font-size:var(--ui-font-body); color:#8e7e71; line-height:1.7; }
+.racha-invite-content > p > strong { color:#313c4c; font-weight:500; }
+.racha-invite-group { border:1px solid #edf0f7; background:#f8faff; border-radius:8px; overflow:hidden; margin:17px 0 13px; text-align:left; }
+.racha-invite-photo { height:192px; background-size:cover; background-position:center 55%; padding:12px; position:relative; }
+.racha-invite-photo > .racha-badge { background:#fff7e9; color:#958268; position:absolute; top:12px; left:12px; }
+.racha-invite-photo-title { position:absolute; bottom:12px; left:14px; color:white; }
+.racha-invite-photo-title h2 { font-size:var(--ui-font-section-title); font-weight:700; letter-spacing:-.8px; line-height:1.25; }
+.racha-invite-photo-title > span { display:flex; gap:5px; align-items:center; font-size:var(--ui-font-caption); margin-top:4px; }
+.racha-invite-album { position:absolute; top:14px; left:50%; transform:translateX(-50%) rotate(-4deg); padding:11px 16px; background:#ffffffe0; border-radius:4px; text-align:center; color:#3d4c5c; box-shadow:2px 3px 8px #17233722; }
+.racha-invite-album small { display:block; font-size:var(--ui-font-caption); letter-spacing:.07em; }
+.racha-invite-album strong { display:block; font-size:var(--ui-font-caption); margin:6px 0; }
+.racha-invite-album > span { font-size:var(--ui-font-caption); color:#9d8875; }
+.racha-invite-group-body { padding:12px 13px; }
+.racha-invite-creator { display:flex; gap:4px; align-items:center; flex-wrap:wrap; font-size:var(--ui-font-caption); color:#88796c; }
+.racha-invite-creator b { color:#b47e55; font-weight:500; }
+.racha-invite-members { display:flex; align-items:center; gap:9px; background:white; border:1px solid #eef0f5; border-radius:6px; padding:9px 7px; margin:12px 0; }
+.racha-invite-members > p { flex:1; font-size:var(--ui-font-caption); color:#7a6e65; }
+.racha-invite-members strong { font-weight:500; }
+.racha-invite-members small { display:block; margin-top:2px; color:#9a8b7f; }
+.racha-invite-members > svg { color:#c6a385; }
+.racha-invite-group-body .racha-notice { margin:0; font-size:var(--ui-font-body); }
+.racha-invite-group-body .racha-notice svg { color:#d89124; }
+.racha-invite-buttons { display:grid; grid-template-columns:1fr 2fr; gap:7px; }
+.racha-invite-support { display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:4px; margin-top:13px; font-size:var(--ui-font-caption); }
+.racha-invite-support a { color:#b47745; font-weight:600; }
+.racha-invite-content > .racha-demo-caption { margin-top:8px; font-size:var(--ui-font-caption); }
+@media(max-width:1150px) { .racha-audit-grid { grid-template-columns:270px minmax(0,1fr); gap:14px; } .racha-audit-check { flex-wrap:wrap; } .racha-audit-check > b { margin-left:46px; } .racha-audit-callout { flex-wrap:wrap; } .racha-audit-callout > button { margin-left:44px; } }
+@media(max-width:900px) { .racha-audit-grid { grid-template-columns:1fr; } .racha-audit-group { display:grid; grid-template-columns:1fr 1fr; } .racha-audit-cover { height:100%; min-height:210px; } .racha-audit-check { flex-wrap:nowrap; } .racha-audit-check > b { margin-left:0; } }
+@media(max-width:760px) {
+  .racha-audit-title h1 { font-size:var(--ui-font-page-title); } .racha-audit-group { display:block; } .racha-audit-cover { min-height:190px; }
+  .racha-audit-money { gap:7px; } .racha-audit-money > .racha-card { padding:13px 8px; } .racha-audit-money strong { font-size:var(--ui-font-card-title); }
+  .racha-audit-callout { padding:16px; } .racha-audit-callout > button { margin-left:0; width:100%; }
+  .racha-invite-modal .racha-dialog-body { padding:21px 15px 13px; } .racha-invite-content > h1 { font-size:var(--ui-font-page-title); }
+  .racha-invite-photo { height:180px; } .racha-invite-photo-title h2 { font-size:var(--ui-font-section-title); }
+  .racha-invite-members { flex-wrap:wrap; } .racha-invite-members > p { min-width:130px; }
+  .racha-invite-buttons button { font-size:var(--ui-font-caption); padding:9px; }
+}
+@media(max-width:420px) { .racha-audit-money { grid-template-columns:1fr; } .racha-audit-money strong { margin-top:10px; font-size:var(--ui-font-amount); } .racha-audit-check { flex-wrap:wrap; } .racha-audit-check > b { margin-left:45px; } .racha-invite-photo-title h2 { font-size:var(--ui-font-section-title); } .racha-invite-photo-title > span { font-size:var(--ui-font-caption); } .racha-invite-photo { height:170px; } .racha-invite-buttons { grid-template-columns:1fr; } }

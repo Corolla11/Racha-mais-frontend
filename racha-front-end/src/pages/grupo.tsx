@@ -1,8 +1,9 @@
+import AppShell from "../components/app-shell";
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRef, useState } from "react";
+import GroupFlows, { type GroupFlowControl, type Activity } from "../components/group-flows";
+import { share, type Payment } from "../lib/finance";
 import {
-  Bell,
   CalendarDays,
   CheckCircle2,
   ChevronRight,
@@ -10,18 +11,13 @@ import {
   Copy,
   CreditCard,
   MapPin,
-  Menu,
   Plus,
   QrCode,
-  Settings,
   SlidersHorizontal,
-  User,
-  UserPlus,
   Users,
   WalletCards,
 } from "lucide-react";
 
-import AbaPerfil from "../components/aba-perfil";
 import OrangeButton from "../components/orange-button";
 
 import EditarTarefa, {
@@ -136,14 +132,6 @@ const tarefasIniciais: DadosTarefa[] = [
   },
 ];
 
-const membros = [
-  { id: "1", nome: "Rodrigo (Você)", status: "Deve R$ 200,00", acao: "Acertar", pendente: true },
-  { id: "2", nome: "Mariana S.", status: "Tudo pago", acao: "Quitado", pendente: false },
-  { id: "3", nome: "Lucas M.", status: "Deve R$ 140,00", acao: "Lembrar", pendente: true },
-  { id: "4", nome: "Bia A.", status: "Deve R$ 220,00", acao: "Lembrar", pendente: true },
-  { id: "5", nome: "Pedro H.", status: "Tudo pago", acao: "Quitado", pendente: false },
-  { id: "6", nome: "Camila R.", status: "Tudo pago", acao: "Quitado", pendente: false },
-];
 
 function moeda(valor: number) {
   return valor.toLocaleString("pt-BR", {
@@ -185,18 +173,14 @@ function quantidadeParticipantes(tarefa: DadosTarefa) {
 // Converte os dados utilizados na edição para o formato
 // utilizado pela tela de visualização.
 
-function converterParaVisualizacao(dados: DadosTarefa): Tarefa {
+function converterParaVisualizacao(dados: DadosTarefa, payments: Record<string, Payment>): Tarefa {
   const participantesSelecionados = dados.participantes.filter(
     (p) => p.selecionado
   );
 
-  const valorIndividual =
-    dados.possuiDespesa && participantesSelecionados.length > 0
-      ? dados.valorTotal / participantesSelecionados.length
-      : 0;
 
   const participantes: ParticipanteVisualizacao[] =
-    participantesSelecionados.map((p) => ({
+    participantesSelecionados.map((p, index) => ({
       id: p.id,
       nome: p.nome,
       iniciais: iniciais(p.nome),
@@ -209,12 +193,12 @@ function converterParaVisualizacao(dados: DadosTarefa): Tarefa {
       // Dados demonstrativos de pagamento:
       // o pagador aparece como tendo pago sua própria cota.
       valorPago:
-        dados.possuiDespesa && p.id === dados.pagadorId
-          ? valorIndividual
+        dados.possuiDespesa && (payments[`${dados.id}:${p.id}`]?.status === "confirmado" || (!payments[`${dados.id}:${p.id}`] && p.id === dados.pagadorId))
+          ? share(dados.valorTotal, participantesSelecionados.length, index)
           : 0,
 
       statusPagamento:
-        dados.possuiDespesa && p.id === dados.pagadorId
+        dados.possuiDespesa && (payments[`${dados.id}:${p.id}`]?.status === "confirmado" || (!payments[`${dados.id}:${p.id}`] && p.id === dados.pagadorId))
           ? "pago"
           : "pendente",
     }));
@@ -223,7 +207,7 @@ function converterParaVisualizacao(dados: DadosTarefa): Tarefa {
     id: dados.id,
     titulo: dados.titulo,
     grupo: nomeGrupo,
-    status: dados.concluida ? "concluida" : "pendente",
+    status: dados.concluida ? "concluida" : dados.emAndamento ? "andamento" : "pendente",
     descricao: dados.descricao,
     responsavelId: dados.responsavelId,
     prazo: `${dataBR(dados.dataLimite)} às ${dados.horario}`,
@@ -264,7 +248,15 @@ type FiltroTarefas =
   | "concluidas";
 
 export default function Grupo() {
-  const navigate = useNavigate();
+  const [groupName, setGroupName] = useState(nomeGrupo);
+  const [closed, setClosed] = useState(false);
+  const [memberMode, setMemberMode] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [payments, setPayments] = useState<Record<string, Payment>>({});
+  const [taskEvents, setTaskEvents] = useState<Activity[]>([]);
+  const [feedback, setFeedback] = useState("");
+  function record(text: string) { setFeedback(text); setTaskEvents(old => [{ text, date: new Date().toISOString() }, ...old]); }
+  const flowControl = useRef<GroupFlowControl>(null);
 
   const [tarefas, setTarefas] = useState<DadosTarefa[]>(tarefasIniciais);
   const [tarefaSelecionadaId, setTarefaSelecionadaId] =
@@ -277,7 +269,7 @@ export default function Grupo() {
     tarefas.find((t) => t.id === tarefaSelecionadaId) ?? null;
 
   const tarefaVisualizacao = tarefaSelecionada
-    ? converterParaVisualizacao(tarefaSelecionada)
+    ? converterParaVisualizacao(tarefaSelecionada, payments)
     : null;
 
   const totalDespesas = tarefas.reduce(
@@ -297,7 +289,9 @@ export default function Grupo() {
     }
 
     const quantidade = quantidadeParticipantes(tarefa);
-    return total + (quantidade > 0 ? tarefa.valorTotal / quantidade : 0);
+    const selected = tarefa.participantes.filter(p => p.selecionado);
+    const confirmed = payments[`${tarefa.id}:1`]?.status === "confirmado" || (!payments[`${tarefa.id}:1`] && tarefa.pagadorId === "1");
+    return total + (quantidade > 0 && !confirmed ? share(tarefa.valorTotal, quantidade, selected.findIndex(p => p.id === "1")) : 0);
   }, 0);
 
   const tarefasConcluidas = tarefas.filter((t) => t.concluida).length;
@@ -309,14 +303,20 @@ export default function Grupo() {
 
   const tarefasFiltradas = tarefas.filter((tarefa) => {
     if (filtro === "concluidas") return tarefa.concluida;
-    if (filtro === "planejadas") return !tarefa.concluida;
-    if (filtro === "andamento") return !tarefa.concluida;
+    if (filtro === "planejadas") return !tarefa.concluida && !tarefa.emAndamento;
+    if (filtro === "andamento") return !tarefa.concluida && tarefa.emAndamento;
     return true;
   });
 
   function abrirTarefa(id: string) {
     setTarefaSelecionadaId(id);
     setEditarAberto(false);
+  }
+
+  function criarTarefa() {
+    if (memberMode || closed) return;
+    setCreating(true);
+    setEditarAberto(true);
   }
 
   function fecharTarefa() {
@@ -329,15 +329,23 @@ export default function Grupo() {
   }
 
   function salvarEdicao(atualizada: DadosTarefa) {
+    if (memberMode || closed) return;
+    const previous = tarefas.find(t => t.id === atualizada.id);
+    const hasPayments = Object.entries(payments).some(([key, value]) => key.startsWith(`${atualizada.id}:`) && value.status !== "pendente");
+    if (previous && hasPayments && (previous.valorTotal !== atualizada.valorTotal || previous.pagadorId !== atualizada.pagadorId || previous.possuiDespesa !== atualizada.possuiDespesa || JSON.stringify(previous.participantes.filter(p => p.selecionado).map(p => p.id)) !== JSON.stringify(atualizada.participantes.filter(p => p.selecionado).map(p => p.id)))) { setFeedback("Existem pagamentos registrados. Preserve o valor e os participantes desta tarefa."); return; }
+    record(`${creating ? "Tarefa criada" : "Tarefa editada"}: ${atualizada.titulo}`);
     setTarefas((anteriores) =>
-      anteriores.map((tarefa) =>
+      creating ? [...anteriores, { ...atualizada, id: crypto.randomUUID() }] : anteriores.map((tarefa) =>
         tarefa.id === atualizada.id ? atualizada : tarefa
       )
     );
+    setCreating(false);
     setEditarAberto(false);
   }
 
   function concluirTarefa(tarefa: Tarefa) {
+    if (memberMode || closed) return;
+    record(`Tarefa concluida: ${tarefa.titulo}`);
     setTarefas((anteriores) =>
       anteriores.map((item) =>
         item.id === tarefa.id
@@ -348,6 +356,8 @@ export default function Grupo() {
   }
 
   function reabrirTarefa(tarefa: Tarefa) {
+    if (memberMode || closed) return;
+    record(`Tarefa reaberta: ${tarefa.titulo}`);
     setTarefas((anteriores) =>
       anteriores.map((item) =>
         item.id === tarefa.id ? { ...item, concluida: false } : item
@@ -356,6 +366,9 @@ export default function Grupo() {
   }
 
   function excluirTarefa(tarefa: Tarefa) {
+    if (memberMode || closed) return;
+    if (Object.keys(payments).some(key => key.startsWith(`${tarefa.id}:`))) { setFeedback("Preserve tarefas com pagamentos registrados no historico."); return; }
+    record(`Tarefa excluida: ${tarefa.titulo}`);
     setTarefas((anteriores) =>
       anteriores.filter((item) => item.id !== tarefa.id)
     );
@@ -363,73 +376,11 @@ export default function Grupo() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F9FC] text-slate-800">
-      {/* SIDEBAR */}
-      <aside className="fixed left-0 top-0 z-20 hidden h-screen w-[235px] flex-col border-r border-slate-200 bg-white lg:flex">
-        <div className="flex h-[72px] items-center gap-2 border-b border-slate-100 px-7">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-500 text-sm font-bold text-white">
-            R
-          </div>
-          <span className="text-xl font-bold tracking-tight">
-            Racha<span className="text-orange-500">+</span>
-          </span>
-        </div>
-
-        <nav className="flex flex-1 flex-col gap-2 px-4 py-6">
-          <button
-            type="button"
-            onClick={() => navigate("/home")}
-            className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-600 hover:bg-orange-50 hover:text-orange-500"
-          >
-            <Users size={18} />
-            Meus grupos
-          </button>
-
-          <button
-            type="button"
-            className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-600 hover:bg-orange-50 hover:text-orange-500"
-          >
-            <Settings size={18} />
-            Configurações
-          </button>
-        </nav>
-
-        <div className="border-t border-slate-100 p-4">
-          <AbaPerfil />
-        </div>
-      </aside>
-
-      {/* CONTEÚDO PRINCIPAL */}
-      <main className="min-h-screen lg:ml-[235px]">
-        <header className="flex h-[72px] items-center justify-between border-b border-slate-200 bg-white px-5 lg:px-8">
-          <div className="flex items-center gap-3 text-sm text-slate-400">
-            <span>Dashboard</span>
-            <ChevronRight size={15} />
-            <span className="font-medium text-slate-700">Visão Geral</span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button type="button" aria-label="Abrir menu" className="text-slate-500">
-              <Menu size={20} />
-            </button>
-            <button type="button" aria-label="Notificações" className="text-slate-500">
-              <Bell size={19} />
-            </button>
-            <div className="hidden sm:block">
-              <OrangeButton>
-                <Plus size={17} />
-                Novo Racha
-              </OrangeButton>
-            </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-white">
-              <User size={17} />
-            </div>
-          </div>
-        </header>
-
-        <div className="mx-auto max-w-[1180px] px-5 py-6 lg:px-7">
+    <AppShell title="Visão Geral">
+      {feedback && <div className="racha-feedback" role="status">{feedback}<button onClick={() => setFeedback("")} aria-label="Fechar aviso"> x </button></div>}
+        <div className="racha-group-host">
           {/* IDENTIFICAÇÃO DO GRUPO */}
-          <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="racha-group-intro mb-6 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <div className="mb-2 flex items-center gap-2 text-xs text-slate-400">
                 <Users size={14} />
@@ -442,8 +393,8 @@ export default function Grupo() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 text-orange-500">
                   <MapPin size={20} />
                 </div>
-                <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-                  {nomeGrupo}
+                <h1 className="text-ui-page-title font-bold tracking-tight text-slate-900">
+                  {groupName}
                 </h1>
                 <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-600">
                   ● Ativo • 6 participantes
@@ -455,13 +406,16 @@ export default function Grupo() {
             </div>
 
             <div className="w-fit shrink-0">
-             <OrangeButton>
+             <OrangeButton onClick={criarTarefa} disabled={memberMode || closed}>
               <Plus size={16} />
                Nova tarefa
              </OrangeButton>
             </div>
           </div>
 
+          <div className="racha-role-preview"><label>Prévia de permissões: <select aria-label="Papel na demonstração" value={memberMode ? "member" : "admin"} onChange={event => setMemberMode(event.target.value === "member")} ><option value="admin">Administrador</option><option value="member">Membro comum</option></select></label></div>
+          <GroupFlows taskEvents={taskEvents} ref={flowControl} payments={payments} setPayments={setPayments} tasks={tarefas} name={groupName} onName={setGroupName} closed={closed} onCloseGroup={() => setClosed(true)} memberMode={memberMode}/>
+          {!closed && <>
           {/* RESUMO */}
           <section className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -520,15 +474,15 @@ export default function Grupo() {
                   <QrCode size={42} className="text-slate-800" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] font-semibold uppercase text-orange-600">
+                  <p className="text-ui-caption font-semibold uppercase text-orange-600">
                     Ação rápida
                   </p>
                   <p className="truncate text-sm font-semibold">
-                    Acessar R$ 200,...
+                    {moeda(suaParte)}
                   </p>
                   <button
                     type="button"
-                    className="mt-1 flex items-center gap-1 rounded-md bg-orange-500 px-2 py-1 text-xs font-semibold text-white"
+                    onClick={() => flowControl.current?.openPayments()} className="ui-button ui-button--md mt-1 flex items-center gap-1 rounded-md bg-orange-500 px-2 py-1 text-xs font-semibold text-white"
                   >
                     <Copy size={12} />
                     Pagar Pix
@@ -555,7 +509,7 @@ export default function Grupo() {
 
               <button
                 type="button"
-                className="flex items-center justify-center gap-2 rounded-lg bg-blue-50 px-4 py-2 text-sm font-medium text-blue-600"
+                onClick={criarTarefa} disabled={memberMode || closed} className="ui-button ui-button--md flex items-center justify-center gap-2 rounded-lg bg-blue-50 px-4 py-2 text-sm font-medium text-blue-600"
               >
                 <Plus size={15} />
                 Tarefa
@@ -573,11 +527,11 @@ export default function Grupo() {
                   key={valor}
                   type="button"
                   onClick={() => setFiltro(valor)}
-                  className={`rounded-md px-4 py-1.5 text-xs font-medium transition ${
+                  className={`ui-button ui-button--md ${`rounded-md px-4 py-1.5 text-xs font-medium transition ${
                     filtro === valor
                       ? "bg-white text-slate-700 shadow-sm"
                       : "text-slate-500 hover:bg-white"
-                  }`}
+                  }`}`}
                 >
                   {texto}
                 </button>
@@ -590,7 +544,7 @@ export default function Grupo() {
                   key={tarefa.id}
                   type="button"
                   onClick={() => abrirTarefa(tarefa.id)}
-                  className="group flex w-full flex-col gap-4 rounded-xl bg-[#F4F7FC] p-4 text-left transition hover:bg-blue-50 md:flex-row md:items-center"
+                  className="ui-button ui-button--md group flex w-full flex-col gap-4 rounded-xl bg-[#F4F7FC] p-4 text-left transition hover:bg-blue-50 md:flex-row md:items-center"
                 >
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500">
                     {tarefa.concluida ? (
@@ -620,7 +574,7 @@ export default function Grupo() {
                   </div>
 
                   <div className="md:w-28">
-                    <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-medium ${
+                    <span className={`inline-flex rounded-full px-3 py-1 text-ui-caption font-medium ${
                       tarefa.concluida
                         ? "bg-green-100 text-green-600"
                         : "bg-orange-100 text-orange-600"
@@ -664,7 +618,7 @@ export default function Grupo() {
               />
               <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
               <div className="absolute bottom-4 left-5 text-white">
-                <p className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase">
+                <p className="mb-1 flex items-center gap-1 text-ui-caption font-semibold uppercase">
                   <MapPin size={12} />
                   Destino confirmado
                 </p>
@@ -674,65 +628,8 @@ export default function Grupo() {
               </div>
             </div>
           </section>
-
-          {/* MEMBROS */}
-          <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-blue-50 p-2 text-blue-500">
-                  <Users size={18} />
-                </div>
-                <div>
-                  <h2 className="font-semibold">Membros do Grupo</h2>
-                  <p className="text-xs text-slate-400">
-                    Status individual de acerto financeiro
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                className="flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-2 text-xs font-medium text-blue-600"
-              >
-                <UserPlus size={15} />
-                Convidar mais amigos
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-              {membros.map((membro, index) => (
-                <div
-                  key={membro.id}
-                  className="rounded-xl bg-[#F0F4FC] p-3 text-center"
-                >
-                  <div className={`relative mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full text-sm font-semibold ${
-                    index === 0
-                      ? "bg-orange-500 text-white"
-                      : "bg-slate-200 text-slate-700"
-                  }`}>
-                    {iniciais(membro.nome.replace("(Você)", ""))}
-                    <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-orange-500" />
-                  </div>
-
-                  <p className="truncate text-xs font-semibold">
-                    {membro.nome}
-                  </p>
-                  <p className={`mt-1 text-[10px] ${
-                    membro.pendente ? "text-red-500" : "text-slate-400"
-                  }`}>
-                    {membro.status}
-                  </p>
-                  <button
-                    type="button"
-                    className="mt-2 w-full rounded-md bg-white px-2 py-1.5 text-[10px] font-medium shadow-sm"
-                  >
-                    {membro.acao}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </section>
+          </>}
         </div>
-      </main>
 
       {/* VISUALIZAÇÃO DA TAREFA */}
       {tarefaVisualizacao?.status !== "concluida" && tarefaVisualizacao && !editarAberto && (
@@ -741,9 +638,10 @@ export default function Grupo() {
           aberta={true}
           tarefa={tarefaVisualizacao}
           onFechar={fecharTarefa}
-          onEditar={abrirEdicao}
-          onConcluir={concluirTarefa}
-          onExcluir={excluirTarefa}
+          onPagamento={() => { fecharTarefa(); flowControl.current?.openPayments(tarefaVisualizacao.id); }}
+          onEditar={memberMode || closed ? undefined : abrirEdicao}
+          onConcluir={memberMode || closed ? undefined : concluirTarefa}
+          onExcluir={memberMode || closed ? undefined : excluirTarefa}
         />
       )}
 
@@ -754,19 +652,21 @@ export default function Grupo() {
           aberta={true}
           tarefa={tarefaVisualizacao}
           onFechar={fecharTarefa}
-          onReabrir={reabrirTarefa}
+          onReabrir={memberMode || closed ? undefined : reabrirTarefa}
+          onPagamento={() => { fecharTarefa(); flowControl.current?.openPayments(tarefaVisualizacao.id); }}
         />
       )}
 
       {/* EDIÇÃO DA TAREFA */}
-      {tarefaSelecionada && editarAberto && (
+      {(tarefaSelecionada || creating) && editarAberto && !closed && !memberMode && (
         <EditarTarefa
-          tarefa={tarefaSelecionada}
+          modo={creating ? "criar" : "editar"}
+          tarefa={creating ? { id: "tarefa-nova", titulo: "", descricao: "", dataLimite: "", horario: "09:00", responsavelId: "1", participantes: participantesGrupo, possuiDespesa: true, valorTotal: 0, pagadorId: "1", comprovante: "", concluida: false } : tarefaSelecionada!}
           nomeGrupo={nomeGrupo}
-          onClose={() => setEditarAberto(false)}
+          onClose={() => { setEditarAberto(false); setCreating(false); }}
           onSave={salvarEdicao}
         />
       )}
-    </div>
+    </AppShell>
   );
 }
