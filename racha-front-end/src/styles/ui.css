@@ -1,0 +1,159 @@
+/* Shared geometry. Legacy screens and the UI components use the same classes. */
+body { font-family:var(--ui-font-family); font-size:var(--ui-font-body); line-height:var(--ui-line-body); }
+
+:is(button, a).ui-button, :is(button, a).racha-primary, :is(button, a).racha-secondary, :is(button, a).racha-danger {
+  align-items:center;
+  justify-content:center;
+  gap:0.5rem;
+  min-height:var(--ui-control-height);
+  height:auto;
+  padding:0.625rem var(--ui-control-padding-x);
+  border-radius:var(--ui-control-radius);
+  font-family:var(--ui-font-family);
+  font-size:var(--ui-font-body);
+  font-weight:600;
+  line-height:var(--ui-line-body);
+  text-align:center;
+  cursor:pointer;
+}
+.ui-button--primary, .ui-button--secondary, .ui-button--danger, .ui-button--ghost { display:inline-flex; }
+.ui-button.ui-button--sm { min-height:var(--ui-control-height-sm); font-size:var(--ui-font-label); }
+.ui-button.ui-button--md { min-height:var(--ui-control-height); font-size:var(--ui-font-body); }
+.ui-button.ui-button--lg { min-height:var(--ui-control-height-lg); font-size:var(--ui-font-body); }
+.ui-button--full { width:100%; }
+.ui-button--primary { background:#ff873d; color:#fff; box-shadow:0 3px 5px #bb631b22; }
+.ui-button--primary:hover { background:#f47a30; }
+.ui-button--secondary { background:#eef2ff; color:#354260; }
+.ui-button--danger { background:#ffe5df; color:#b04535; }
+.ui-button--ghost { background:transparent; color:#756452; box-shadow:none; }
+.ui-button:disabled { opacity:.55; cursor:not-allowed; }
+.ui-button > svg, .racha-primary > svg, .racha-secondary > svg, .racha-danger > svg { width:1rem; height:1rem; flex-shrink:0; }
+
+.ui-control {
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  min-height:var(--ui-control-height);
+  height:auto;
+  padding:0.625rem 0.75rem;
+  border-radius:var(--ui-control-radius);
+  font-family:var(--ui-font-family);
+  font-size:var(--ui-font-body);
+  line-height:var(--ui-line-body);
+}
+.ui-control--leading { padding-inline-start:2.75rem; }
+.ui-control--trailing { padding-inline-end:2.75rem; }
+input.ui-control, select.ui-control { height:var(--ui-control-height); font-size:var(--ui-font-body); }
+textarea.ui-control { min-height:6.5rem; resize:vertical; }
+.ui-control:disabled { opacity:.65; cursor:not-allowed; }
+.ui-field { margin-block:var(--ui-gap); gap:0.5rem; }
+.ui-field > span:first-child { font-size:var(--ui-font-label); font-weight:500; }
+.ui-field .ui-field__hint, .ui-field .ui-field__error { font-size:var(--ui-font-caption); line-height:var(--ui-line-body); font-weight:400; }
+.ui-field__hint { color:#8e7f71; }
+.ui-field__error { color:#bd3427; }
+
+.racha-app, .racha-dialog, .racha-auth-page, .racha-flows { font-size:var(--ui-font-body); line-height:var(--ui-line-body); }
+.racha-content { max-width:var(--ui-content-width); padding:var(--ui-page-padding); }
+.racha-card { padding:var(--ui-card-padding); border-radius:var(--ui-card-radius); }
+.racha-card-intro { margin:calc(-1 * var(--ui-card-padding)) calc(-1 * var(--ui-card-padding)) var(--ui-section-gap); padding:var(--ui-card-padding); }
+.racha-card h2 { font-size:var(--ui-font-section-title); line-height:var(--ui-line-heading); }
+.racha-card h3 { font-size:var(--ui-font-lead); line-height:var(--ui-line-heading); }
+.racha-page-heading h1, .racha-section-heading h1, .racha-audit-title h1, .racha-payments-heading h1, .racha-checkout-heading h1, .racha-auth-form h1 { font-size:var(--ui-font-page-title); line-height:var(--ui-line-heading); }
+.racha-dialog > header h2 { font-size:var(--ui-font-dialog-title); line-height:var(--ui-line-heading); }
+.racha-page-heading p, .racha-section-heading p, .racha-card-intro p, .racha-muted, .racha-auth-form > p, .racha-auth-pitch > p, .racha-checkout-heading p, .racha-plan-description, .racha-plan li, .racha-checkout-summary li, .racha-invite-content > p { font-size:var(--ui-font-body); line-height:var(--ui-line-body); }
+.racha-eyebrow, .racha-feature-label, .racha-badge, .racha-plan-label, .racha-verified { font-size:var(--ui-font-meta); line-height:var(--ui-line-body); }
+.racha-label { font-size:var(--ui-font-label); gap:0.5rem; margin-block:var(--ui-gap); }
+.racha-label input, .racha-label textarea, .racha-label select { font-size:var(--ui-font-body); min-height:var(--ui-control-height); line-height:var(--ui-line-body); border-radius:var(--ui-control-radius); }
+.racha-label .ui-control { padding-block:0.625rem; }
+.racha-label textarea { min-height:6.5rem; }
+.racha-label .ui-control--leading { padding-inline-start:2.75rem; }
+.racha-label .ui-control--trailing { padding-inline-end:2.75rem; }
+.racha-auth-input .ui-control { background:transparent; }
+.racha-field-hint, .racha-copy-label, .racha-demo-caption { font-size:var(--ui-font-caption); }
+.racha-card-heading h3, .racha-qr-card .racha-card-heading h3 { font-size:var(--ui-font-lead); }
+.racha-price, .racha-order-total > strong, .racha-pix-amounts > div:last-child > strong, .racha-audit-money strong, .racha-collection-stats strong, .racha-stats strong { font-size:var(--ui-font-amount); line-height:var(--ui-line-heading); }
+.racha-price small { font-size:var(--ui-font-caption); }
+.racha-tabs button, .racha-settings-tabs button, .racha-settings-tabs a, .racha-member-tabs button, .racha-billing-toggle button { min-height:var(--ui-control-height-sm); font-size:var(--ui-font-label); padding:0.5rem 0.75rem; }
+.racha-settings-tabs > span { font-size:var(--ui-font-label); }
+.racha-app .racha-topbar .racha-primary { min-height:var(--ui-control-height-sm); font-size:var(--ui-font-label); padding:0.5rem 0.75rem; }
+.racha-topbar { min-height:4rem; height:auto; padding-block:0.5rem; }
+.racha-breadcrumb { font-size:var(--ui-font-caption); }
+.racha-app nav a { min-height:var(--ui-control-height); font-size:var(--ui-font-body); }
+.racha-icon { min-width:var(--ui-control-height-sm); min-height:var(--ui-control-height-sm); }
+.racha-auth-pitch h2 { font-size:var(--ui-font-page-title); }
+.racha-auth-form { max-width:25rem; }
+.racha-auth-form .racha-primary { min-height:var(--ui-control-height); font-size:var(--ui-font-body); }
+.racha-auth-form .racha-label { font-size:var(--ui-font-label); }
+.racha-auth-progress > span { font-size:var(--ui-font-caption); }
+.racha-pricing-page { max-width:65rem; }
+.racha-plan-description { min-height:4.5rem; }
+.racha-plan ul { gap:0.75rem; }
+.racha-pricing-faq summary { min-height:var(--ui-control-height); font-size:var(--ui-font-body); }
+.racha-pricing-faq details p { font-size:var(--ui-font-body); }
+.racha-checkout-page { max-width:var(--ui-content-width); }
+.racha-checkout-grid { grid-template-columns:minmax(0,1fr) 19rem; gap:var(--ui-section-gap); }
+.racha-checkout-pix { grid-template-columns:11rem minmax(0,1fr); gap:var(--ui-gap); }
+.racha-pix-steps p strong { font-size:var(--ui-font-label); }
+.racha-pix-steps p small { font-size:var(--ui-font-caption); }
+.racha-pix-steps > div > span { width:1.25rem; height:1.25rem; font-size:var(--ui-font-meta); }
+.racha-copy-field .racha-primary { white-space:normal; }
+.racha-payment-methods { gap:0.75rem; }
+.racha-method-badge { position:static; margin-left:auto; font-size:var(--ui-font-meta); }
+.racha-dialog-footer { padding:var(--ui-gap) var(--ui-card-padding); flex-wrap:wrap; }
+.racha-dialog-footer > small { font-size:var(--ui-font-caption); }
+.racha-pix-modal .racha-dialog { width:min(100%,40rem); }
+.racha-pix-modal .racha-dialog > header h2 { font-size:var(--ui-font-dialog-title); }
+.racha-members-modal .racha-dialog { width:min(100%,45rem); }
+.racha-drawer .racha-dialog { width:min(100%,40rem); }
+.racha-member strong, .racha-transaction-title strong, .racha-ledger-row > div > strong { font-size:var(--ui-font-body); }
+.racha-member small, .racha-transaction-title small, .racha-ledger-row > div > small { font-size:var(--ui-font-caption); }
+.racha-member select { min-height:var(--ui-control-height-sm); max-width:10rem; font-size:var(--ui-font-caption); }
+.racha-account-columns { grid-template-columns:minmax(0,1.6fr) minmax(18rem,1fr); gap:var(--ui-section-gap); }
+.racha-saved-key { flex-wrap:wrap; }
+.racha-saved-key > div:nth-child(2) { min-width:8rem; }
+.racha-bank-card { min-height:10rem; }
+.racha-bank-card > span { flex-wrap:wrap; }
+.racha-audit-check { flex-wrap:wrap; }
+.racha-audit-check > div { min-width:10rem; }
+.racha-audit-callout { flex-wrap:wrap; }
+.racha-audit-callout > div { min-width:12rem; }
+.racha-audit-money strong { overflow-wrap:anywhere; }
+.racha-key-copy { flex-wrap:wrap; }
+.racha-pix-recipient { flex-wrap:wrap; }
+.racha-invite-buttons { grid-template-columns:1fr 2fr; }
+.racha-invite-content > h1 { font-size:var(--ui-font-dialog-title); }
+.racha-invite-photo-title h2 { font-size:var(--ui-font-dialog-title); }
+.racha-payment-summary, .racha-stats { gap:var(--ui-gap); }
+.racha-payments-heading { flex-wrap:wrap; }
+.profile-menu .profile-menu__item { min-height:var(--ui-control-height-sm); font-size:var(--ui-font-label); }
+.profile-menu .profile-menu__footer button { min-height:var(--ui-control-height-sm); font-size:var(--ui-font-label); }
+
+@media(max-width:1050px) {
+  .racha-account-columns { grid-template-columns:1fr; }
+  .racha-checkout-grid { grid-template-columns:minmax(0,1fr) 17rem; gap:var(--ui-gap); }
+  .racha-checkout-pix { grid-template-columns:1fr; }
+  .racha-account-columns > div:last-child { display:block; }
+}
+@media(max-width:900px) { .racha-plans { grid-template-columns:1fr; max-width:34rem; margin-inline:auto; gap:2rem; } .racha-plan-description { min-height:auto; } }
+@media(max-width:760px) {
+  .racha-checkout-grid, .racha-checkout-pix { grid-template-columns:1fr; }
+  .racha-content { padding:var(--ui-page-padding); padding-bottom:3rem; }
+  .racha-topbar { gap:0.5rem; }
+  .racha-breadcrumb > a, .racha-breadcrumb > svg { display:none; }
+  .racha-breadcrumb > span { max-width:8rem; font-size:var(--ui-font-caption); }
+  .racha-header-avatar { display:none; }
+  .racha-checkout-summary > ul { grid-template-columns:1fr; }
+  .racha-card-heading { flex-wrap:wrap; }
+  .racha-pix-code-grid { grid-template-columns:1fr; }
+  .racha-pix-qr { max-width:12rem; margin-inline:auto; }
+  .racha-payments-summary { grid-template-columns:1fr; }
+  .racha-ledger-row > div:first-of-type { min-width:0; flex-basis:calc(100% - 3rem); }
+  .racha-invite-buttons { grid-template-columns:1fr; }
+  .racha-invite-photo-title h2 { font-size:var(--ui-font-card-title); }
+  .racha-invite-members { flex-wrap:wrap; }
+  .racha-financial-footer a { white-space:normal; }
+  .racha-saved-cards { grid-template-columns:1fr; }
+  .racha-key-types { grid-template-columns:repeat(2,1fr); }
+  .racha-dialog-footer > .racha-primary { flex:1; }
+}
+@media(max-width:420px) { .racha-topbar .racha-breadcrumb { display:none; } .racha-topbar > .racha-actions { margin-left:auto; } .racha-audit-money { grid-template-columns:1fr; } }
