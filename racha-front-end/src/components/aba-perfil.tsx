@@ -1,27 +1,63 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  User,
-  KeyRound,
-  Bell,
-  Settings,
-  ShieldCheck,
-  CircleHelp,
-  LogOut,
-} from "lucide-react";
+﻿import { useEffect, useRef, useState } from "react";
+import { Award, BadgeCheck, Bell, CircleHelp, KeyRound, LogOut, Shield, UserRound, WalletCards } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "../auth/auth-context";
+import { useAppNavigate } from "../lib/navigation";
+import Link from "./app-link";
+import "./profile-menu.css";
 
-function Aba() {
-  const navigate = useNavigate();
+interface ProfileMenuProps {
+  onClose?: () => void;
+  placement?: "below" | "above";
+}
+
+export default function Aba({ onClose, placement = "below" }: ProfileMenuProps) {
+  const navigate = useAppNavigate();
+  const { pathname, search } = useLocation();
   const { user, signOut } = useAuth();
   const [erroLogout, setErroLogout] = useState("");
   const [saindo, setSaindo] = useState(false);
+  const panel = useRef<HTMLDivElement>(null);
+  const close = useRef(onClose);
+  const preview = pathname.startsWith("/previa") || pathname.startsWith("/revisao");
+  const demo = preview && !user;
+  const name = user?.name || (demo ? "Rodrigo Mendes" : "Usuário");
+  const handle = user?.email || (demo ? "@rodrigo.m" : "Minha conta");
+  const initials = name.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join("").toUpperCase();
+  const activeTab = new URLSearchParams(search).get("aba");
+  const inProfile = pathname.endsWith("/perfil");
+  const items = [
+    { label: "Meu Perfil", to: "/perfil", icon: UserRound, active: inProfile && !activeTab },
+    { label: "Chaves Pix & Recebimentos", to: "/perfil?aba=pix", icon: WalletCards, active: inProfile && activeTab === "pix" },
+    { label: "Notificações & Alertas", to: "/notificacoes", icon: Bell, active: pathname.endsWith("/notificacoes"), badge: demo ? "3 novas" : undefined, badgeClass: "notifications" },
+    { label: "Segurança & Privacidade", to: "/perfil?aba=security", icon: Shield, active: inProfile && activeTab === "security" },
+    { label: "Planos & Vantagens", to: "/assinatura", icon: Award, active: pathname.endsWith("/assinatura") || pathname.endsWith("/gerenciar-assinatura"), badge: demo ? "Plano Pro" : undefined, badgeClass: "plan" },
+    { label: "Ajuda & Suporte", to: "/faq", icon: CircleHelp, active: pathname.endsWith("/faq") },
+  ];
+
+  useEffect(() => { close.current = onClose; }, [onClose]);
+  useEffect(() => {
+    const trigger = document.activeElement as HTMLElement | null;
+    function keyboard(event: KeyboardEvent) {
+      if (event.key === "Escape") { close.current?.(); trigger?.focus(); }
+    }
+    function outside(event: PointerEvent) {
+      if (event.target instanceof Node && !panel.current?.contains(event.target) && !trigger?.contains(event.target)) close.current?.();
+    }
+    document.addEventListener("keydown", keyboard);
+    document.addEventListener("pointerdown", outside);
+    return () => {
+      document.removeEventListener("keydown", keyboard);
+      document.removeEventListener("pointerdown", outside);
+    };
+  }, []);
 
   async function encerrarSessao() {
     setErroLogout("");
     setSaindo(true);
     try {
-      await signOut();
+      if (!demo) await signOut();
+      onClose?.();
       navigate("/login", { replace: true });
     } catch {
       setErroLogout("Não foi possível encerrar a sessão. Tente novamente.");
@@ -31,167 +67,37 @@ function Aba() {
   }
 
   return (
-    <div className="absolute right-0 top-full z-50 mt-2 w-70 overflow-hidden rounded-xl bg-white shadow-lg">
-
-      {/* Informações do usuário */}
-      <div className="p-4">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            {user?.image ? (
-              <img
-                src={user.image}
-                alt=""
-                className="h-10 w-10 rounded-full object-cover"
-              />
-            ) : (
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-800">
-                {user?.name.slice(0, 1).toUpperCase() ?? "?"}
-              </span>
-            )}
-
-            <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-green-500" />
-          </div>
-
-          <div>
-            <p className="text-sm font-semibold text-[#111827]">
-              {user?.name ?? "Usuário"}
-            </p>
-
-            <p className="text-xs text-gray-500">
-              {user?.email ?? ""}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-2 flex justify-end">
-          <span className="text-[10px] font-medium text-green-600">
-            AUTENTICADO
-          </span>
-        </div>
+    <div ref={panel} className={`profile-menu profile-menu--${placement}`} role="region" aria-label="Opções da conta">
+      <div className="profile-menu__header">
+        <Link to="/perfil" className="profile-menu__avatar" aria-label="Abrir meu perfil" onClick={onClose}>
+          {user?.image ? <img src={user.image} alt={`Foto de ${name}`}/> : <span>{initials}</span>}
+          <i aria-hidden="true"/>
+        </Link>
+        <div className="profile-menu__identity"><strong className="profile-menu__name">{name}</strong><span className="profile-menu__handle">{handle}</span></div>
+        <span className="profile-menu__session">{user ? "AUTENTICADO" : demo ? "PRÉVIA" : "VISITANTE"}</span>
       </div>
 
-      {/* Chave Pix */}
-      <div className="border-t border-gray-100 px-3 py-3">
-        <div className="rounded-lg border border-gray-100 p-3">
-          <div className="flex items-center gap-2">
-            <KeyRound size={14} className="text-[#1D4ED8]" />
+      <Link to="/perfil?aba=pix" className="profile-menu__pix" onClick={onClose}>
+        <div><span className="profile-menu__pix-label"><KeyRound size={10}/>CHAVE PIX PRINCIPAL</span><span className="profile-menu__verified">{demo ? "Verificada" : "Gerenciar"}</span></div>
+        <span className="profile-menu__pix-value">{demo ? "rodrigo.alencar@pix.me" : "Consultar chave de recebimento"}</span>
+      </Link>
 
-            <span className="text-[9px] font-medium uppercase text-gray-500">
-              Chave Pix principal
-            </span>
-          </div>
-
-          <div className="mt-1 flex items-center justify-between">
-            <span className="text-xs text-gray-700">
-              mariana.silva@pix.me
-            </span>
-
-            <span className="rounded bg-blue-50 px-2 py-1 text-[9px] font-medium text-blue-600">
-              Verificada
-            </span>
-          </div>
-        </div>
-
-        {/* Informações rápidas */}
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          <div className="rounded-lg border border-gray-100 p-2 text-center">
-            <p className="text-[9px] text-gray-500">
-              Grupos Ativos
-            </p>
-
-            <p className="text-sm font-semibold text-[#111827]">
-              4
-            </p>
-          </div>
-
-          <div className="rounded-lg border border-gray-100 p-2 text-center">
-            <p className="text-[9px] text-gray-500">
-              Contabilidade
-            </p>
-
-            <p className="text-sm font-semibold text-[#111827]">
-              98%
-            </p>
-          </div>
-        </div>
+      <div className="profile-menu__metrics">
+        <Link to="/meus-grupos" onClick={onClose}><span className="profile-menu__metric-label">Grupos Ativos</span><strong className="profile-menu__metric-value">{demo ? "7" : "—"}</strong></Link>
+        <div><span className="profile-menu__metric-label">Pontualidade</span><strong className="profile-menu__metric-value profile-menu__metric-value--green">{demo ? "99.4%" : "—"}{demo && <BadgeCheck size={12}/>}</strong></div>
       </div>
 
-      {/* Opções */}
-      <div className="border-t border-gray-100 py-1">
-
-        <button
-          type="button"
-          className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs text-gray-700 transition hover:bg-gray-50"
-        >
-          <User size={15} />
-          Meu Perfil
-        </button>
-
-        <button
-          type="button"
-          className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs text-gray-700 transition hover:bg-gray-50"
-        >
-          <KeyRound size={15} />
-          Chaves Pix & Recebimentos
-        </button>
-
-        <button
-          type="button"
-          className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs text-gray-700 transition hover:bg-gray-50"
-        >
-          <Bell size={15} />
-          Notificações & Alertas
-
-          <span className="ml-auto rounded-full bg-[#F5A623] px-2 py-0.5 text-[9px] font-medium text-white">
-            2 novas
-          </span>
-        </button>
-
-        <button
-          type="button"
-          className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs text-gray-700 transition hover:bg-gray-50"
-        >
-          <Settings size={15} />
-          Configurações da Conta
-        </button>
-
-        <button
-          type="button"
-          className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs text-gray-700 transition hover:bg-gray-50"
-        >
-          <ShieldCheck size={15} />
-          Segurança & Privacidade
-        </button>
-
-        <button
-          type="button"
-          className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs text-gray-700 transition hover:bg-gray-50"
-        >
-          <CircleHelp size={15} />
-          Ajuda & Suporte
-        </button>
+      <div className="profile-menu__links">
+        {items.map(({ label, to, icon: Icon, active, badge, badgeClass }) => (
+          <Link key={label} to={to} onClick={onClose} className={`profile-menu__item ${active ? "profile-menu__item--active" : ""}`} aria-current={active ? "page" : undefined}>
+            <Icon size={13}/><span>{label}</span>{badge && <span className={`profile-menu__badge profile-menu__badge--${badgeClass}`}>{badge}</span>}{active && <i aria-hidden="true"/>}
+          </Link>
+        ))}
       </div>
-
-      {/* Sair */}
-      <div className="border-t border-gray-100">
-        {erroLogout && (
-          <p role="alert" className="px-4 py-2 text-xs text-red-700">
-            {erroLogout}
-          </p>
-        )}
-        <button
-          type="button"
-          onClick={() => void encerrarSessao()}
-          disabled={saindo}
-          className="flex w-full items-center gap-3 px-4 py-3 text-left text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <LogOut size={15} />
-          {saindo ? "Encerrando..." : "Encerrar Sessão"}
-        </button>
+      <div className="profile-menu__footer">
+        {erroLogout && <p role="alert" className="profile-menu__error">{erroLogout}</p>}
+        <button type="button" onClick={() => void encerrarSessao()} disabled={saindo}><LogOut size={13}/>{saindo ? "Encerrando..." : "Encerrar Sessão"}</button>
       </div>
-
     </div>
   );
 }
-
-export default Aba;

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { useAppNavigate as useNavigate } from "../lib/navigation";
 
 import {
   AlarmClock,
@@ -236,9 +237,10 @@ const iconesSaldo = {
 
 function MeusGrupos() {
   const navigate = useNavigate();
+  const preview = useLocation().pathname.startsWith("/previa");
 
   const [gruposApi, setGruposApi] = useState<GrupoApi[]>([]);
-  const [carregandoGruposApi, setCarregandoGruposApi] = useState(true);
+  const [carregandoGruposApi, setCarregandoGruposApi] = useState(!preview);
   const [erroGruposApi, setErroGruposApi] = useState("");
   const [tentativaGruposApi, setTentativaGruposApi] = useState(0);
   const [abaAberta, setAbaAberta] = useState(false);
@@ -247,6 +249,7 @@ function MeusGrupos() {
   const [ordenacao, setOrdenacao] = useState<Ordenacao>("recentes");
 
   useEffect(() => {
+    if (preview) return;
     let ativo = true;
 
     apiRequest<GrupoApi[]>("/grupos")
@@ -268,7 +271,7 @@ function MeusGrupos() {
     return () => {
       ativo = false;
     };
-  }, [tentativaGruposApi]);
+  }, [tentativaGruposApi, preview]);
 
   const gruposVisiveis = useMemo(() => {
     const termo = busca.trim().toLowerCase();
@@ -306,7 +309,7 @@ function MeusGrupos() {
           <div>
             <p className="text-sm font-semibold text-text-primary">Racha+</p>
 
-            <p className="text-[9px] text-text-secondary">
+            <p className="text-ui-caption text-text-secondary">
               Divisão Inteligente
             </p>
           </div>
@@ -316,7 +319,7 @@ function MeusGrupos() {
         <nav className="hidden items-center gap-6 md:flex">
           <button
             type="button"
-            className="rounded-lg bg-input px-3 py-1.5 text-xs font-semibold text-secondary"
+            className="ui-button ui-button--md rounded-lg bg-input px-3 py-1.5 text-xs font-semibold text-secondary"
           >
             Meus Grupos
           </button>
@@ -350,7 +353,7 @@ function MeusGrupos() {
           <button
             type="button"
             onClick={() => navigate("/criar-grupo")}
-            className="hidden items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-text-primary transition hover:bg-tertiary hover:text-white sm:flex"
+            className="ui-button ui-button--md hidden items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-text-primary transition hover:bg-tertiary hover:text-white sm:flex"
           >
             <Plus size={14} />
             Novo Grupo
@@ -372,7 +375,7 @@ function MeusGrupos() {
             <button
               type="button"
               onClick={() => setAbaAberta(!abaAberta)}
-              className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition hover:bg-gray-50"
+              className="ui-button ui-button--md flex items-center gap-2 rounded-xl px-2 py-1.5 transition hover:bg-gray-50"
             >
               <img
                 src="https://i.pravatar.cc/100?img=47"
@@ -383,7 +386,7 @@ function MeusGrupos() {
               <div className="hidden text-left xl:block">
                 <p className="text-xs font-semibold">Mariana S.</p>
 
-                <p className="text-[9px] text-text-secondary">Online</p>
+                <p className="text-ui-caption text-text-secondary">Online</p>
               </div>
 
               <ChevronDown
@@ -394,7 +397,7 @@ function MeusGrupos() {
               />
             </button>
 
-            {abaAberta && <Aba />}
+            {abaAberta && <Aba onClose={() => setAbaAberta(false)}/>}
           </div>
         </div>
       </header>
@@ -405,18 +408,18 @@ function MeusGrupos() {
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-secondary">
+              <span className="text-ui-caption font-semibold uppercase tracking-wide text-secondary">
                 Visão Geral de Grupos
               </span>
 
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
 
-              <span className="text-[10px] text-text-secondary">
+              <span className="text-ui-caption text-text-secondary">
                 Junho 2025
               </span>
             </div>
 
-            <h1 className="text-3xl font-bold tracking-tight">Meus Grupos</h1>
+            <h1 className="text-ui-page-title font-bold tracking-tight">Meus Grupos</h1>
 
             <p className="max-w-2xl text-sm text-text-secondary">
               Gerencie despesas compartilhadas, acompanhe quem já pagou e
@@ -428,7 +431,7 @@ function MeusGrupos() {
             <button
               type="button"
               onClick={() => navigate("/criar-grupo")}
-              className="flex items-center gap-2 rounded-lg bg-surface px-4 py-2.5 text-xs font-medium text-secondary shadow-sm transition hover:bg-input"
+              className="ui-button ui-button--md flex items-center gap-2 rounded-lg bg-surface px-4 py-2.5 text-xs font-medium text-secondary shadow-sm transition hover:bg-input"
             >
               <Sparkles size={15} className="text-primary" />
               Criar com IA
@@ -437,7 +440,7 @@ function MeusGrupos() {
             <button
               type="button"
               onClick={() => navigate("/criar-grupo")}
-              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-medium text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white"
+              className="ui-button ui-button--md flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-medium text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white"
             >
               <Users size={15} />+ Novo Grupo Manual
             </button>
@@ -445,14 +448,14 @@ function MeusGrupos() {
         </div>
 
         <section
-          aria-labelledby="grupos-reais-heading"
+          hidden={preview} aria-labelledby="grupos-reais-heading"
           className="rounded-xl border border-secondary/15 bg-white p-5 shadow-sm sm:p-6"
         >
           <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
             <div>
               <h2
                 id="grupos-reais-heading"
-                className="text-xl font-bold text-text-primary"
+                className="text-ui-section-title font-bold text-text-primary"
               >
                 Seus grupos
               </h2>
@@ -519,7 +522,7 @@ function MeusGrupos() {
                         { state: { nomeGrupo: grupo.nome } },
                       )
                     }
-                    className="w-full rounded-lg bg-secondary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-secondary/90"
+                    className="ui-button ui-button--md w-full rounded-lg bg-secondary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-secondary/90"
                   >
                     Gerenciar membros
                   </button>
@@ -556,7 +559,7 @@ function MeusGrupos() {
               <div className="mt-1 flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-secondary" />
 
-                <span className="text-[10px] font-medium text-text-secondary">
+                <span className="text-ui-caption font-medium text-text-secondary">
                   + 2 pessoas pendentes com você
                 </span>
               </div>
@@ -581,13 +584,13 @@ function MeusGrupos() {
               </span>
 
               <div className="mt-2 flex items-center justify-between gap-2">
-                <span className="truncate text-[10px] text-text-secondary">
+                <span className="truncate text-ui-caption text-text-secondary">
                   Vence em 2 dias (Churrasco)
                 </span>
 
                 <button
                   type="button"
-                  className="text-[10px] font-semibold text-primary underline underline-offset-2 transition hover:text-tertiary"
+                  className="text-ui-caption font-semibold text-primary underline underline-offset-2 transition hover:text-tertiary"
                 >
                   Pagar Pix
                 </button>
@@ -616,7 +619,7 @@ function MeusGrupos() {
                 </span>
               </div>
 
-              <span className="mt-1 text-[10px] text-text-secondary">
+              <span className="mt-1 text-ui-caption text-text-secondary">
                 3 organizador • 2 participante
               </span>
             </div>
@@ -638,7 +641,7 @@ function MeusGrupos() {
               <span className="text-2xl font-bold tracking-tight">96%</span>
 
               <div className="mt-1 flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-input px-2 py-0.5 text-[10px] font-semibold text-secondary">
+                <span className="inline-flex items-center gap-1 rounded-full bg-input px-2 py-0.5 text-ui-caption font-semibold text-secondary">
                   <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
                   Alta Confiabilidade
                 </span>
@@ -662,7 +665,7 @@ function MeusGrupos() {
                 value={busca}
                 onChange={(evento) => setBusca(evento.target.value)}
                 placeholder="Buscar por grupo ou participante..."
-                className="w-full rounded-lg bg-input py-2.5 pl-10 pr-4 text-xs text-text-primary outline-none transition placeholder:text-text-secondary focus:ring-2 focus:ring-primary"
+                className="ui-control ui-control--leading w-full rounded-lg bg-input py-2.5 pl-10 pr-4 text-xs text-text-primary outline-none transition placeholder:text-text-secondary focus:ring-2 focus:ring-primary"
               />
             </div>
 
@@ -670,7 +673,7 @@ function MeusGrupos() {
             <div className="flex items-center gap-3 self-end lg:self-auto">
               <label
                 htmlFor="ordenar-grupos"
-                className="whitespace-nowrap text-xs text-text-secondary"
+                className="whitespace-nowrap text-ui-label text-text-secondary"
               >
                 Ordenar por:
               </label>
@@ -682,7 +685,7 @@ function MeusGrupos() {
                   onChange={(evento) =>
                     setOrdenacao(evento.target.value as Ordenacao)
                   }
-                  className="cursor-pointer appearance-none rounded-lg bg-input py-2 pl-3 pr-8 text-xs font-medium text-text-primary outline-none"
+                  className="ui-control cursor-pointer appearance-none rounded-lg bg-input py-2 pl-3 pr-8 text-xs font-medium text-text-primary outline-none"
                 >
                   <option value="recentes">Mais recentes primeiro</option>
                   <option value="antigos">Mais antigos</option>
@@ -712,11 +715,11 @@ function MeusGrupos() {
                   key={item.id}
                   type="button"
                   onClick={() => setFiltro(item.id)}
-                  className={`whitespace-nowrap rounded-full px-4 py-1.5 text-[11px] font-semibold transition ${
+                  className={`ui-button ui-button--md ${`whitespace-nowrap rounded-full px-4 py-1.5 text-ui-caption font-semibold transition ${
                     ativo
                       ? "bg-secondary text-white shadow-sm"
                       : "bg-input text-text-secondary hover:bg-background hover:text-text-primary"
-                  }`}
+                  }`}`}
                 >
                   {item.nome} ({quantidade})
                 </button>
@@ -738,18 +741,18 @@ function MeusGrupos() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex flex-col">
                       <span
-                        className={`text-[10px] font-bold uppercase tracking-wide ${grupo.corCategoria}`}
+                        className={`text-ui-caption font-bold uppercase tracking-wide ${grupo.corCategoria}`}
                       >
                         {grupo.categoria}
                       </span>
 
-                      <h2 className="mt-1 text-lg font-bold transition group-hover:text-secondary">
+                      <h2 className="mt-1 text-ui-section-title font-bold transition group-hover:text-secondary">
                         {grupo.nome}
                       </h2>
                     </div>
 
                     <span
-                      className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[10px] font-semibold ${grupo.corEtiqueta}`}
+                      className={`whitespace-nowrap rounded-full px-2.5 py-1 text-ui-caption font-semibold ${grupo.corEtiqueta}`}
                     >
                       {grupo.etiqueta}
                     </span>
@@ -768,20 +771,20 @@ function MeusGrupos() {
                       ))}
 
                       {grupo.extras > 0 && (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-input text-[10px] font-bold text-text-secondary ring-2 ring-surface">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-input text-ui-caption font-bold text-text-secondary ring-2 ring-surface">
                           +{grupo.extras}
                         </div>
                       )}
                     </div>
 
-                    <span className="text-[10px] text-text-secondary">
+                    <span className="text-ui-caption text-text-secondary">
                       {grupo.rotuloParticipantes}
                     </span>
                   </div>
 
                   {/* Progresso */}
                   <div className="mt-5 flex flex-col gap-2">
-                    <div className="flex items-center justify-between text-[11px]">
+                    <div className="flex items-center justify-between text-ui-caption">
                       <span className="font-semibold">
                         {grupo.progressoTitulo}
                       </span>
@@ -813,7 +816,7 @@ function MeusGrupos() {
                     </div>
 
                     <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${grupo.corSaldoBadge}`}
+                      className={`rounded-full px-2 py-0.5 text-ui-caption font-semibold ${grupo.corSaldoBadge}`}
                     >
                       {grupo.saldoBadge}
                     </span>
@@ -825,9 +828,9 @@ function MeusGrupos() {
                   <button
                     type="button"
                     onClick={() => navigate("/grupo")}
-                    className={`rounded-lg bg-input px-4 py-2.5 text-center text-xs font-medium text-text-primary transition hover:bg-background ${
+                    className={`ui-button ui-button--md ${`rounded-lg bg-input px-4 py-2.5 text-center text-xs font-medium text-text-primary transition hover:bg-background ${
                       grupo.acaoSecundaria ? "flex-1" : "w-full"
-                    }`}
+                    }`}`}
                   >
                     {grupo.rotuloDetalhes}
                   </button>
@@ -835,7 +838,7 @@ function MeusGrupos() {
                   {grupo.acaoSecundaria === "pix" && (
                     <button
                       type="button"
-                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-xs font-semibold text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white"
+                      className="ui-button ui-button--md flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-xs font-semibold text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white"
                     >
                       <Zap size={14} />
                       Pagar Pix
@@ -845,7 +848,7 @@ function MeusGrupos() {
                   {grupo.acaoSecundaria === "whatsapp" && (
                     <button
                       type="button"
-                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-input px-4 py-2.5 text-xs font-semibold text-secondary transition hover:bg-background"
+                      className="ui-button ui-button--md flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-input px-4 py-2.5 text-xs font-semibold text-secondary transition hover:bg-background"
                     >
                       <MessageCircle size={14} />
                       Cobrar WhatsApp
@@ -900,7 +903,7 @@ function MeusGrupos() {
               Configurar Regras
             </button>
 
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-[10px] font-bold text-secondary shadow-sm">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-ui-caption font-bold text-secondary shadow-sm">
               <span className="h-2 w-2 rounded-full bg-secondary" />
               Ativo em todos os grupos
             </span>
