@@ -1,0 +1,110 @@
+/* Pricing composition from the supplied plan comparison screen. */
+.racha-pricing-page { max-width:880px; margin:0 auto; padding-top:8px; }
+.racha-billing-toggle { display:inline-flex; gap:5px; background:#edf2ff; padding:5px; border-radius:24px; }
+.racha-billing-toggle button { display:flex; align-items:center; gap:8px; font-size:var(--ui-font-label); padding:7px 14px; border-radius:20px; cursor:pointer; }
+.racha-billing-toggle button[aria-pressed=true] { background:white; box-shadow:0 1px 4px #17233709; }
+.racha-billing-toggle span { background:#ff9a08; color:white; font-size:var(--ui-font-label); border-radius:15px; padding:3px 6px; font-weight:650; }
+.racha-plans { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:17px; margin:36px 0 26px; }
+.racha-plan { position:relative; padding:24px 21px 19px; display:flex; flex-direction:column; min-width:0; margin:0; border-radius:9px; }
+.racha-plan.recommended { box-shadow:0 5px 9px #17233712; border-color:#f2e0d3; }
+.racha-recommended { position:absolute; top:-15px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:5px; background:#ff873d; color:white; font-weight:700; font-size:var(--ui-font-caption); padding:4px 13px; border-radius:20px; white-space:nowrap; }
+.racha-plan-title { display:flex; gap:6px; align-items:center; margin:0 0 11px; }
+.racha-plan-title h2 { margin:0; font-size:var(--ui-font-section-title); }
+.racha-plan-title .racha-plan-label { font-size:var(--ui-font-meta); padding:2px 4px; background:#fff0e4; }
+.racha-plan-mark { margin-left:auto; padding:6px; background:#edf2ff; border-radius:5px; color:#6e86a7; }
+.recommended .racha-plan-mark { color:#e77c36; background:#fff0e4; }
+.racha-plan-description { color:#8b7b71; font-size:var(--ui-font-body); line-height:1.65; min-height:49px; }
+.racha-price { font-size:var(--ui-font-amount); font-weight:700; letter-spacing:-.9px; margin:11px 0 0; }
+.racha-price small { font-size:var(--ui-font-caption); font-weight:400; color:#7e7168; letter-spacing:0; }
+.racha-price-caption { font-size:var(--ui-font-caption); color:#957d6b; }
+.racha-plan hr,.racha-checkout-summary hr { border:0; border-top:1px solid #ececf3; margin:22px 0 18px; }
+.racha-feature-label { font-size:var(--ui-font-meta); font-weight:500; letter-spacing:.015em; }
+.racha-plan ul { display:grid; gap:9px; align-content:start; flex:1; margin:14px 0 30px; list-style:none; }
+.racha-plan li { display:flex; gap:6px; font-size:var(--ui-font-body); color:#7b716b; line-height:1.55; }
+.racha-plan li svg { flex-shrink:0; margin-top:2px; color:#b7700a; background:#fff2da; border-radius:50%; }
+.racha-plan > button { width:100%; margin-top:auto; font-size:var(--ui-font-caption); min-height:33px; }
+.racha-plan > .racha-secondary:disabled { opacity:1; color:#7a859f; }
+.racha-value-strip { display:flex; align-items:center; gap:15px; border-radius:9px; background:#eef2ff; padding:22px; }
+.racha-value-icon { background:#ffdac5; color:#d67635; border-radius:7px; padding:10px; }
+.racha-value-strip > div:first-of-type { flex:1; }
+.racha-value-strip h3 { font-weight:600; font-size:var(--ui-font-card-title); }
+.racha-value-strip p,.racha-value-strip small { font-size:var(--ui-font-caption); color:#8b7b71; }
+.racha-value-strip > div:not(:first-of-type) { text-align:center; }
+.racha-value-strip strong { font-size:var(--ui-font-section-title); color:#b46a13; font-weight:500; }
+.racha-value-strip small { display:block; }
+.racha-pricing-faq { max-width:760px; margin:48px auto 0; text-align:center; }
+.racha-pricing-faq h2 { font-size:var(--ui-font-section-title); margin:7px 0 20px; font-weight:650; }
+.racha-pricing-faq details { background:white; border:1px solid #e7e9f3; margin:8px 0; border-radius:8px; text-align:left; }
+.racha-pricing-faq summary { display:flex; justify-content:space-between; align-items:center; list-style:none; cursor:pointer; font-size:var(--ui-font-label); padding:14px 17px; }
+.racha-pricing-faq summary::-webkit-details-marker { display:none; }
+.racha-pricing-faq details[open] summary svg { transform:rotate(180deg); }
+.racha-pricing-faq details p { padding:0 17px 16px; font-size:var(--ui-font-caption); color:#887a70; line-height:1.7; }
+.racha-pricing-footer { display:flex; justify-content:space-between; align-items:center; font-size:var(--ui-font-caption); color:#a36a3c; margin-top:22px; }
+
+/* Full-page checkout, with fixed-width order summary on desktop. */
+.racha-checkout-page { max-width:950px; margin:0 auto; }
+.racha-checkout-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+.racha-checkout-top > span { display:flex; align-items:center; gap:5px; font-size:var(--ui-font-caption); color:#8a7c70; background:#edf2ff; padding:5px 9px; border-radius:5px; }
+.racha-checkout-grid { display:grid; grid-template-columns:minmax(0,1fr) 245px; gap:20px; align-items:start; }
+.racha-checkout-heading { background:linear-gradient(105deg,#fff 30%,#fff8f3); }
+.racha-checkout-heading h1 { font-size:var(--ui-font-page-title); margin:4px 0 6px; font-weight:700; letter-spacing:-.6px; }
+.racha-checkout-heading p { max-width:440px; font-size:var(--ui-font-body); color:#8a7c70; }
+.racha-payment-methods { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0; }
+.racha-payment-methods button { position:relative; display:flex; align-items:center; gap:9px; padding:15px 11px; background:#eef2ff; border-radius:7px; text-align:left; cursor:pointer; border:1px solid transparent; }
+.racha-payment-methods button[aria-pressed=true] { background:#ffdac8; border-color:#ffd0b6; }
+.racha-payment-methods strong { display:block; font-size:var(--ui-font-caption); }
+.racha-payment-methods small { display:block; font-size:var(--ui-font-caption); color:#8a786c; }
+.racha-method-icon { background:#fff4ec; color:#f07c36; padding:5px; border-radius:4px; }
+.racha-method-badge { position:absolute; top:10px; right:7px; background:#ff873d; color:white; font-size:var(--ui-font-meta); padding:2px 4px; border-radius:9px; }
+.racha-expiry { display:flex; align-items:center; justify-content:space-between; padding:11px 13px; background:#eef2ff; border-radius:6px; font-size:var(--ui-font-caption); margin-bottom:18px; }
+.racha-expiry > span { display:flex; align-items:center; gap:6px; }
+.racha-expiry > strong { font-size:var(--ui-font-section-title); color:#bd6b10; font-weight:500; }
+.racha-expiry small { font-size:var(--ui-font-caption); color:#b68b61; }
+.racha-checkout-pix { display:grid; grid-template-columns:174px 1fr; align-items:center; gap:18px; }
+.racha-checkout-qr { padding:9px; border:1px solid #edf0f7; background:white; border-radius:9px; text-align:center; box-shadow:0 3px 4px #1723370c; }
+.racha-checkout-qr small { font-size:var(--ui-font-caption); color:#99856c; display:block; margin-top:5px; }
+.racha-pix-steps > strong { font-size:var(--ui-font-caption); }
+.racha-pix-steps > div { display:flex; align-items:flex-start; gap:8px; background:#eef2ff; padding:9px; border-radius:6px; margin:7px 0; }
+.racha-pix-steps > div > span { border-radius:50%; background:#ff873d; color:white; width:15px; height:15px; display:grid; place-items:center; font-size:var(--ui-font-caption); flex-shrink:0; }
+.racha-pix-steps p strong { display:block; font-size:var(--ui-font-caption); color:#bb713f; }
+.racha-pix-steps p small { display:block; font-size:var(--ui-font-caption); line-height:1.5; color:#8a7c70; margin-top:3px; }
+.racha-copy-field { display:flex; gap:7px; }
+.racha-copy-field code { min-width:0; flex:1; background:#eef2ff; padding:11px 9px; border-radius:5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--ui-font-caption); }
+.racha-copy-field .racha-primary {   white-space:nowrap; }
+.racha-checkout-summary { border-top:3px solid #ff873d; padding:19px 17px; }
+.racha-checkout-summary > h2 { font-size:var(--ui-font-section-title); margin-bottom:20px; }
+.racha-checkout-summary > ul { list-style:none; display:grid; gap:11px; margin:12px 0; }
+.racha-checkout-summary li { display:flex; gap:7px; align-items:flex-start; font-size:var(--ui-font-label); color:#8a7c70; }
+.racha-checkout-summary li svg { color:#e98047; flex-shrink:0; }
+.racha-order-line { display:flex; justify-content:space-between; margin:8px 0; font-size:var(--ui-font-caption); color:#8a7c70; }
+.racha-order-line strong { font-weight:500; }
+.racha-order-total { display:flex; align-items:center; justify-content:space-between; margin:20px 0 24px; }
+.racha-order-total span { font-size:var(--ui-font-caption); color:#8a7c70; }
+.racha-order-total small { font-size:var(--ui-font-caption); }
+.racha-order-total > strong { color:#b45a04; font-size:var(--ui-font-amount); font-weight:600; letter-spacing:-.8px; }
+.racha-checkout-summary > .racha-primary { width:100%;  }
+.racha-checkout-caption { display:flex; gap:5px; margin:13px 0 22px; font-size:var(--ui-font-caption); line-height:1.7; color:#9d8b7b; }
+.racha-checkout-caption svg { flex-shrink:0; margin-top:2px; }
+.racha-checkout-testimonial { display:flex; gap:8px; border-top:1px solid #edf0f7; padding-top:16px; font-size:var(--ui-font-caption); }
+.racha-checkout-testimonial .racha-avatar { width:27px; height:27px; font-size:var(--ui-font-caption); }
+.racha-checkout-testimonial small { display:block; color:#9d8b7b; margin-top:5px; font-size:var(--ui-font-caption); }
+.racha-checkout-support { display:flex; gap:5px; align-items:center; margin-top:21px; color:#9d8b7b; font-size:var(--ui-font-caption); }
+.racha-checkout-support strong { color:#d17835; margin-left:auto; font-weight:500; }
+.racha-checkout-trust { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.racha-checkout-trust > div { background:white; border:1px solid #e9ebf4; border-radius:8px; padding:13px 9px; display:flex; gap:7px; align-items:center; }
+.racha-checkout-trust svg { color:#c6924d; padding:4px; background:#eef2ff; box-sizing:content-box; border-radius:50%; }
+.racha-checkout-trust strong { display:block; font-size:var(--ui-font-caption); font-weight:500; }
+.racha-checkout-trust small { display:block; font-size:var(--ui-font-caption); color:#9d8b7b; }
+@media(max-width:900px) { .racha-checkout-grid { grid-template-columns:minmax(0,1fr) 220px; gap:14px; } .racha-checkout-pix { grid-template-columns:1fr; } .racha-checkout-qr { max-width:190px; margin:auto; } .racha-plans { gap:11px; } .racha-plan { padding:22px 14px 17px; } .racha-plan-title { gap:4px; flex-wrap:wrap; } .racha-price { font-size:var(--ui-font-amount); } }
+@media(max-width:760px) {
+  .racha-pricing-page { max-width:480px; }
+  .racha-plans { grid-template-columns:1fr; gap:30px; } .racha-plan { padding:25px; }
+  .racha-plan-title { flex-wrap:nowrap; } .racha-plan-title h2 { font-size:var(--ui-font-section-title); }
+  .racha-plan li { font-size:var(--ui-font-body); } .racha-plan ul { gap:12px; } .racha-plan-description { font-size:var(--ui-font-body); min-height:auto; }
+  .racha-price { font-size:var(--ui-font-amount); }
+  .racha-value-strip { flex-wrap:wrap; padding:17px; gap:10px; } .racha-value-strip > div:first-of-type { min-width:calc(100% - 65px); } .racha-value-strip > div:not(:first-of-type) { flex:1; padding-top:9px; }
+  .racha-pricing-faq { margin-top:35px; } .racha-checkout-grid { grid-template-columns:1fr; }
+  .racha-checkout-pix { grid-template-columns:165px 1fr; gap:10px; } .racha-checkout-top > span { font-size:var(--ui-font-caption); }
+  .racha-checkout-summary > ul { grid-template-columns:1fr 1fr; } .racha-checkout-summary > .racha-primary {   }
+}
+@media(max-width:420px) { .racha-checkout-pix,.racha-checkout-trust,.racha-checkout-summary > ul { grid-template-columns:1fr; } .racha-checkout-trust > div { padding:11px; } }
