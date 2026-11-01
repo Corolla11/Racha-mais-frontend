@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useAppNavigate as useNavigate } from "../lib/navigation";
 
 import {
   ArrowRight,
@@ -274,7 +274,7 @@ function Notificacoes() {
         return (
           <button
             type="button"
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white md:flex-initial"
+            className="ui-button ui-button--md inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white md:flex-initial"
           >
             <QrCode size={15} />
             Pagar com Pix
@@ -284,7 +284,7 @@ function Notificacoes() {
         return (
           <button
             type="button"
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-input px-4 py-2 text-xs font-semibold text-secondary transition hover:bg-background md:flex-initial"
+            className="ui-button ui-button--md inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-input px-4 py-2 text-xs font-semibold text-secondary transition hover:bg-background md:flex-initial"
           >
             <ReceiptText size={15} />
             Comprovante
@@ -296,7 +296,7 @@ function Notificacoes() {
             <button
               type="button"
               onClick={() => dispensar(n.id)}
-              className="flex-1 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white md:flex-initial"
+              className="ui-button ui-button--md flex-1 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white md:flex-initial"
             >
               Aceitar
             </button>
@@ -304,7 +304,7 @@ function Notificacoes() {
             <button
               type="button"
               onClick={() => dispensar(n.id)}
-              className="flex-1 rounded-xl bg-input px-3 py-2 text-xs font-medium text-text-secondary transition hover:bg-background md:flex-initial"
+              className="ui-button ui-button--md flex-1 rounded-xl bg-input px-3 py-2 text-xs font-medium text-text-secondary transition hover:bg-background md:flex-initial"
             >
               Recusar
             </button>
@@ -312,7 +312,7 @@ function Notificacoes() {
         );
       case "enviado":
         return (
-          <span className="inline-flex items-center gap-1 rounded-xl bg-input px-3 py-1.5 text-[11px] font-medium text-secondary">
+          <span className="inline-flex items-center gap-1 rounded-xl bg-input px-3 py-1.5 text-ui-caption font-medium text-secondary">
             <Check size={13} />
             Enviado
           </span>
@@ -322,7 +322,7 @@ function Notificacoes() {
           <button
             type="button"
             onClick={() => navigate("/meus-grupos")}
-            className="flex items-center gap-1 text-[11px] font-semibold text-secondary hover:underline"
+            className="flex items-center gap-1 text-ui-caption font-semibold text-secondary hover:underline"
           >
             Ver Grupo
             <ChevronRight size={14} />
@@ -333,7 +333,7 @@ function Notificacoes() {
           <button
             type="button"
             onClick={() => navigate("/criar-grupo")}
-            className="flex items-center gap-1 text-[11px] font-semibold text-tertiary hover:underline"
+            className="flex items-center gap-1 text-ui-caption font-semibold text-tertiary hover:underline"
           >
             Experimentar IA
             <ArrowRight size={14} />
@@ -354,7 +354,7 @@ function Notificacoes() {
           <div>
             <p className="text-sm font-semibold text-text-primary">Racha+</p>
 
-            <p className="text-[9px] text-text-secondary">
+            <p className="text-ui-caption text-text-secondary">
               Divisão Inteligente
             </p>
           </div>
@@ -397,7 +397,7 @@ function Notificacoes() {
           <button
             type="button"
             onClick={() => navigate("/criar-grupo")}
-            className="hidden items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-text-primary transition hover:bg-tertiary hover:text-white sm:flex"
+            className="ui-button ui-button--md hidden items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-text-primary transition hover:bg-tertiary hover:text-white sm:flex"
           >
             <Plus size={14} />
             Novo Grupo
@@ -419,7 +419,7 @@ function Notificacoes() {
             <button
               type="button"
               onClick={() => setAbaAberta(!abaAberta)}
-              className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition hover:bg-gray-50"
+              className="ui-button ui-button--md flex items-center gap-2 rounded-xl px-2 py-1.5 transition hover:bg-gray-50"
             >
               <img
                 src="https://i.pravatar.cc/100?img=47"
@@ -430,7 +430,7 @@ function Notificacoes() {
               <div className="hidden text-left xl:block">
                 <p className="text-xs font-semibold">Mariana S.</p>
 
-                <p className="text-[9px] text-text-secondary">Online</p>
+                <p className="text-ui-caption text-text-secondary">Online</p>
               </div>
 
               <ChevronDown
@@ -441,7 +441,7 @@ function Notificacoes() {
               />
             </button>
 
-            {abaAberta && <Aba onLogout={() => navigate("/login")} />}
+            {abaAberta && <Aba onClose={() => setAbaAberta(false)}/>}
           </div>
         </div>
       </header>
@@ -451,7 +451,7 @@ function Notificacoes() {
         {/* TÍTULO */}
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div className="flex max-w-2xl flex-col gap-2">
-            <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-text-secondary">
+            <div className="flex flex-wrap items-center gap-2 text-ui-caption font-semibold uppercase tracking-wider text-text-secondary">
               <button
                 type="button"
                 onClick={() => navigate("/meus-grupos")}
@@ -467,7 +467,7 @@ function Notificacoes() {
               </span>
             </div>
 
-            <h1 className="text-4xl font-bold tracking-tight">
+            <h1 className="text-ui-page-title font-bold tracking-tight">
               Notificações e Avisos
             </h1>
 
@@ -483,7 +483,7 @@ function Notificacoes() {
               type="button"
               onClick={marcarTodasComoLidas}
               disabled={naoLidas === 0}
-              className="inline-flex items-center gap-2 rounded-xl bg-surface px-4 py-2.5 text-xs font-semibold text-secondary shadow-sm transition hover:bg-input disabled:pointer-events-none disabled:opacity-70"
+              className="ui-button ui-button--md inline-flex items-center gap-2 rounded-xl bg-surface px-4 py-2.5 text-xs font-semibold text-secondary shadow-sm transition hover:bg-input disabled:pointer-events-none disabled:opacity-70"
             >
               {naoLidas === 0 ? <Check size={16} /> : <CheckCheck size={16} />}
               {naoLidas === 0 ? "Tudo lido!" : "Marcar todas como lidas"}
@@ -491,7 +491,7 @@ function Notificacoes() {
 
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-xl bg-surface px-4 py-2.5 text-xs font-semibold text-text-secondary shadow-sm transition hover:bg-input hover:text-text-primary"
+              className="ui-button ui-button--md inline-flex items-center gap-2 rounded-xl bg-surface px-4 py-2.5 text-xs font-semibold text-text-secondary shadow-sm transition hover:bg-input hover:text-text-primary"
             >
               <SlidersHorizontal size={16} />
               <span className="hidden sm:inline">Configurar Lembretes</span>
@@ -515,7 +515,7 @@ function Notificacoes() {
               <span className="text-5xl font-bold leading-none tracking-tight">
                 {String(naoLidas).padStart(2, "0")}
               </span>
-              <span className="text-[11px] font-medium text-tertiary">
+              <span className="text-ui-caption font-medium text-tertiary">
                 requerem atenção
               </span>
             </div>
@@ -533,7 +533,7 @@ function Notificacoes() {
               <span className="text-xs font-medium text-text-secondary">
                 Aguardando Seu Pix
               </span>
-              <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-700">
+              <span className="rounded-full bg-red-50 px-2 py-0.5 text-ui-caption font-semibold text-red-700">
                 2 pendências
               </span>
             </div>
@@ -552,7 +552,7 @@ function Notificacoes() {
 
               <button
                 type="button"
-                className="flex items-center gap-1 text-[11px] font-semibold text-tertiary hover:underline"
+                className="flex items-center gap-1 text-ui-caption font-semibold text-tertiary hover:underline"
               >
                 Pagar tudo
                 <ArrowRight size={13} />
@@ -565,7 +565,7 @@ function Notificacoes() {
               <span className="text-xs font-medium text-text-secondary">
                 Recebidos Hoje
               </span>
-              <span className="rounded-full bg-input px-2 py-0.5 text-[10px] font-semibold text-secondary">
+              <span className="rounded-full bg-input px-2 py-0.5 text-ui-caption font-semibold text-secondary">
                 3 pessoas
               </span>
             </div>
@@ -590,7 +590,7 @@ function Notificacoes() {
               <span className="text-xs font-medium text-text-secondary">
                 Lembretes Automáticos
               </span>
-              <span className="rounded-full bg-input px-2 py-0.5 text-[10px] font-semibold text-secondary">
+              <span className="rounded-full bg-input px-2 py-0.5 text-ui-caption font-semibold text-secondary">
                 24h
               </span>
             </div>
@@ -599,7 +599,7 @@ function Notificacoes() {
               <span className="text-5xl font-bold leading-none tracking-tight">
                 03
               </span>
-              <span className="text-[11px] text-text-secondary">
+              <span className="text-ui-caption text-text-secondary">
                 disparos via bot
               </span>
             </div>
@@ -631,11 +631,11 @@ function Notificacoes() {
                       key={aba.id}
                       type="button"
                       onClick={() => setFiltro(aba.id)}
-                      className={`shrink-0 rounded-xl px-3 py-1.5 text-[11px] font-semibold transition ${
+                      className={`ui-button ui-button--md ${`shrink-0 rounded-xl px-3 py-1.5 text-ui-caption font-semibold transition ${
                         ativo
                           ? "bg-secondary text-white shadow-sm"
                           : "text-text-secondary hover:bg-input"
-                      }`}
+                      }`}`}
                     >
                       {aba.nome} ({quantidade})
                     </button>
@@ -655,7 +655,7 @@ function Notificacoes() {
                     value={busca}
                     onChange={(evento) => setBusca(evento.target.value)}
                     placeholder="Buscar..."
-                    className="w-full rounded-xl bg-input py-1.5 pl-9 pr-3 text-xs outline-none transition placeholder:text-text-secondary focus:ring-2 focus:ring-primary"
+                    className="ui-control ui-control--leading w-full rounded-xl bg-input py-1.5 pl-9 pr-3 text-xs outline-none transition placeholder:text-text-secondary focus:ring-2 focus:ring-primary"
                   />
                 </div>
 
@@ -667,7 +667,7 @@ function Notificacoes() {
                       ? "Mais antigas primeiro"
                       : "Mais recentes primeiro"
                   }
-                  className="rounded-xl p-2 text-text-secondary transition hover:bg-input hover:text-text-primary"
+                  className="ui-button ui-button--md rounded-xl p-2 text-text-secondary transition hover:bg-input hover:text-text-primary"
                 >
                   <ArrowDownUp size={18} />
                 </button>
@@ -746,12 +746,12 @@ function Notificacoes() {
                                 />
                               )}
 
-                              <h2 className="truncate text-[15px] font-semibold">
+                              <h2 className="truncate text-ui-section-title font-semibold">
                                 {n.titulo}
                               </h2>
 
                               <span
-                                className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${n.corSelo}`}
+                                className={`rounded-full px-2 py-0.5 text-ui-caption font-medium ${n.corSelo}`}
                               >
                                 {n.selo}
                               </span>
@@ -761,7 +761,7 @@ function Notificacoes() {
                               {n.descricao}
                             </p>
 
-                            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-text-secondary">
+                            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-ui-caption text-text-secondary">
                               {n.meta.map((item, indice) => (
                                 <span
                                   key={indice}
@@ -791,7 +791,7 @@ function Notificacoes() {
                                   ? "Dispensar"
                                   : "Mais opções"
                               }
-                              className="rounded-xl p-2 text-text-secondary transition hover:bg-input hover:text-text-primary"
+                              className="ui-button ui-button--md rounded-xl p-2 text-text-secondary transition hover:bg-input hover:text-text-primary"
                             >
                               {n.acao === "comprovante" ? (
                                 <X size={18} />
@@ -821,7 +821,7 @@ function Notificacoes() {
                   <h3 className="text-base font-semibold">Canais de Envio</h3>
                 </div>
 
-                <span className="rounded-full bg-input px-2 py-0.5 text-[10px] font-semibold text-secondary">
+                <span className="rounded-full bg-input px-2 py-0.5 text-ui-caption font-semibold text-secondary">
                   Ativos
                 </span>
               </div>
@@ -903,7 +903,7 @@ function Notificacoes() {
               </div>
 
               <div className="flex items-center justify-between rounded-xl bg-background p-4">
-                <span className="text-[11px] text-text-secondary">
+                <span className="text-ui-caption text-text-secondary">
                   Horário silencioso: 22h às 08h
                 </span>
                 <MoonStar size={16} className="text-secondary" />
@@ -912,7 +912,7 @@ function Notificacoes() {
               <button
                 type="button"
                 onClick={() => navigate("/perfil")}
-                className="rounded-xl py-2 text-center text-xs font-semibold text-secondary transition hover:bg-input"
+                className="ui-button ui-button--md rounded-xl py-2 text-center text-xs font-semibold text-secondary transition hover:bg-input"
               >
                 Gerenciar Regras Avançadas no Perfil
               </button>
@@ -920,7 +920,7 @@ function Notificacoes() {
 
             <div className="relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-secondary to-[#315b81] p-6 text-white shadow-sm">
               <div className="relative z-10 flex flex-col gap-2">
-                <div className="inline-flex w-max items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold backdrop-blur-md">
+                <div className="inline-flex w-max items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-ui-caption font-semibold backdrop-blur-md">
                   <ShieldCheck size={15} />
                   Cobrança Sem Constrangimento
                 </div>
@@ -938,7 +938,7 @@ function Notificacoes() {
                 <button
                   type="button"
                   onClick={() => navigate("/criar-grupo")}
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-[11px] font-semibold text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white"
+                  className="ui-button ui-button--md inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-ui-caption font-semibold text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white"
                 >
                   Ativar Cobrança Automática
                   <ArrowRight size={14} />

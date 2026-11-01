@@ -63,6 +63,7 @@ interface VisualizarTarefaProps {
   aberta: boolean;
   tarefa: Tarefa | null;
   onFechar: () => void;
+  onPagamento?: () => void;
   onEditar?: (tarefa: Tarefa) => void;
   onExcluir?: (tarefa: Tarefa) => void;
   onConcluir?: (tarefa: Tarefa) => void;
@@ -87,6 +88,7 @@ export default function VisualizarTarefa({
   aberta,
   tarefa,
   onFechar,
+  onPagamento,
   onEditar,
   onExcluir,
   onConcluir,
@@ -154,12 +156,14 @@ export default function VisualizarTarefa({
       : 0;
 
   function concluir() {
+    if (!onConcluir) return;
     if (statusAtual === "concluida") return;
     setConcluidaLocalmente(true);
     onConcluir?.(tarefa!);
   }
 
   function excluir() {
+    if (!onExcluir) return;
     if (!confirmarExclusao) {
       setConfirmarExclusao(true);
       return;
@@ -185,7 +189,7 @@ export default function VisualizarTarefa({
         {/* CABEÇALHO */}
         <header className="shrink-0 border-b border-slate-200 bg-white px-5 py-5 sm:px-8">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <span className="truncate text-[11px] font-semibold uppercase tracking-wide text-orange-600">
+            <span className="truncate text-ui-caption font-semibold uppercase tracking-wide text-orange-600">
               {tarefa.grupo} / Detalhes da tarefa
             </span>
 
@@ -201,7 +205,7 @@ export default function VisualizarTarefa({
 
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
+              <h1 className="text-ui-page-title font-bold text-slate-900 text-ui-page-title">
                 {tarefa.titulo}
               </h1>
               <p className="mt-1 text-sm text-slate-500">
@@ -236,13 +240,13 @@ export default function VisualizarTarefa({
               )}
 
               <div className="min-w-0">
-                <p className="text-[11px] text-slate-500">
+                <p className="text-ui-caption text-slate-500">
                   Responsável principal
                 </p>
                 <p className="truncate text-sm font-bold">
                   {responsavel?.nome ?? "Não definido"}
                 </p>
-                <p className="text-[11px] text-orange-600">
+                <p className="text-ui-caption text-orange-600">
                   Organização e acompanhamento
                 </p>
               </div>
@@ -251,7 +255,7 @@ export default function VisualizarTarefa({
             <div className="flex items-center gap-3 rounded-xl bg-[#EDF3FF] p-4">
               <CalendarDays size={21} className="text-slate-500" />
               <div>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-ui-caption text-slate-500">
                   Prazo de entrega
                 </p>
                 <p className="text-sm font-bold">{tarefa.prazo}</p>
@@ -261,7 +265,7 @@ export default function VisualizarTarefa({
 
           {/* DESCRIÇÃO */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-bold">
+            <h2 className="mb-3 flex items-center gap-2 text-ui-section-title font-bold">
               <ListChecks size={18} className="text-orange-500" />
               Instruções e Notas da Tarefa
             </h2>
@@ -272,10 +276,10 @@ export default function VisualizarTarefa({
 
           {/* PARTICIPANTES */}
           <section>
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-bold">
+            <h2 className="mb-3 flex items-center gap-2 text-ui-section-title font-bold">
               <Users size={18} className="text-slate-500" />
               Participantes da Tarefa
-              <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px]">
+              <span className="rounded-full bg-slate-200 px-2 py-0.5 text-ui-caption">
                 {tarefa.participantes.length}
               </span>
             </h2>
@@ -289,7 +293,7 @@ export default function VisualizarTarefa({
                   <Avatar participante={p} />
                   <div className="min-w-0">
                     <p className="truncate text-xs font-bold">{p.nome}</p>
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-ui-caption text-slate-500">
                       {p.funcao ?? "Membro"}
                     </p>
                   </div>
@@ -307,7 +311,7 @@ export default function VisualizarTarefa({
                     <Wallet size={21} />
                   </div>
                   <div>
-                    <h2 className="text-sm font-bold">Despesa Vinculada</h2>
+                    <h2 className="text-ui-section-title font-bold">Despesa Vinculada</h2>
                     <p className="text-xs text-slate-500">
                       {despesa.descricao ?? "Rateio da tarefa"}
                     </p>
@@ -315,7 +319,7 @@ export default function VisualizarTarefa({
                 </div>
 
                 <div>
-                  <p className="text-[10px] uppercase text-slate-400">
+                  <p className="text-ui-caption uppercase text-slate-400">
                     Valor total
                   </p>
                   <p className="text-xl font-extrabold text-orange-600">
@@ -329,7 +333,7 @@ export default function VisualizarTarefa({
                   <div className="flex items-center gap-2">
                     <CreditCard size={18} className="text-slate-500" />
                     <div>
-                      <p className="text-[10px] text-slate-500">
+                      <p className="text-ui-caption text-slate-500">
                         Categoria / Pagamento
                       </p>
                       <p className="text-xs font-semibold">
@@ -340,7 +344,7 @@ export default function VisualizarTarefa({
                   </div>
 
                   <div>
-                    <p className="text-[10px] text-slate-500">
+                    <p className="text-ui-caption text-slate-500">
                       Valor por participante
                     </p>
                     <p className="text-sm font-bold">
@@ -364,7 +368,7 @@ export default function VisualizarTarefa({
                       style={{ width: `${progresso}%` }}
                     />
                   </div>
-                  <p className="mt-2 text-right text-[11px] text-slate-500">
+                  <p className="mt-2 text-right text-ui-caption text-slate-500">
                     {moeda(totalPago)} de {moeda(despesa.valorTotal)} pagos
                   </p>
                 </div>
@@ -386,13 +390,13 @@ export default function VisualizarTarefa({
                           <Avatar participante={p} />
                           <div>
                             <p className="text-xs font-bold">{p.nome}</p>
-                            <p className="text-[11px] text-slate-500">
+                            <p className="text-ui-caption text-slate-500">
                               Cota: {moeda(valorIndividual)}
                             </p>
                           </div>
                         </div>
 
-                        <span className={`rounded-md px-2 py-1 text-[10px] font-semibold ${
+                        <span className={`rounded-md px-2 py-1 text-ui-caption font-semibold ${
                           quitado
                             ? "bg-green-100 text-green-700"
                             : pago > 0
@@ -420,7 +424,7 @@ export default function VisualizarTarefa({
 
           {/* COMPROVANTES */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="mb-4 flex items-center gap-2 text-sm font-bold">
+            <h2 className="mb-4 flex items-center gap-2 text-ui-section-title font-bold">
               <Paperclip size={18} className="text-orange-500" />
               Comprovantes e Arquivos
             </h2>
@@ -461,7 +465,7 @@ export default function VisualizarTarefa({
 
           {/* HISTÓRICO */}
           <section className="pb-3">
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-bold">
+            <h2 className="mb-3 flex items-center gap-2 text-ui-section-title font-bold">
               <Clock3 size={17} className="text-slate-500" />
               Histórico da Tarefa
             </h2>
@@ -504,23 +508,25 @@ export default function VisualizarTarefa({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <button
               type="button"
-              onClick={excluir}
-              className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-bold transition ${
+                onClick={excluir}
+                disabled={!onExcluir}
+              className={`ui-button ui-button--md ${`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-bold transition ${
                 confirmarExclusao
                   ? "bg-red-600 text-white hover:bg-red-700"
                   : "border border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
-              }`}
+              }`}`}
             >
               <Trash2 size={16} />
               {confirmarExclusao ? "Confirmar exclusão" : "Excluir tarefa"}
             </button>
 
             <div className="flex flex-wrap items-center gap-2">
+              {despesa && onPagamento && <button className="racha-primary" onClick={onPagamento}>Ver pagamentos / Pix</button>}
               <button
                 type="button"
                 onClick={() => onEditar?.(tarefa!)}
                 disabled={!onEditar}
-                className="flex items-center gap-2 rounded-lg bg-[#EDF3FF] px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-blue-100 disabled:opacity-40"
+                className="ui-button ui-button--md flex items-center gap-2 rounded-lg bg-[#EDF3FF] px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-blue-100 disabled:opacity-40"
               >
                 <Pencil size={16} />
                 Editar Tarefa
@@ -535,7 +541,8 @@ export default function VisualizarTarefa({
                 <button
                   type="button"
                   onClick={concluir}
-                  className="flex items-center gap-2 rounded-lg bg-[#F97316] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#EA580C]"
+                  disabled={!onConcluir}
+                  className="ui-button ui-button--md flex items-center gap-2 rounded-lg bg-[#F97316] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#EA580C]"
                 >
                   <CheckCircle2 size={17} />
                   Marcar como concluída

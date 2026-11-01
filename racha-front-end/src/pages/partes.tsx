@@ -159,7 +159,7 @@ export default function Partes() {
         >
           Voltar
         </Link>
-        <h1 className="mt-5 text-2xl font-bold">Rateio da tarefa</h1>
+        <h1 className="mt-5 text-ui-page-title font-bold">Rateio da tarefa</h1>
         <p className="mt-1 break-all text-sm text-slate-600">
           Tarefa: {idTarefa ?? "não informada"}
         </p>
@@ -177,7 +177,7 @@ export default function Partes() {
 
         <form onSubmit={criarParte} className="mt-7 grid gap-3 sm:grid-cols-2">
           <div className="sm:col-span-2">
-            <label htmlFor="parte-usuario" className="mb-1 block text-sm font-medium">
+            <label htmlFor="parte-usuario" className="mb-1 block text-ui-label font-medium">
               ID do membro responsável
             </label>
             <input
@@ -186,11 +186,11 @@ export default function Partes() {
               value={idUser}
               onChange={(event) => setIdUser(event.target.value)}
               placeholder="ID de um membro do grupo"
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-orange-500"
+              className="ui-control w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-orange-500"
             />
           </div>
           <div>
-            <label htmlFor="parte-valor" className="mb-1 block text-sm font-medium">
+            <label htmlFor="parte-valor" className="mb-1 block text-ui-label font-medium">
               Valor (R$)
             </label>
             <input
@@ -201,11 +201,11 @@ export default function Partes() {
               required
               value={valor}
               onChange={(event) => setValor(event.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-orange-500"
+              className="ui-control w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-orange-500"
             />
           </div>
           <div>
-            <label htmlFor="parte-descricao" className="mb-1 block text-sm font-medium">
+            <label htmlFor="parte-descricao" className="mb-1 block text-ui-label font-medium">
               Descrição
             </label>
             <input
@@ -213,13 +213,13 @@ export default function Partes() {
               value={descricao}
               onChange={(event) => setDescricao(event.target.value)}
               placeholder="Ex.: cota da hospedagem"
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-orange-500"
+              className="ui-control w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-orange-500"
             />
           </div>
           <button
             type="submit"
             disabled={enviando || !idTarefa}
-            className="rounded-lg bg-orange-600 px-5 py-3 font-semibold text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-2"
+            className="ui-button ui-button--md rounded-lg bg-orange-600 px-5 py-3 font-semibold text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-2"
           >
             {enviando ? "Salvando..." : "Adicionar parte"}
           </button>
@@ -229,7 +229,7 @@ export default function Partes() {
           </p>
         </form>
 
-        <h2 className="mt-9 text-lg font-semibold">Partes cadastradas</h2>
+        <h2 className="mt-9 text-ui-section-title font-semibold">Partes cadastradas</h2>
         {carregando ? (
           <p className="mt-4 text-sm text-slate-600">Carregando partes...</p>
         ) : partes.length === 0 ? (
@@ -254,14 +254,14 @@ export default function Partes() {
                   <button
                     type="button"
                     onClick={() => void removerParte(parte.id)}
-                    className="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+                    className="ui-button ui-button--md rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
                   >
                     Remover
                   </button>
                 </div>
                 <label
                   htmlFor={`status-${parte.id}`}
-                  className="mt-4 block text-xs font-medium text-slate-600"
+                  className="mt-4 block text-ui-label font-medium text-slate-600"
                 >
                   Status
                 </label>
@@ -273,7 +273,7 @@ export default function Partes() {
                       status: event.target.value as StatusParte,
                     })
                   }
-                  className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="ui-control mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
                 >
                   {statusDisponiveis.map((status) => (
                     <option key={status} value={status}>

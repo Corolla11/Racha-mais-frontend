@@ -201,12 +201,12 @@ export default function Cadastro() {
             <h1
               className="
                 max-w-110
-                text-4xl
+                text-ui-page-title
                 font-bold
                 leading-[1.18]
                 tracking-[-0.03em]
                 text-text-primary
-                xl:text-[40px]
+                text-ui-page-title
               "
             >
               Comece a organizar grupos sem dor de cabeça em{" "}
@@ -385,7 +385,7 @@ export default function Cadastro() {
                   Beatriz Mendonça
                 </p>
 
-                <p className="text-[11px] text-text-secondary">
+                <p className="text-ui-caption text-text-secondary">
                   Moradora em república • São Carlos, SP
                 </p>
 
@@ -420,7 +420,7 @@ export default function Cadastro() {
 
               <span
                 className="
-                  text-[10px]
+                  text-ui-caption
                   font-semibold
                   uppercase
                   tracking-wide
@@ -432,7 +432,7 @@ export default function Cadastro() {
 
               <span
                 className="
-                  text-[10px]
+                  text-ui-caption
                   font-medium
                   text-text-secondary
                 "
@@ -446,7 +446,7 @@ export default function Cadastro() {
 
               <h2
                 className="
-                  text-3xl
+                  text-ui-page-title
                   font-bold
                   tracking-[-0.03em]
                   text-text-primary
@@ -474,7 +474,7 @@ export default function Cadastro() {
               type="button"
               disabled
               title="Login com Google ainda não está configurado."
-              className="
+              className="ui-button ui-button--md
                 flex
                 h-11
                 w-full
@@ -508,7 +508,7 @@ export default function Cadastro() {
 
               <span
                 className="
-                  text-[10px]
+                  text-ui-caption
                   font-semibold
                   uppercase
                   text-secondary
@@ -545,7 +545,7 @@ export default function Cadastro() {
                   className="
                     mb-2
                     block
-                    text-xs
+                    text-ui-label
                     font-semibold
                     text-text-primary
                   "
@@ -564,7 +564,7 @@ export default function Cadastro() {
                     onChange={(event) =>
                       handleChange("nome", event.target.value)
                     }
-                    className="
+                    className="ui-control ui-control--trailing
                       h-11
                       w-full
                       rounded-xl
@@ -608,7 +608,7 @@ export default function Cadastro() {
                   className="
                     mb-2
                     block
-                    text-xs
+                    text-ui-label
                     font-semibold
                     text-text-primary
                   "
@@ -627,7 +627,7 @@ export default function Cadastro() {
                     onChange={(event) =>
                       handleChange("email", event.target.value)
                     }
-                    className="
+                    className="ui-control ui-control--trailing
                       h-11
                       w-full
                       rounded-xl
@@ -675,7 +675,7 @@ export default function Cadastro() {
                     <label
                       htmlFor="senha"
                       className="
-                        text-xs
+                        text-ui-label
                         font-semibold
                         text-text-primary
                       "
@@ -686,7 +686,7 @@ export default function Cadastro() {
                     {forcaSenha > 0 && (
                       <span
                         className={`
-                          text-[10px]
+                          text-ui-caption
                           font-semibold
                           ${
                             forcaSenha === 1
@@ -715,7 +715,7 @@ export default function Cadastro() {
                       onChange={(event) =>
                         handleChange("senha", event.target.value)
                       }
-                      className="
+                      className="ui-control ui-control--trailing
                         h-11
                         w-full
                         rounded-xl
@@ -804,7 +804,7 @@ export default function Cadastro() {
                     <label
                       htmlFor="confirmarSenha"
                       className="
-                        text-xs
+                        text-ui-label
                         font-semibold
                         text-text-primary
                       "
@@ -814,7 +814,7 @@ export default function Cadastro() {
 
                     <span
                       className={`
-                        text-[10px]
+                        text-ui-caption
                         font-semibold
                         ${
                           formulario.confirmarSenha &&
@@ -852,7 +852,7 @@ export default function Cadastro() {
                           event.target.value
                         )
                       }
-                      className={`
+                      className={`ui-control ui-control--trailing ${`
                         h-11
                         w-full
                         rounded-xl
@@ -872,7 +872,7 @@ export default function Cadastro() {
                             ? "border-red-400 focus:border-red-400"
                             : "border-transparent focus:border-primary"
                         }
-                      `}
+                      `}`}
                     />
 
                     <button
@@ -937,7 +937,7 @@ export default function Cadastro() {
                   </div>
 
                   {senhasPreenchidas && !senhasIguais && (
-                    <p className="mt-1 text-[10px] font-semibold text-red-500">
+                    <p className="mt-1 text-ui-caption font-semibold text-red-500">
                       As senhas não coincidem
                     </p>
                   )}

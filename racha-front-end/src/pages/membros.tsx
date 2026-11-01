@@ -149,7 +149,7 @@ export default function Membros() {
         >
           Voltar aos grupos
         </Link>
-        <h1 className="mt-5 text-2xl font-bold">Membros do grupo</h1>
+        <h1 className="mt-5 text-ui-page-title font-bold">Membros do grupo</h1>
         <p className="mt-1 break-all text-sm text-slate-600">
           Grupo: {typeof nomeGrupo === "string" ? nomeGrupo : idGrupo ?? "não informado"}
         </p>
@@ -176,12 +176,12 @@ export default function Membros() {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="E-mail de um usuário já cadastrado"
-            className="min-w-0 flex-1 rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-orange-500"
+            className="ui-control min-w-0 flex-1 rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-orange-500"
           />
           <button
             type="submit"
             disabled={enviando || !idGrupo}
-            className="rounded-lg bg-orange-600 px-5 py-3 font-semibold text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="ui-button ui-button--md rounded-lg bg-orange-600 px-5 py-3 font-semibold text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {enviando ? "Adicionando..." : "Adicionar membro"}
           </button>
@@ -190,7 +190,7 @@ export default function Membros() {
           Somente o dono pode adicionar membros. A pessoa precisa ter cadastro.
         </p>
 
-        <h2 className="mt-9 text-lg font-semibold">Participantes</h2>
+        <h2 className="mt-9 text-ui-section-title font-semibold">Participantes</h2>
         {carregando ? (
           <p className="mt-4 text-sm text-slate-600">Carregando membros...</p>
         ) : membros.length === 0 ? (
@@ -228,14 +228,14 @@ export default function Membros() {
                   <button
                     type="button"
                     onClick={() => void alternarFuncao(membro)}
-                    className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-50"
+                    className="ui-button ui-button--md rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-50"
                   >
                     {membro.funcao === "dono" ? "Tornar membro" : "Promover a dono"}
                   </button>
                   <button
                     type="button"
                     onClick={() => void removerMembro(membro)}
-                    className="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+                    className="ui-button ui-button--md rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
                   >
                     Remover / sair
                   </button>

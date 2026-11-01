@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./styles/design-tokens.css";
 
 @theme {
   --color-primary: #F2A541;
@@ -13,5 +14,36 @@
   --color-text-primary: #071D33;
   --color-text-secondary: #596A7B;
 
-  --font-jakarta: "Plus Jakarta Sans", sans-serif;
+  --font-jakarta: var(--ui-font-family);
+  --font-sans: var(--ui-font-family);
+  --radius-lg: var(--ui-control-radius);
+  --radius-xl: var(--ui-card-radius);
+  --radius-2xl: var(--ui-card-radius);
+
+  --text-ui-meta: var(--ui-font-meta);
+  --text-ui-meta--line-height: var(--ui-line-body);
+  --text-ui-caption: var(--ui-font-caption);
+  --text-ui-caption--line-height: var(--ui-line-body);
+  --text-ui-label: var(--ui-font-label);
+  --text-ui-label--line-height: var(--ui-line-body);
+  --text-ui-body: var(--ui-font-body);
+  --text-ui-body--line-height: var(--ui-line-body);
+  --text-ui-lead: var(--ui-font-lead);
+  --text-ui-lead--line-height: var(--ui-line-body);
+  --text-ui-card-title: var(--ui-font-card-title);
+  --text-ui-card-title--line-height: var(--ui-line-heading);
+  --text-ui-section-title: var(--ui-font-section-title);
+  --text-ui-section-title--line-height: var(--ui-line-heading);
+  --text-ui-dialog-title: var(--ui-font-dialog-title);
+  --text-ui-dialog-title--line-height: var(--ui-line-heading);
+  --text-ui-page-title: var(--ui-font-page-title);
+  --text-ui-page-title--line-height: var(--ui-line-heading);
+  --text-ui-display: var(--ui-font-display);
+  --text-ui-display--line-height: var(--ui-line-heading);
+}
+
+@layer base {
+  h1 { font-size:var(--ui-font-page-title); line-height:var(--ui-line-heading); font-weight:700; }
+  h2 { font-size:var(--ui-font-section-title); line-height:var(--ui-line-heading); font-weight:600; }
+  h3 { font-size:var(--ui-font-card-title); line-height:var(--ui-line-heading); font-weight:600; }
 }

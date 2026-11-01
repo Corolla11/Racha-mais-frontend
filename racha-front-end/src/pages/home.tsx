@@ -59,7 +59,7 @@ function Home() {
             <button
               type="button"
               onClick={() => irPara("/criar-grupo")}
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-secondary shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              className="ui-button ui-button--md inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-secondary shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               <Plus size={17} />
               Criar grupo
@@ -76,9 +76,7 @@ function Home() {
                 <span className="sr-only">Abrir perfil</span>
               </button>
               {abaAberta && (
-                <div className="absolute right-0 top-14 z-40">
-                  <Aba />
-                </div>
+                <Aba onClose={() => setAbaAberta(false)}/>
               )}
             </div>
           </div>
@@ -100,21 +98,21 @@ function Home() {
               <button
                 type="button"
                 onClick={() => irPara("/meus-grupos")}
-                className="flex items-center justify-between rounded-xl px-3 py-3 text-left text-sm font-semibold text-secondary hover:bg-background"
+                className="ui-button ui-button--md flex items-center justify-between rounded-xl px-3 py-3 text-left text-sm font-semibold text-secondary hover:bg-background"
               >
                 Meus grupos <ArrowRight size={16} />
               </button>
               <button
                 type="button"
                 onClick={() => irPara("/perfil")}
-                className="flex items-center justify-between rounded-xl px-3 py-3 text-left text-sm font-semibold text-secondary hover:bg-background"
+                className="ui-button ui-button--md flex items-center justify-between rounded-xl px-3 py-3 text-left text-sm font-semibold text-secondary hover:bg-background"
               >
                 Meu perfil <ArrowRight size={16} />
               </button>
               <button
                 type="button"
                 onClick={() => irPara("/criar-grupo")}
-                className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-secondary"
+                className="ui-button ui-button--md mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-secondary"
               >
                 <Plus size={17} /> Criar grupo
               </button>
@@ -142,14 +140,14 @@ function Home() {
               <button
                 type="button"
                 onClick={() => irPara("/criar-grupo")}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-extrabold text-secondary transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                className="ui-button ui-button--md inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-extrabold text-secondary transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               >
                 Criar meu grupo <ArrowRight size={17} />
               </button>
               <button
                 type="button"
                 onClick={() => irPara("/meus-grupos")}
-                className="inline-flex h-12 items-center justify-center rounded-xl border border-white/20 px-6 text-sm font-bold text-white transition hover:bg-white/10"
+                className="ui-button ui-button--md inline-flex h-12 items-center justify-center rounded-xl border border-white/20 px-6 text-sm font-bold text-white transition hover:bg-white/10"
               >
                 Explorar meus grupos
               </button>
@@ -183,7 +181,7 @@ function Home() {
             <button
               type="button"
               onClick={() => irPara("/criar-grupo")}
-              className="group rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:border-primary/60 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              className="ui-button ui-button--md group rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:border-primary/60 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-tertiary transition group-hover:bg-primary group-hover:text-secondary">
                 <UsersRound size={22} />
@@ -196,7 +194,7 @@ function Home() {
             <button
               type="button"
               onClick={() => irPara("/meus-grupos")}
-              className="group rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:border-primary/60 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              className="ui-button ui-button--md group rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:border-primary/60 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary/10 text-secondary transition group-hover:bg-secondary group-hover:text-white">
                 <ClipboardList size={22} />
@@ -209,7 +207,7 @@ function Home() {
             <button
               type="button"
               onClick={() => irPara("/perfil")}
-              className="group rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:border-primary/60 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              className="ui-button ui-button--md group rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:border-primary/60 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-tertiary transition group-hover:bg-primary group-hover:text-secondary">
                 <UserRound size={22} />
@@ -229,7 +227,7 @@ function Home() {
           <button
             type="button"
             onClick={() => irPara("/criar-grupo")}
-            className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-secondary px-5 text-sm font-bold text-white transition hover:bg-secondary/90"
+            className="ui-button ui-button--md inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-secondary px-5 text-sm font-bold text-white transition hover:bg-secondary/90"
           >
             Começar agora <ArrowRight size={16} />
           </button>
