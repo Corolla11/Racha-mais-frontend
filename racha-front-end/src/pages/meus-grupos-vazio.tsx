@@ -1,486 +1,496 @@
-import { useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowRightLeft,
+  Flame,
+  Home,
+  KeyRound,
+  ListChecks,
+  MessageCircleQuestion,
+  Plane,
+  Plus,
+  QrCode,
+  Sparkles,
+  UserPlus,
+  Users,
+  X,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
+import AppShell from "../components/app-shell";
 import { useAppNavigate as useNavigate } from "../lib/navigation";
 
-import {
-  ArrowDown,
-  ArrowRight,
-  Bell,
-  ChevronDown,
-  CircleCheckBig,
-  MessageCircle,
-  Plus,
-  Search,
-  ShieldCheck,
-  Sparkles,
-  Users,
-} from "lucide-react";
+/* =====================================================
+   TOKENS DO DESIGN
 
-import Aba from "../components/aba-perfil";
+   Ficam aqui dentro (e não no tema do Tailwind) para que
+   esta tela não interfira nas demais páginas do projeto.
+====================================================== */
 
-const filtros = [
-  "Todos",
-  "Como Organizador",
-  "Contas Pendentes",
-  "Viagens & Eventos",
-  "República & Moradia",
-  "Finalizados",
+const C = {
+  primary: "#9b4500",
+  primaryContainer: "#ff8c42",
+  primaryFixed: "#ffdbc9",
+  onPrimary: "#ffffff",
+  onPrimaryContainer: "#6a2d00",
+
+  secondary: "#ab3425",
+  secondaryFixed: "#ffdad4",
+
+  tertiary: "#855300",
+  tertiaryFixed: "#ffddb8",
+  tertiaryContainer: "#ed9800",
+
+  surfaceLowest: "#ffffff",
+  surfaceLow: "#eff4ff",
+  surfaceContainer: "#e6eeff",
+  surfaceHigh: "#dee9fc",
+
+  onSurface: "#121c2a",
+  onSurfaceVariant: "#564338",
+};
+
+type Passo = {
+  numero: string;
+  titulo: string;
+  descricao: string;
+  rodape: string;
+  icone: LucideIcon;
+  cor: string;
+  fundo: string;
+};
+
+const PASSOS: Passo[] = [
+  {
+    numero: "01",
+    titulo: "Crie seu grupo",
+    descricao:
+      "Em segundos com Inteligência Artificial contextual ou pelo formulário manual detalhado. Convide amigos por link direto.",
+    rodape: "Criar por IA ou Manual",
+    icone: Sparkles,
+    cor: C.primary,
+    fundo: C.primaryFixed,
+  },
+  {
+    numero: "02",
+    titulo: "Adicione despesas e tarefas",
+    descricao:
+      "Defina quem participa de cada custo ou tarefa sem enrolação. Suporte a divisões desiguais, cotas fixas ou porcentagens.",
+    rodape: "Controle transparente",
+    icone: ListChecks,
+    cor: C.tertiary,
+    fundo: C.tertiaryFixed,
+  },
+  {
+    numero: "03",
+    titulo: "Acerte as contas via Pix",
+    descricao:
+      "O algoritmo inteligente otimiza transações para o menor número de transferências e gera QR Codes Pix diretamente.",
+    rodape: "Liquidação sem estresse",
+    icone: ArrowRightLeft,
+    cor: C.secondary,
+    fundo: C.secondaryFixed,
+  },
 ];
 
-const modelos = [
-  {
-    emoji: "🥩",
-    titulo: "Churrasco & Festas",
-    descricao:
-      "Divida compras, bebidas e carnes por pessoa com regras de consumo personalizadas.",
-  },
-  {
-    emoji: "🏠",
-    titulo: "Contas da Casa",
-    descricao:
-      "Aluguel, internet, energia e mercado coletivo com divisão mensal recorrente.",
-  },
-  {
-    emoji: "🏖️",
-    titulo: "Viagem com Amigos",
-    descricao:
-      "Hospedagem, combustível e passeios com rateio em tempo real e comprovantes.",
-  },
+// Os ids batem com as categorias da tela de criação manual
+const CATEGORIAS: { id: string; nome: string; icone: LucideIcon }[] = [
+  { id: "viagem", nome: "Viagem", icone: Plane },
+  { id: "evento", nome: "Rolê / Evento", icone: Flame },
+  { id: "republica", nome: "Casa / República", icone: Home },
 ];
 
-function MeusGruposVazio() {
+export default function MeusGruposVazio() {
   const navigate = useNavigate();
+  const campoCodigo = useRef<HTMLInputElement>(null);
 
-  const [abaAberta, setAbaAberta] = useState(false);
-  const [filtroAtivo, setFiltroAtivo] = useState("Todos");
+  const [modalAberto, setModalAberto] = useState(false);
+  const [nomeGrupo, setNomeGrupo] = useState("");
+  const [categoria, setCategoria] = useState("viagem");
+  const [codigo, setCodigo] = useState("");
+
+  // Fecha o modal com Esc
+  useEffect(() => {
+    if (!modalAberto) return;
+    function aoPressionar(event: KeyboardEvent) {
+      if (event.key === "Escape") setModalAberto(false);
+    }
+    window.addEventListener("keydown", aoPressionar);
+    return () => window.removeEventListener("keydown", aoPressionar);
+  }, [modalAberto]);
+
+  function focarCodigo() {
+    campoCodigo.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    campoCodigo.current?.focus({ preventScroll: true });
+  }
+
+  function continuarCriacao(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    navigate("/criar-grupo/manual", {
+      state: { nome: nomeGrupo.trim(), categoria },
+    });
+  }
+
+  // Aceita tanto o código quanto o link completo do convite
+  function ingressar(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const valor = codigo.trim();
+    if (!valor) return;
+    const token = valor.split("/convite/").pop()?.split(/[?#/]/)[0] ?? valor;
+    navigate(`/convite/${encodeURIComponent(token)}`);
+  }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-text-primary">
-      {/* HEADER */}
-      <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-gray-100 bg-surface px-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F3F6FA]">
-            <span className="text-xs font-bold text-secondary">R+</span>
-          </div>
+    <AppShell title="Meus grupos">
+      <div
+        className="mx-auto flex w-full max-w-7xl flex-col gap-12 font-jakarta"
+        style={{ color: C.onSurface }}
+      >
+        {/* =====================================================
+            CABEÇALHO
+        ====================================================== */}
 
-          <div>
-            <p className="text-sm font-semibold text-text-primary">Racha+</p>
-
-            <p className="text-ui-caption text-text-secondary">
-              Divisão Inteligente
-            </p>
-          </div>
-        </div>
-
-        <nav className="hidden items-center gap-6 md:flex">
-          <button
-            type="button"
-            className="ui-button ui-button--md rounded-lg bg-input px-3 py-1.5 text-xs font-semibold text-secondary"
-          >
-            Meus Grupos
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate("/criar-grupo")}
-            className="text-xs text-gray-700 transition hover:text-secondary"
-          >
-            Criar com IA
-          </button>
-
-          <button
-            type="button"
-            className="text-xs text-gray-700 transition hover:text-secondary"
-          >
-            Histórico &amp; Pix
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate("/perfil")}
-            className="text-xs text-gray-700 transition hover:text-secondary"
-          >
-            Perfil
-          </button>
-        </nav>
-
-        <div className="flex items-center gap-4">
-          <button
-            type="button"
-            onClick={() => navigate("/criar-grupo")}
-            className="ui-button ui-button--md hidden items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-text-primary transition hover:bg-tertiary hover:text-white sm:flex"
-          >
-            <Plus size={14} />
-            Novo Grupo
-          </button>
-
-          <button
-            type="button"
-            aria-label="Notificações"
-            onClick={() => navigate("/notificacoes")}
-            className="relative text-gray-600"
-          >
-            <Bell size={17} />
-
-            <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-primary" />
-          </button>
-
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setAbaAberta(!abaAberta)}
-              className="ui-button ui-button--md flex items-center gap-2 rounded-xl px-2 py-1.5 transition hover:bg-gray-50"
-            >
-              <img
-                src="https://i.pravatar.cc/100?img=47"
-                alt="Foto de perfil"
-                className="h-9 w-9 rounded-full object-cover"
-              />
-
-              <div className="hidden text-left xl:block">
-                <p className="text-xs font-semibold">Mariana S.</p>
-
-                <p className="text-ui-caption text-text-secondary">Online</p>
-              </div>
-
-              <ChevronDown
-                size={15}
-                className={`text-gray-500 transition-transform ${
-                  abaAberta ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            {abaAberta && <Aba onClose={() => setAbaAberta(false)}/>}
-          </div>
-        </div>
-      </header>
-
-      {/* CONTEÚDO */}
-      <main className="mx-auto flex w-full max-w-[1280px] flex-1 flex-col gap-8 px-6 py-8">
-        {/* TÍTULO E AÇÕES */}
-        <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-          <div className="flex max-w-2xl flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-primary" />
-
-              <span className="text-ui-caption font-semibold uppercase tracking-wide text-text-secondary">
-                Visão Geral de Grupos • Junho 2025
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="flex flex-col gap-1">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-[2rem] font-bold leading-10 tracking-tight">
+                Meus grupos
+              </h1>
+              <span
+                className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                style={{
+                  backgroundColor: C.surfaceContainer,
+                  color: C.onSurfaceVariant,
+                }}
+              >
+                0 grupos ativos
               </span>
             </div>
-
-            <h1 className="text-ui-page-title font-bold tracking-tight text-secondary">
-              Meus Grupos
-            </h1>
-
-            <p className="text-base text-text-secondary">
-              Gerencie despesas compartilhadas, acompanhe quem já pagou e
-              acesse seus compromissos ativos sem atrito.
+            <p className="text-sm" style={{ color: C.onSurfaceVariant }}>
+              Gerencie divisões financeiras e tarefas coletivas com seus amigos
             </p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => navigate("/criar-grupo")}
-              className="ui-button ui-button--md flex items-center gap-2 rounded-xl bg-surface px-5 py-3 text-sm font-semibold text-secondary shadow-sm transition hover:bg-input"
-            >
-              <Sparkles size={18} className="fill-primary text-primary" />
-              Criar com IA
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate("/criar-grupo")}
-              className="ui-button ui-button--md flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white"
-            >
-              <Plus size={18} />
-              Novo Grupo Manual
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setModalAberto(true)}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[#eff4ff] px-4 py-2 text-sm font-semibold shadow-sm transition-all duration-200 hover:bg-[#e6eeff] active:scale-95"
+          >
+            <Plus className="h-[18px] w-[18px]" style={{ color: C.primary }} />
+            <span>Novo grupo</span>
+          </button>
         </div>
 
-        {/* RESUMO ZERADO */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            {
-              titulo: "Saldo a Receber",
-              valor: "R$ 0,00",
-              legenda: "Nenhum valor pendente a receber",
-              icone: <ArrowDown size={16} className="rotate-45" />,
-            },
-            {
-              titulo: "Minhas Cotas Pendentes",
-              valor: "R$ 0,00",
-              legenda: "Tudo em dia! Sem pendências",
-              icone: <CircleCheckBig size={16} />,
-            },
-            {
-              titulo: "Grupos Ativos",
-              valor: "0 grupos",
-              legenda: "Crie seu primeiro racha agora",
-              icone: <Users size={16} />,
-            },
-            {
-              titulo: "Pontualidade Geral",
-              valor: "100%",
-              legenda: "Iniciando histórico coletivo",
-              icone: <ShieldCheck size={16} />,
-            },
-          ].map((card) => (
-            <div
-              key={card.titulo}
-              className="relative flex flex-col justify-between overflow-hidden rounded-xl bg-surface p-6 shadow-sm"
-            >
-              <div className="pointer-events-none absolute -right-3 -top-3 h-16 w-16 rounded-full bg-input opacity-60" />
+        {/* =====================================================
+            ESTADO VAZIO
+        ====================================================== */}
 
-              <div className="relative mb-3 flex items-center justify-between">
-                <span className="text-xs font-medium text-text-secondary">
-                  {card.titulo}
-                </span>
+        <section
+          className="relative flex flex-col items-center overflow-hidden rounded-2xl p-8 text-center shadow-sm sm:p-14"
+          style={{ backgroundColor: C.surfaceLowest }}
+        >
+          <div
+            className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full blur-3xl"
+            style={{ backgroundColor: `${C.primaryFixed}4d` }}
+          />
+          <div
+            className="pointer-events-none absolute -bottom-24 -left-24 h-80 w-80 rounded-full blur-3xl"
+            style={{ backgroundColor: `${C.tertiaryFixed}4d` }}
+          />
 
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-input text-secondary">
-                  {card.icone}
-                </span>
-              </div>
-
-              <div className="relative flex flex-col">
-                <span className="text-3xl font-bold tracking-tight text-secondary">
-                  {card.valor}
-                </span>
-
-                <span className="mt-1 text-ui-caption text-text-secondary">
-                  {card.legenda}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* BUSCA, ORDENAÇÃO E FILTROS */}
-        <div className="flex flex-col gap-4 rounded-2xl bg-surface p-5 shadow-sm">
-          <div className="flex flex-col items-stretch justify-between gap-4 lg:flex-row lg:items-center">
-            <div className="relative max-w-xl flex-1">
-              <Search
-                size={18}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary"
-              />
-
-              <input
-                type="text"
-                placeholder="Buscar por grupo ou participante..."
-                className="ui-control ui-control--leading h-11 w-full rounded-xl bg-input pl-11 pr-4 text-sm text-text-primary outline-none transition placeholder:text-text-secondary focus:ring-2 focus:ring-primary"
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-3">
-              <label
-                htmlFor="ordenar-grupos"
-                className="hidden text-ui-label text-text-secondary sm:inline"
+          <div className="relative z-10 flex max-w-2xl flex-col items-center">
+            <div className="relative mb-8">
+              <div
+                className="flex h-24 w-24 items-center justify-center rounded-full shadow-[0_8px_24px_rgba(255,140,66,0.18)]"
+                style={{ backgroundColor: C.primaryFixed }}
               >
-                Ordenar:
-              </label>
-
-              <div className="relative">
-                <select
-                  id="ordenar-grupos"
-                  className="ui-control ui-control--trailing cursor-pointer appearance-none rounded-xl bg-input py-2.5 pl-4 pr-10 text-xs font-semibold text-secondary outline-none transition hover:bg-background"
-                >
-                  <option>Mais recentes primeiro</option>
-                  <option>Maior valor total</option>
-                  <option>Mais antigos</option>
-                  <option>Nome (A-Z)</option>
-                </select>
-
-                <ChevronDown
-                  size={16}
-                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary"
+                <Users className="h-12 w-12" style={{ color: C.primary }} />
+              </div>
+              <div
+                className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full shadow-md"
+                style={{ backgroundColor: C.surfaceLowest }}
+              >
+                <ArrowLeft
+                  className="h-5 w-5"
+                  strokeWidth={3}
+                  style={{ color: C.primaryContainer }}
                 />
               </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
-            {filtros.map((nome) => {
-              const ativo = filtroAtivo === nome;
+            <h2 className="mb-3 text-[1.75rem] font-bold leading-tight tracking-tight sm:text-[2rem]">
+              Você ainda não faz parte de nenhum grupo
+            </h2>
+            <p
+              className="mb-10 max-w-xl text-lg leading-relaxed"
+              style={{ color: C.onSurfaceVariant }}
+            >
+              Que tal começar agora? Organize viagens, churrascos, contas da
+              casa ou qualquer despesa compartilhada com seus amigos de forma
+              justa, visual e transparente.
+            </p>
 
-              return (
-                <button
-                  key={nome}
-                  type="button"
-                  onClick={() => setFiltroAtivo(nome)}
-                  className={`ui-button ui-button--md ${`whitespace-nowrap rounded-full px-4 py-1.5 text-xs font-semibold transition ${
-                    ativo
-                      ? "bg-secondary text-white shadow-sm"
-                      : "bg-input text-text-secondary hover:bg-background hover:text-text-primary"
-                  }`}`}
-                >
-                  {nome} (0)
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ESTADO VAZIO */}
-        <section className="relative flex flex-col items-center overflow-hidden rounded-2xl bg-surface p-8 text-center shadow-sm md:p-12">
-          <div className="pointer-events-none absolute -left-24 -top-24 h-80 w-80 rounded-full bg-input opacity-60 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-primary/20 blur-3xl" />
-
-          <div className="relative mb-6 flex h-24 w-24 items-center justify-center">
-            <div className="absolute inset-0 animate-pulse rounded-full bg-input" />
-
-            <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-background shadow-inner">
-              <Users size={40} className="fill-primary/30 text-tertiary" />
+            <div className="flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row">
+              <button
+                type="button"
+                onClick={() => setModalAberto(true)}
+                className="group inline-flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl bg-[#ff8c42] px-8 py-3.5 text-base font-semibold text-white shadow-md transition-all duration-200 hover:bg-[#9b4500] hover:shadow-lg active:scale-95 sm:w-auto"
+              >
+                <Plus className="h-[22px] w-[22px] transition-transform duration-200 group-hover:rotate-90" />
+                <span>Criar meu primeiro grupo</span>
+              </button>
+              <button
+                type="button"
+                onClick={focarCodigo}
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#eff4ff] px-6 py-3.5 text-base font-semibold transition-all duration-200 hover:bg-[#e6eeff] active:scale-95 sm:w-auto"
+              >
+                <KeyRound className="h-5 w-5" style={{ color: C.onSurfaceVariant }} />
+                <span>Entrar com link ou código</span>
+              </button>
             </div>
 
-            <div className="absolute -right-1 -top-1 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-text-primary shadow-md">
-              <Plus size={18} />
-            </div>
-          </div>
-
-          <h2 className="relative mb-3 max-w-xl text-ui-dialog-title font-bold tracking-tight text-secondary">
-            Você ainda não participa de nenhum grupo
-          </h2>
-
-          <p className="relative mb-8 max-w-2xl text-sm leading-relaxed text-text-secondary">
-            Divida churrascos, contas da república, viagens ou partidas de
-            futebol sem constrangimento nem planilhas complicadas. Crie um
-            grupo em segundos ou peça o link de convite para um amigo.
-          </p>
-
-          <div className="relative mb-12 flex w-full max-w-md flex-col items-center justify-center gap-4 sm:flex-row">
-            <button
-              type="button"
-              onClick={() => navigate("/criar-grupo")}
-              className="ui-button ui-button--md flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white sm:w-auto"
+            <div
+              className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-medium"
+              style={{ color: `${C.onSurfaceVariant}cc` }}
             >
-              <Sparkles size={18} className="fill-current" />
-              Criar Primeiro Grupo com IA
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate("/criar-grupo")}
-              className="ui-button ui-button--md flex w-full items-center justify-center gap-2 rounded-xl bg-input px-6 py-3 text-sm font-semibold text-secondary transition hover:bg-background sm:w-auto"
-            >
-              <Plus size={18} />
-              Criar Manualmente
-            </button>
-          </div>
-
-          {/* Modelos populares */}
-          <div className="relative mt-2 flex w-full flex-col items-center pt-8">
-            <div className="mb-6 flex items-center gap-3">
-              <span className="h-px w-8 bg-gray-200" />
-
-              <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
-                Modelos populares para começar
+              <span className="inline-flex items-center gap-1.5">
+                <Zap className="h-4 w-4" style={{ color: C.tertiaryContainer }} />
+                Configuração em 30 segundos
               </span>
-
-              <span className="h-px w-8 bg-gray-200" />
-            </div>
-
-            <div className="grid w-full max-w-4xl grid-cols-1 gap-4 text-left md:grid-cols-3">
-              {modelos.map((modelo) => (
-                <button
-                  key={modelo.titulo}
-                  type="button"
-                  onClick={() => navigate("/criar-grupo")}
-                  className="ui-button ui-button--md group flex flex-col justify-between rounded-xl bg-input p-5 text-left shadow-sm transition hover:bg-background"
-                >
-                  <div className="mb-3 flex items-start justify-between">
-                    <span className="text-2xl" role="img" aria-label={modelo.titulo}>
-                      {modelo.emoji}
-                    </span>
-
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-surface text-text-secondary transition group-hover:text-tertiary">
-                      <ArrowRight size={14} />
-                    </span>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold text-secondary transition group-hover:text-tertiary">
-                      {modelo.titulo}
-                    </h3>
-
-                    <p className="mt-1 text-ui-label leading-snug text-text-secondary">
-                      {modelo.descricao}
-                    </p>
-                  </div>
-                </button>
-              ))}
+              <span className="inline-flex items-center gap-1.5">
+                <QrCode className="h-4 w-4" style={{ color: C.tertiaryContainer }} />
+                Divisão e Pix integrados
+              </span>
             </div>
           </div>
         </section>
 
-        {/* AVISO - LEMBRETES AUTOMÁTICOS */}
-        <div className="flex flex-col items-center justify-between gap-6 rounded-2xl bg-surface p-6 shadow-sm md:flex-row md:p-8">
-          <div className="flex max-w-3xl items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-input text-secondary">
-              <MessageCircle size={24} />
+        {/* =====================================================
+            COMO FUNCIONA
+        ====================================================== */}
+
+        <section className="flex flex-col gap-6 pt-2">
+          <div className="flex flex-col gap-1">
+            <span
+              className="text-xs font-semibold uppercase tracking-wider"
+              style={{ color: C.primary }}
+            >
+              Primeiros passos
+            </span>
+            <h3 className="text-2xl font-bold tracking-tight">
+              Como funciona o Racha+
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            {PASSOS.map((passo) => {
+              const Icone = passo.icone;
+              return (
+                <div
+                  key={passo.numero}
+                  className="group relative isolate flex flex-col justify-between overflow-hidden rounded-2xl p-6 shadow-sm transition-all duration-300 hover:shadow-md"
+                  style={{ backgroundColor: C.surfaceLowest }}
+                >
+                  <div
+                    className="absolute right-0 top-0 -z-10 h-24 w-24 rounded-bl-[4rem] transition-transform duration-300 group-hover:scale-110"
+                    style={{ backgroundColor: C.surfaceLow }}
+                  />
+                  <div>
+                    <div
+                      className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl"
+                      style={{ backgroundColor: passo.fundo, color: passo.cor }}
+                    >
+                      <Icone className="h-[26px] w-[26px]" />
+                    </div>
+                    <span
+                      className="mb-1 inline-block text-xs font-bold"
+                      style={{ color: passo.cor }}
+                    >
+                      Passo {passo.numero}
+                    </span>
+                    <h4 className="mb-2 text-xl font-bold">{passo.titulo}</h4>
+                    <p
+                      className="text-base leading-relaxed"
+                      style={{ color: C.onSurfaceVariant }}
+                    >
+                      {passo.descricao}
+                    </p>
+                  </div>
+                  <div
+                    className="mt-6 flex items-center gap-2 pt-6 text-xs font-medium"
+                    style={{ color: passo.cor }}
+                  >
+                    <span>{passo.rodape}</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* =====================================================
+            CONVITE
+        ====================================================== */}
+
+        <section
+          className="flex flex-col items-center justify-between gap-6 rounded-2xl p-6 md:flex-row"
+          style={{ backgroundColor: C.surfaceLow }}
+        >
+          <div className="flex items-center gap-4">
+            <div
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full shadow-sm"
+              style={{ backgroundColor: C.surfaceLowest }}
+            >
+              <MessageCircleQuestion className="h-6 w-6" style={{ color: C.primary }} />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-base font-semibold">
+                Foi convidado por alguém?
+              </span>
+              <span className="text-sm" style={{ color: C.onSurfaceVariant }}>
+                Basta colar o link enviado pelo WhatsApp ou o código de 6
+                dígitos para ingressar na hora.
+              </span>
+            </div>
+          </div>
+          <form
+            onSubmit={ingressar}
+            className="flex w-full items-center gap-2 md:w-auto"
+          >
+            <label htmlFor="codigo-convite" className="sr-only">
+              Link ou código do convite
+            </label>
+            <input
+              ref={campoCodigo}
+              id="codigo-convite"
+              type="text"
+              value={codigo}
+              onChange={(event) => setCodigo(event.target.value)}
+              placeholder="Ex: RCH-789"
+              className="w-full rounded-lg bg-white px-4 py-2.5 text-base tracking-wider shadow-sm outline-none focus:ring-2 focus:ring-[#ff8c42] md:w-44"
+              style={{ color: C.onSurface }}
+            />
+            <button
+              type="submit"
+              disabled={!codigo.trim()}
+              className="cursor-pointer whitespace-nowrap rounded-lg bg-[#9b4500] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#6a2d00] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Ingressar
+            </button>
+          </form>
+        </section>
+      </div>
+
+      {/* =====================================================
+          MODAL — CRIAR NOVO GRUPO
+      ====================================================== */}
+
+      {modalAberto && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-[#27313f]/40 p-4 font-jakarta backdrop-blur-sm"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setModalAberto(false);
+          }}
+        >
+          <form
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="titulo-modal-grupo"
+            onSubmit={continuarCriacao}
+            className="relative flex w-full max-w-lg flex-col gap-6 rounded-2xl p-6 shadow-xl sm:p-8"
+            style={{ backgroundColor: C.surfaceLowest, color: C.onSurface }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex h-10 w-10 items-center justify-center rounded-xl"
+                  style={{ backgroundColor: C.primaryFixed, color: C.primary }}
+                >
+                  <UserPlus className="h-6 w-6" />
+                </div>
+                <h3 id="titulo-modal-grupo" className="text-xl font-bold">
+                  Criar novo grupo
+                </h3>
+              </div>
+              <button
+                type="button"
+                aria-label="Fechar"
+                onClick={() => setModalAberto(false)}
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-[#e6eeff] transition-colors hover:bg-[#dee9fc]"
+                style={{ color: C.onSurfaceVariant }}
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
 
-            <div className="flex flex-col">
-              <div className="mb-1 flex flex-wrap items-center gap-2">
-                <h3 className="text-lg font-semibold text-secondary">
-                  Lembretes Automáticos Racha+
-                </h3>
-
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-input px-2.5 py-0.5 text-ui-caption font-semibold text-secondary">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  Ativo em todos os grupos
-                </span>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="nome-grupo" className="text-sm font-medium">
+                  Nome do grupo
+                </label>
+                <input
+                  id="nome-grupo"
+                  type="text"
+                  autoFocus
+                  value={nomeGrupo}
+                  onChange={(event) => setNomeGrupo(event.target.value)}
+                  placeholder="Ex: Viagem Florianópolis, Churrasco da Firma..."
+                  className="rounded-lg px-4 py-3 text-base outline-none transition-all focus:ring-2 focus:ring-[#ff8c42]"
+                  style={{ backgroundColor: C.surfaceLow }}
+                />
               </div>
 
-              <p className="text-ui-label leading-relaxed text-text-secondary">
-                Nenhum constrangimento: avisamos os participantes com
-                pendências via WhatsApp de forma amigável e com link direto do
-                Pix quando faltar 24h para o vencimento.
-              </p>
+              <fieldset className="flex flex-col gap-1.5">
+                <legend className="mb-1.5 text-sm font-medium">Categoria</legend>
+                <div className="grid grid-cols-3 gap-2">
+                  {CATEGORIAS.map((item) => {
+                    const Icone = item.icone;
+                    const ativo = categoria === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        aria-pressed={ativo}
+                        onClick={() => setCategoria(item.id)}
+                        className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl p-3 text-xs transition-colors ${
+                          ativo ? "font-semibold" : "hover:bg-[#e6eeff]"
+                        }`}
+                        style={
+                          ativo
+                            ? { backgroundColor: `${C.primaryContainer}1a`, color: C.primary }
+                            : { backgroundColor: C.surfaceLow, color: C.onSurfaceVariant }
+                        }
+                      >
+                        <Icone className="h-5 w-5" />
+                        <span>{item.nome}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </fieldset>
             </div>
-          </div>
 
-          <div className="flex w-full shrink-0 items-center justify-end gap-3 md:w-auto">
-            <button
-              type="button"
-              className="ui-button ui-button--md rounded-xl bg-input px-5 py-2.5 text-xs font-semibold text-secondary shadow-sm transition hover:bg-background"
-            >
-              Configurar Regras
-            </button>
-          </div>
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setModalAberto(false)}
+                className="cursor-pointer rounded-lg px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-[#e6eeff]"
+                style={{ color: C.onSurfaceVariant }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="flex cursor-pointer items-center gap-2 rounded-lg bg-[#ff8c42] px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#9b4500]"
+              >
+                <span>Continuar</span>
+                <ArrowRight className="h-[18px] w-[18px]" />
+              </button>
+            </div>
+          </form>
         </div>
-      </main>
-
-      {/* RODAPÉ */}
-      <footer className="mt-12 w-full bg-surface py-8">
-        <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-4 px-6 md:flex-row">
-          <div className="flex items-center gap-3">
-            <span className="font-semibold text-secondary">Racha+</span>
-
-            <span className="text-xs text-text-secondary">
-              • Organização descomplicada de despesas e tarefas coletivas
-            </span>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-text-secondary">
-            <button type="button" className="transition hover:text-secondary">
-              Sobre
-            </button>
-
-            <button type="button" className="transition hover:text-secondary">
-              Segurança Pix
-            </button>
-
-            <button type="button" className="transition hover:text-secondary">
-              Privacidade
-            </button>
-
-            <span>© 2025 Racha+. Todos os direitos reservados.</span>
-          </div>
-        </div>
-      </footer>
-    </div>
+      )}
+    </AppShell>
   );
 }
-
-export default MeusGruposVazio;

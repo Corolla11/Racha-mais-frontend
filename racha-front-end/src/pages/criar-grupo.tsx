@@ -1,6 +1,8 @@
 import EditarTarefa, { type DadosTarefa } from "./editar-tarefa";
 import { useMemo, useState } from "react";
 import { useAppNavigate as useNavigate } from "../lib/navigation";
+import { useLocation } from "react-router-dom";
+import { salvarRascunho, type GrupoRascunho } from "../lib/grupo-rascunho";
 
 import {
   ArrowRight,
@@ -179,27 +181,44 @@ function gerarIniciais(nome: string) {
 export default function CriarGrupo() {
   const navigate = useNavigate();
 
+  // Nome e categoria podem vir do modal "Criar novo grupo";
+  // o rascunho completo volta da tela de confirmação ("Editar detalhes")
+  const estadoInicial = useLocation().state as
+    | { nome?: unknown; categoria?: unknown; rascunho?: GrupoRascunho }
+    | null;
+  const rascunho = estadoInicial?.rascunho;
+  const nomeInicial =
+    rascunho?.nome ??
+    (typeof estadoInicial?.nome === "string" && estadoInicial.nome
+      ? estadoInicial.nome
+      : "Churrasco de Boas-Vindas da Turma");
+  const categoriaPedida = rascunho?.categoria ?? estadoInicial?.categoria;
+  const categoriaInicial =
+    typeof categoriaPedida === "string" &&
+    categorias.some((item) => item.id === categoriaPedida)
+      ? categoriaPedida
+      : "evento";
+
   const [abaAberta, setAbaAberta] = useState(false);
 
   // DADOS DO GRUPO
-  const [nomeGrupo, setNomeGrupo] = useState(
-    "Churrasco de Boas-Vindas da Turma"
-  );
-  const [categoria, setCategoria] = useState("evento");
-  const [dataEvento, setDataEvento] = useState("Próximo Sábado, 12:30");
-  const [moeda, setMoeda] = useState("BRL");
+  const [nomeGrupo, setNomeGrupo] = useState(nomeInicial);
+  const [categoria, setCategoria] = useState(categoriaInicial);
+  const [dataEvento, setDataEvento] = useState(rascunho?.data ?? "Próximo Sábado, 12:30");
+  const [moeda, setMoeda] = useState(rascunho?.moeda ?? "BRL");
   const [descricao, setDescricao] = useState(
-    "Quiosque 04 reservado no nome do Pedro. Trazer toalha de banho individual. A cerveja já está calculada no valor coletivo."
+    rascunho?.descricao ??
+      "Quiosque 04 reservado no nome do Pedro. Trazer toalha de banho individual. A cerveja já está calculada no valor coletivo."
   );
 
   // PARTICIPANTES
-  const [membros, setMembros] = useState<Membro[]>(membrosIniciais);
+  const [membros, setMembros] = useState<Membro[]>(rascunho?.membros ?? membrosIniciais);
   const [novoNome, setNovoNome] = useState("");
   const [novoContato, setNovoContato] = useState("");
-  const [rateio, setRateio] = useState("igual");
+  const [rateio, setRateio] = useState(rascunho?.rateio ?? "igual");
 
   // DESPESAS E TAREFAS
-  const [itens, setItens] = useState<Item[]>(itensIniciais);
+  const [itens, setItens] = useState<Item[]>(rascunho?.itens ?? itensIniciais);
   const [modalAberto, setModalAberto] = useState(false);
 
   const totalCadastrado = useMemo(
@@ -252,7 +271,7 @@ export default function CriarGrupo() {
   }
 
   function criarGrupo() {
-    const grupo = {
+    const grupo: GrupoRascunho = {
       nome: nomeGrupo,
       categoria,
       data: dataEvento,
@@ -266,9 +285,9 @@ export default function CriarGrupo() {
     };
 
     if (!nomeGrupo.trim()) { window.alert("Informe o nome do grupo."); return; }
-    sessionStorage.setItem("racha-demo-created-group", JSON.stringify(grupo));
+    salvarRascunho(grupo);
 
-    navigate("/grupo-criado");
+    navigate("/criar-grupo/confirmar", { state: { grupo } });
   }
 
   return (
@@ -1105,7 +1124,7 @@ export default function CriarGrupo() {
                   onClick={criarGrupo}
                   className="ui-button ui-button--md flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-bold text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white active:scale-[0.99]"
                 >
-                  Criar Grupo e Gerar Convites
+                  Revisar e confirmar grupo
                   <ArrowRight size={18} />
                 </button>
 
