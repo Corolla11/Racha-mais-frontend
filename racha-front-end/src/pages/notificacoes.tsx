@@ -1,1003 +1,1248 @@
-import { useMemo, useState } from "react";
-import type { ReactNode } from "react";
-import { useAppNavigate as useNavigate } from "../lib/navigation";
-
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
+  AlarmClock,
+  ArrowLeftRight,
   ArrowRight,
-  Bell,
-  BellRing,
-  Bot,
-  Check,
-  CheckCheck,
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
-  Clock,
-  CloudCheck,
-  Landmark,
-  MessageCircle,
-  Mail,
-  MoonStar,
-  MoreVertical,
-  PartyPopper,
-  Plus,
-  QrCode,
-  ReceiptText,
-  Search,
-  SlidersHorizontal,
-  Sparkles,
-  ArrowDownUp,
-  Medal,
-  ShieldCheck,
   BadgeCheck,
   Banknote,
-  Users,
+  Bell,
+  BellRing,
+  ChartColumn,
+  CheckCheck,
+  CheckCircle2,
+  CircleAlert,
+  CircleCheckBig,
+  ClipboardList,
+  Clock,
+  Copy,
+  ExternalLink,
+  FolderArchive,
+  HandCoins,
+  Inbox,
+  Info,
+  Lightbulb,
+  ListTodo,
+  Mail,
+  MessageCircle,
+  PartyPopper,
+  QrCode,
+  RadioTower,
+  Receipt,
+  ReceiptText,
+  Send,
+  Settings2,
+  Shield,
+  ShieldAlert,
+  SlidersHorizontal,
+  UserPlus,
   X,
-  Zap,
+  type LucideIcon,
 } from "lucide-react";
+import AppShell from "../components/app-shell";
+import { useAppNavigate as useNavigate } from "../lib/navigation";
 
-import Aba from "../components/aba-perfil";
+/* =====================================================
+   TOKENS DO DESIGN
 
-type Filtro = "todas" | "pendencias" | "pix" | "lembretes";
+   Ficam aqui dentro (e não no tema do Tailwind) para que
+   esta tela não interfira nas demais páginas do projeto.
+====================================================== */
+
+const C = {
+  primary: "#9b4500",
+  primaryContainer: "#ff8c42",
+  primaryFixed: "#ffdbc9",
+  primaryFixedDim: "#ffb68d",
+  onPrimaryFixed: "#331200",
+
+  secondary: "#ab3425",
+  secondaryFixed: "#ffdad4",
+
+  tertiary: "#855300",
+  tertiaryContainer: "#ed9800",
+  tertiaryFixed: "#ffddb8",
+  onTertiaryFixed: "#2a1700",
+
+  errorContainer: "#ffdad6",
+  onErrorContainer: "#93000a",
+
+  surfaceLowest: "#ffffff",
+  surfaceLow: "#eff4ff",
+  surfaceContainer: "#e6eeff",
+  surfaceHigh: "#dee9fc",
+  surfaceHighest: "#d9e3f6",
+
+  onSurface: "#121c2a",
+  onSurfaceVariant: "#564338",
+  inverseSurface: "#27313f",
+  inverseOnSurface: "#eaf1ff",
+};
+
+/* =====================================================
+   DADOS DEMONSTRATIVOS
+====================================================== */
+
+type Categoria = "invites" | "payments" | "tasks" | "system";
 type Secao = "Hoje" | "Ontem" | "Esta Semana";
+type Tom = "primary" | "tertiary" | "secondary";
+
+type Acao =
+  | { tipo: "comprovante" }
+  | { tipo: "convite" }
+  | { tipo: "tarefa" }
+  | { tipo: "pix" }
+  | { tipo: "relatorio" };
 
 interface Notificacao {
   id: number;
   secao: Secao;
-  categorias: Filtro[];
-  naoLida: boolean;
-  destaque: "primary" | "secondary" | null;
-  icone: ReactNode;
-  corIcone: string;
+  categoria: Categoria;
+  lida: boolean;
+  tom: Tom;
+  icone: LucideIcon;
   titulo: string;
   selo: string;
-  corSelo: string;
+  corSelo: { fundo: string; texto: string };
   descricao: ReactNode;
-  meta: ReactNode[];
-  acao: "pix" | "comprovante" | "convite" | "enviado" | "grupo" | "ia";
+  quando: string;
+  acao?: Acao;
+  resolvida?: string;
 }
 
-const notificacoesIniciais: Notificacao[] = [
+const TONS: Record<Tom, { borda: string; fundoIcone: string; corIcone: string }> = {
+  primary: { borda: C.primaryContainer, fundoIcone: `${C.primaryFixedDim}66`, corIcone: C.primary },
+  tertiary: { borda: C.tertiaryContainer, fundoIcone: C.tertiaryFixed, corIcone: C.tertiary },
+  secondary: { borda: C.secondary, fundoIcone: C.secondaryFixed, corIcone: C.secondary },
+};
+
+const SELO_NEUTRO = { fundo: C.surfaceContainer, texto: C.onSurfaceVariant };
+const SELO_ALERTA = { fundo: C.errorContainer, texto: C.onErrorContainer };
+
+const destaque = (texto: string) => (
+  <strong className="font-semibold" style={{ color: C.onSurface }}>
+    {texto}
+  </strong>
+);
+
+const NOTIFICACOES_INICIAIS: Notificacao[] = [
   {
     id: 1,
     secao: "Hoje",
-    categorias: ["pendencias", "pix"],
-    naoLida: true,
-    destaque: "primary",
-    icone: <Banknote size={22} />,
-    corIcone: "bg-primary/15 text-tertiary",
-    titulo: "Cota pendente: Churrasco de Fim de Ano 🥩",
-    selo: "Vence em 48h",
-    corSelo: "bg-red-50 text-red-700",
+    categoria: "payments",
+    lida: false,
+    tom: "primary",
+    icone: QrCode,
+    titulo: "Pagamento Informado — Viagem Florianópolis",
+    selo: "Pix Pendente",
+    corSelo: { fundo: C.surfaceHigh, texto: C.onSurfaceVariant },
     descricao: (
       <>
-        Mariana Silva (Organizadora) aguarda sua cota individual de{" "}
-        <strong className="font-semibold text-text-primary">R$ 65,00</strong>{" "}
-        para confirmação das carnes e bebidas.
+        {destaque("Mariana S.")} informou o pagamento de{" "}
+        <span className="font-semibold" style={{ color: C.primary }}>R$ 112,50</span>{" "}
+        referente à tarefa {destaque("“Comprar bebidas, gelo e carvão”")}.
       </>
     ),
-    meta: [
-      <span key="g" className="flex items-center gap-1">
-        <Users size={13} /> Amigos da Firma
-      </span>,
-      "Há 20 minutos",
-    ],
-    acao: "pix",
+    quando: "Há 15 minutos",
+    acao: { tipo: "comprovante" },
   },
   {
     id: 2,
     secao: "Hoje",
-    categorias: ["pix"],
-    naoLida: true,
-    destaque: "secondary",
-    icone: <CheckCircle2 size={22} />,
-    corIcone: "bg-blue-50 text-secondary",
-    titulo: "Pix recebido de Lucas Rodrigues 🏠",
-    selo: "Validado Open Finance",
-    corSelo: "bg-input text-secondary",
+    categoria: "invites",
+    lida: false,
+    tom: "tertiary",
+    icone: PartyPopper,
+    titulo: "Novo Convite — Churrasco de Aniversário do Leo",
+    selo: "Grupo Privado",
+    corSelo: { fundo: C.tertiaryFixed, texto: C.onTertiaryFixed },
     descricao: (
       <>
-        Pagamento de{" "}
-        <strong className="font-semibold text-secondary">R$ 450,00</strong>{" "}
-        referente ao aluguel e despesas fixas de Maio no grupo{" "}
-        <em>'Apê 402'</em>.
+        {destaque("Leo M.")} convidou você para integrar o rateio coletivo com{" "}
+        {destaque("8 participantes confirmados")}. Cota estimada: R$ 65,00 por
+        pessoa.
       </>
     ),
-    meta: [
-      <span key="b" className="flex items-center gap-1">
-        <Landmark size={13} /> Nubank Pagamentos S.A.
-      </span>,
-      "Hoje às 11:42",
-    ],
-    acao: "comprovante",
+    quando: "Há 1 hora",
+    acao: { tipo: "convite" },
   },
   {
     id: 3,
     secao: "Hoje",
-    categorias: ["lembretes"],
-    naoLida: false,
-    destaque: null,
-    icone: <Bot size={22} />,
-    corIcone: "bg-input text-secondary",
-    titulo: "Lembrete amigável enviado para 4 amigos",
-    selo: "Automação WhatsApp",
-    corSelo: "bg-background text-text-secondary",
+    categoria: "tasks",
+    lida: false,
+    tom: "secondary",
+    icone: AlarmClock,
+    titulo: "Lembrete de Prazo — Alugar carro 7 lugares",
+    selo: "Vence amanhã",
+    corSelo: SELO_ALERTA,
     descricao: (
       <>
-        O bot Racha+ relembrou educadamente os participantes que ainda não
-        confirmaram a presença no <em>'Futebol de Terça ⚽'</em>.
+        O prazo da tarefa atribuída a você no grupo{" "}
+        {destaque("“Viagem Florianópolis”")} encerra amanhã às{" "}
+        {destaque("11:30")}. Após a reserva, anexe o comprovante com o valor
+        total estimado.
       </>
     ),
-    meta: ["96% de eficácia em cobranças automáticas", "Hoje às 09:15"],
-    acao: "enviado",
+    quando: "Há 3 horas",
+    acao: { tipo: "tarefa" },
   },
   {
     id: 4,
     secao: "Ontem",
-    categorias: ["pendencias"],
-    naoLida: true,
-    destaque: "primary",
-    icone: <PartyPopper size={22} />,
-    corIcone: "bg-primary/15 text-tertiary",
-    titulo: "Convite: Viagem Floripa Réveillon 🏖️",
-    selo: "Novo Grupo",
-    corSelo: "bg-primary/20 text-tertiary",
+    categoria: "payments",
+    lida: false,
+    tom: "primary",
+    icone: HandCoins,
+    titulo: "Cota Pendente — Apê 302 República",
+    selo: "Cobrança",
+    corSelo: SELO_ALERTA,
     descricao: (
       <>
-        Beatriz Mendonça adicionou você ao rateio de hospedagem e transporte.
-        Estimativa individual:{" "}
-        <strong className="font-semibold text-text-primary">R$ 600,00</strong>.
+        {destaque("Lucas M.")} solicitou o acerto da sua cota de{" "}
+        <strong className="text-base font-bold" style={{ color: C.onSurface }}>R$ 85,00</strong>{" "}
+        referente ao fechamento da fatura {destaque("“Internet Fibra 600MB”")}.
       </>
     ),
-    meta: ["6 membros convidados", "Ontem às 18:30"],
-    acao: "convite",
+    quando: "Ontem às 18:40",
+    acao: { tipo: "pix" },
   },
   {
     id: 5,
     secao: "Ontem",
-    categorias: ["pix"],
-    naoLida: false,
-    destaque: null,
-    icone: <Medal size={22} />,
-    corIcone: "bg-blue-50 text-secondary",
-    titulo: "100% arrecadado no 'Apê 402 - Fixas' 🎉",
-    selo: "Grupo Liquidado",
-    corSelo: "bg-input text-secondary",
+    categoria: "payments",
+    lida: true,
+    tom: "primary",
+    icone: CheckCircle2,
+    titulo: "Pagamento Confirmado!",
+    selo: "Liquidado",
+    corSelo: SELO_NEUTRO,
     descricao: (
       <>
-        Todos os 4 moradores quitaram suas cotas pontualmente. O índice de
-        confiança do grupo subiu para{" "}
-        <strong className="font-semibold text-secondary">96%</strong>.
+        {destaque("Rodrigo M.")} confirmou o recebimento do seu pagamento de{" "}
+        {destaque("R$ 70,00")} na tarefa <span className="italic">“Passagens de Balsa”</span>.
+        Seu saldo no grupo agora está zerado.
       </>
     ),
-    meta: ["Total: R$ 2.450,00", "Ontem às 14:00"],
-    acao: "grupo",
+    quando: "Ontem às 14:15",
   },
   {
     id: 6,
+    secao: "Ontem",
+    categoria: "tasks",
+    lida: true,
+    tom: "primary",
+    icone: CircleCheckBig,
+    titulo: "Tarefa Finalizada",
+    selo: "Concluído",
+    corSelo: SELO_NEUTRO,
+    descricao: (
+      <>
+        {destaque("Carla T.")} marcou {destaque("“Check-in na casa do Airbnb”")}{" "}
+        como concluída no grupo {destaque("Viagem Florianópolis")}. As
+        instruções de entrada estão no chat do grupo.
+      </>
+    ),
+    quando: "Ontem às 10:20",
+  },
+  {
+    id: 7,
     secao: "Esta Semana",
-    categorias: ["lembretes"],
-    naoLida: false,
-    destaque: null,
-    icone: <Sparkles size={22} />,
-    corIcone: "bg-primary/15 text-tertiary",
-    titulo: "Divisão Inteligente por IA aprimorada ✨",
-    selo: "Recurso Novo",
-    corSelo: "bg-input text-text-secondary",
-    descricao:
-      "Agora nossa IA escaneia cupons fiscais complexos, dividindo automaticamente gorjetas e taxas de serviço entre quem consumiu cada item.",
-    meta: ["Disponível para todos os grupos", "Quarta-feira"],
-    acao: "ia",
+    categoria: "system",
+    lida: true,
+    tom: "primary",
+    icone: FolderArchive,
+    titulo: "Grupo Encerrado — Viagem Serra da Canastra",
+    selo: "100% Liquidado",
+    corSelo: SELO_NEUTRO,
+    descricao: (
+      <>
+        O grupo foi liquidado com total conformidade entre todos os 6 membros
+        e movido para o arquivo de histórico. O balanço final de R$ 2.450,00
+        está fechado.
+      </>
+    ),
+    quando: "Terça, 21 Mai",
+    acao: { tipo: "relatorio" },
+  },
+  {
+    id: 8,
+    secao: "Esta Semana",
+    categoria: "system",
+    lida: true,
+    tom: "primary",
+    icone: ShieldAlert,
+    titulo: "Segurança da Conta",
+    selo: "Dispositivo",
+    corSelo: SELO_NEUTRO,
+    descricao: (
+      <>
+        Novo acesso autenticado detectado utilizando navegador{" "}
+        {destaque("Chrome no macOS")} em {destaque("Florianópolis, SC")} (IP
+        177.136.**.**). Se você não reconhece esta sessão, revogue
+        imediatamente o acesso nas configurações.
+      </>
+    ),
+    quando: "Seg, 20 Mai",
   },
 ];
 
-const abas: { id: Filtro; nome: string }[] = [
-  { id: "todas", nome: "Todas" },
-  { id: "pendencias", nome: "Pendências" },
-  { id: "pix", nome: "Pix" },
-  { id: "lembretes", nome: "Lembretes" },
+const FILTROS: { id: Categoria | "all"; nome: string; icone: LucideIcon }[] = [
+  { id: "all", nome: "Todas", icone: Inbox },
+  { id: "invites", nome: "Convites de Grupos", icone: UserPlus },
+  { id: "payments", nome: "Pagamentos & Pix", icone: Banknote },
+  { id: "tasks", nome: "Tarefas & Prazos", icone: ListTodo },
+  { id: "system", nome: "Avisos do Sistema", icone: Shield },
 ];
 
-const secoes: { nome: Secao; legenda: string }[] = [
-  { nome: "Hoje", legenda: "3 novos eventos" },
-  { nome: "Ontem", legenda: "2 atualizações" },
-  { nome: "Esta Semana", legenda: "Novidade da plataforma" },
-];
+const SECOES: Secao[] = ["Hoje", "Ontem", "Esta Semana"];
 
-interface ToggleProps {
-  ativo: boolean;
-  onChange: () => void;
-  cor: string;
-  label: string;
+const CODIGO_PIX =
+  "00020126580014br.gov.bcb.pix0136lucas.moura@racha.app520400005303986540585.005802BR5913Lucas Moura6009SAO PAULO62070503***6304E5F6";
+
+function dataPorExtenso(diasAtras: number) {
+  const data = new Date();
+  data.setDate(data.getDate() - diasAtras);
+  return data.toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" });
 }
 
-function Toggle({ ativo, onChange, cor, label }: ToggleProps) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={ativo}
-      aria-label={label}
-      onClick={onChange}
-      className={`relative mt-1 h-6 w-11 shrink-0 rounded-full transition-colors ${
-        ativo ? cor : "bg-gray-200"
-      }`}
-    >
-      <span
-        className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-          ativo ? "translate-x-5" : ""
-        }`}
-      />
-    </button>
-  );
-}
+type Modal = "comprovante" | "pix" | "tarefa" | "configuracoes" | null;
 
-function Notificacoes() {
+export default function Notificacoes() {
   const navigate = useNavigate();
+  const [notificacoes, setNotificacoes] = useState(NOTIFICACOES_INICIAIS);
+  const [filtro, setFiltro] = useState<Categoria | "all">("all");
+  const [modal, setModal] = useState<Modal>(null);
+  const [aviso, setAviso] = useState("");
+  const [canais, setCanais] = useState({ push: true, whatsapp: true, email: true });
 
-  const [abaAberta, setAbaAberta] = useState(false);
-  const [notificacoes, setNotificacoes] = useState(notificacoesIniciais);
-  const [filtro, setFiltro] = useState<Filtro>("todas");
-  const [busca, setBusca] = useState("");
-  const [maisAntigasPrimeiro, setMaisAntigasPrimeiro] = useState(false);
+  // Esconde o aviso depois de alguns segundos
+  useEffect(() => {
+    if (!aviso) return;
+    const id = window.setTimeout(() => setAviso(""), 3200);
+    return () => window.clearTimeout(id);
+  }, [aviso]);
 
-  const [whatsapp, setWhatsapp] = useState(true);
-  const [email, setEmail] = useState(true);
-  const [push, setPush] = useState(true);
+  // Fecha modais com Esc
+  useEffect(() => {
+    if (!modal) return;
+    function aoPressionar(event: KeyboardEvent) {
+      if (event.key === "Escape") setModal(null);
+    }
+    window.addEventListener("keydown", aoPressionar);
+    return () => window.removeEventListener("keydown", aoPressionar);
+  }, [modal]);
 
-  const naoLidas = notificacoes.filter((n) => n.naoLida).length;
+  const naoLidas = notificacoes.filter((n) => !n.lida).length;
 
-  const visiveis = useMemo(() => {
-    const termo = busca.trim().toLowerCase();
+  const contagem = useMemo(() => {
+    const total: Record<string, { total: number; naoLidas: number }> = {};
+    for (const item of FILTROS) total[item.id] = { total: 0, naoLidas: 0 };
+    for (const n of notificacoes) {
+      for (const chave of ["all", n.categoria]) {
+        total[chave].total++;
+        if (!n.lida) total[chave].naoLidas++;
+      }
+    }
+    return total;
+  }, [notificacoes]);
 
-    return notificacoes.filter((n) => {
-      if (filtro !== "todas" && !n.categorias.includes(filtro)) return false;
-      if (!termo) return true;
+  const visiveis = notificacoes.filter((n) => filtro === "all" || n.categoria === filtro);
 
-      return n.titulo.toLowerCase().includes(termo);
-    });
-  }, [notificacoes, filtro, busca]);
-
-  const secoesOrdenadas = maisAntigasPrimeiro ? [...secoes].reverse() : secoes;
+  function atualizar(id: number, mudancas: Partial<Notificacao>) {
+    setNotificacoes((anteriores) =>
+      anteriores.map((n) => (n.id === id ? { ...n, ...mudancas } : n)),
+    );
+  }
 
   function marcarTodasComoLidas() {
-    setNotificacoes((lista) => lista.map((n) => ({ ...n, naoLida: false })));
+    setNotificacoes((anteriores) => anteriores.map((n) => ({ ...n, lida: true })));
+    setAviso("Todas as notificações foram marcadas como lidas.");
   }
 
-  function dispensar(id: number) {
-    setNotificacoes((lista) => lista.filter((n) => n.id !== id));
+  function confirmarRecebimento() {
+    atualizar(1, { lida: true, resolvida: "Recebimento confirmado" });
+    setModal(null);
+    setAviso("Pagamento de Mariana S. (R$ 112,50) confirmado.");
   }
 
-  function renderAcao(n: Notificacao) {
-    switch (n.acao) {
-      case "pix":
-        return (
-          <button
-            type="button"
-            className="ui-button ui-button--md inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white md:flex-initial"
-          >
-            <QrCode size={15} />
-            Pagar com Pix
-          </button>
-        );
-      case "comprovante":
-        return (
-          <button
-            type="button"
-            className="ui-button ui-button--md inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-input px-4 py-2 text-xs font-semibold text-secondary transition hover:bg-background md:flex-initial"
-          >
-            <ReceiptText size={15} />
-            Comprovante
-          </button>
-        );
-      case "convite":
-        return (
-          <>
-            <button
-              type="button"
-              onClick={() => dispensar(n.id)}
-              className="ui-button ui-button--md flex-1 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white md:flex-initial"
-            >
-              Aceitar
-            </button>
+  function responderConvite(aceito: boolean) {
+    atualizar(2, { lida: true, resolvida: aceito ? "Convite aceito" : "Convite recusado" });
+    setAviso(aceito ? "Você entrou no grupo Churrasco de Aniversário do Leo." : "Convite recusado.");
+  }
 
-            <button
-              type="button"
-              onClick={() => dispensar(n.id)}
-              className="ui-button ui-button--md flex-1 rounded-xl bg-input px-3 py-2 text-xs font-medium text-text-secondary transition hover:bg-background md:flex-initial"
-            >
-              Recusar
-            </button>
-          </>
-        );
-      case "enviado":
-        return (
-          <span className="inline-flex items-center gap-1 rounded-xl bg-input px-3 py-1.5 text-ui-caption font-medium text-secondary">
-            <Check size={13} />
-            Enviado
-          </span>
-        );
-      case "grupo":
-        return (
-          <button
-            type="button"
-            onClick={() => navigate("/meus-grupos")}
-            className="flex items-center gap-1 text-ui-caption font-semibold text-secondary hover:underline"
-          >
-            Ver Grupo
-            <ChevronRight size={14} />
-          </button>
-        );
-      case "ia":
-        return (
-          <button
-            type="button"
-            onClick={() => navigate("/criar-grupo")}
-            className="flex items-center gap-1 text-ui-caption font-semibold text-tertiary hover:underline"
-          >
-            Experimentar IA
-            <ArrowRight size={14} />
-          </button>
-        );
+  async function copiarPix() {
+    try {
+      await navigator.clipboard.writeText(CODIGO_PIX);
+      setAviso("Código Pix copiado!");
+    } catch {
+      setAviso("Não foi possível copiar. Selecione o código manualmente.");
     }
   }
 
+  function notificarPagamento() {
+    atualizar(4, { lida: true, resolvida: "Pagamento informado a Lucas M." });
+    setModal(null);
+    setAviso("Lucas M. foi avisado do seu Pix.");
+  }
+
+  function alternarCanal(canal: keyof typeof canais) {
+    setCanais((anteriores) => ({ ...anteriores, [canal]: !anteriores[canal] }));
+  }
+
   return (
-    <div className="flex min-h-screen flex-col bg-background text-text-primary">
-      {/* HEADER */}
-      <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-gray-100 bg-surface px-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F3F6FA]">
-            <span className="text-xs font-bold text-secondary">R+</span>
-          </div>
+    <AppShell title="Notificações & Avisos">
+      <div className="flex w-full flex-col font-jakarta" style={{ color: C.onSurface }}>
+        {/* =====================================================
+            CABEÇALHO
+        ====================================================== */}
 
-          <div>
-            <p className="text-sm font-semibold text-text-primary">Racha+</p>
-
-            <p className="text-ui-caption text-text-secondary">
-              Divisão Inteligente
-            </p>
-          </div>
-        </div>
-
-        <nav className="hidden items-center gap-6 md:flex">
-          <button
-            type="button"
-            onClick={() => navigate("/meus-grupos")}
-            className="text-xs text-gray-700 transition hover:text-secondary"
-          >
-            Meus Grupos
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate("/criar-grupo")}
-            className="text-xs text-gray-700 transition hover:text-secondary"
-          >
-            Criar com IA
-          </button>
-
-          <button
-            type="button"
-            className="text-xs text-gray-700 transition hover:text-secondary"
-          >
-            Histórico &amp; Pix
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate("/perfil")}
-            className="text-xs text-gray-700 transition hover:text-secondary"
-          >
-            Perfil
-          </button>
-        </nav>
-
-        <div className="flex items-center gap-4">
-          <button
-            type="button"
-            onClick={() => navigate("/criar-grupo")}
-            className="ui-button ui-button--md hidden items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-text-primary transition hover:bg-tertiary hover:text-white sm:flex"
-          >
-            <Plus size={14} />
-            Novo Grupo
-          </button>
-
-          <button
-            type="button"
-            aria-label="Notificações"
-            className="relative rounded-lg bg-input p-2 text-secondary"
-          >
-            <Bell size={17} />
-
-            {naoLidas > 0 && (
-              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />
-            )}
-          </button>
-
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setAbaAberta(!abaAberta)}
-              className="ui-button ui-button--md flex items-center gap-2 rounded-xl px-2 py-1.5 transition hover:bg-gray-50"
+        <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+          <div className="flex items-center gap-2">
+            <div
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl shadow-sm"
+              style={{ backgroundColor: C.primaryFixed, color: C.primary }}
             >
-              <img
-                src="https://i.pravatar.cc/100?img=47"
-                alt="Foto de perfil"
-                className="h-9 w-9 rounded-full object-cover"
-              />
-
-              <div className="hidden text-left xl:block">
-                <p className="text-xs font-semibold">Mariana S.</p>
-
-                <p className="text-ui-caption text-text-secondary">Online</p>
-              </div>
-
-              <ChevronDown
-                size={15}
-                className={`text-gray-500 transition-transform ${
-                  abaAberta ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            {abaAberta && <Aba onClose={() => setAbaAberta(false)}/>}
-          </div>
-        </div>
-      </header>
-
-      {/* CONTEÚDO */}
-      <main className="mx-auto flex w-full max-w-[1280px] flex-1 flex-col gap-8 px-6 py-8">
-        {/* TÍTULO */}
-        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <div className="flex max-w-2xl flex-col gap-2">
-            <div className="flex flex-wrap items-center gap-2 text-ui-caption font-semibold uppercase tracking-wider text-text-secondary">
-              <button
-                type="button"
-                onClick={() => navigate("/meus-grupos")}
-                className="uppercase transition hover:text-secondary"
-              >
-                Início
-              </button>
-              <span className="text-gray-300">/</span>
-              <span className="text-secondary">Central de Notificações</span>
-              <span className="text-gray-300">•</span>
-              <span className="rounded-full bg-input px-2 py-0.5 font-medium lowercase text-secondary">
-                Junho 2025
-              </span>
+              <BellRing className="h-7 w-7" fill="currentColor" />
             </div>
-
-            <h1 className="text-ui-page-title font-bold tracking-tight">
-              Notificações e Avisos
-            </h1>
-
-            <p className="text-sm text-text-secondary">
-              Acompanhe cobranças ativas, confirmações instantâneas de Pix,
-              lembretes automáticos e novidades dos seus rateios em tempo
-              real.
-            </p>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-[1.75rem] font-bold leading-tight tracking-tight sm:text-[2rem]">
+                  Notificações e Avisos
+                </h1>
+                {naoLidas > 0 && (
+                  <span
+                    className="rounded-full px-2.5 py-0.5 text-xs font-bold text-white shadow-sm"
+                    style={{ backgroundColor: C.secondary }}
+                  >
+                    {naoLidas} não {naoLidas === 1 ? "lida" : "lidas"}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm" style={{ color: C.onSurfaceVariant }}>
+                Acompanhe confirmações Pix, convites de grupos, pendências de
+                tarefas e atualizações em tempo real.
+              </p>
+            </div>
           </div>
-
-          <div className="flex shrink-0 items-center gap-3 self-start md:self-end">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={marcarTodasComoLidas}
               disabled={naoLidas === 0}
-              className="ui-button ui-button--md inline-flex items-center gap-2 rounded-xl bg-surface px-4 py-2.5 text-xs font-semibold text-secondary shadow-sm transition hover:bg-input disabled:pointer-events-none disabled:opacity-70"
+              className="flex cursor-pointer items-center gap-1 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold shadow-sm transition-all hover:bg-[#e6eeff] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {naoLidas === 0 ? <Check size={16} /> : <CheckCheck size={16} />}
-              {naoLidas === 0 ? "Tudo lido!" : "Marcar todas como lidas"}
+              <CheckCheck className="h-[18px] w-[18px]" style={{ color: C.primary }} />
+              Marcar todas como lidas
             </button>
-
             <button
               type="button"
-              className="ui-button ui-button--md inline-flex items-center gap-2 rounded-xl bg-surface px-4 py-2.5 text-xs font-semibold text-text-secondary shadow-sm transition hover:bg-input hover:text-text-primary"
+              onClick={() => setModal("configuracoes")}
+              className="flex cursor-pointer items-center gap-1 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold shadow-sm transition-all hover:bg-[#e6eeff] active:scale-[0.98]"
             >
-              <SlidersHorizontal size={16} />
-              <span className="hidden sm:inline">Configurar Lembretes</span>
+              <SlidersHorizontal className="h-[18px] w-[18px]" style={{ color: C.onSurfaceVariant }} />
+              Configurar alertas
             </button>
           </div>
         </div>
 
-        {/* MÉTRICAS */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="relative flex flex-col justify-between overflow-hidden rounded-2xl bg-surface p-5 shadow-sm">
-            <div className="pointer-events-none absolute -bottom-6 -right-6 h-20 w-20 rounded-full bg-primary/10 blur-xl" />
+        {/* =====================================================
+            FILTROS
+        ====================================================== */}
 
-            <div className="mb-3 flex items-center justify-between">
-              <span className="text-xs font-medium text-text-secondary">
-                Não Lidas
-              </span>
-              <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-primary" />
-            </div>
-
-            <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-bold leading-none tracking-tight">
-                {String(naoLidas).padStart(2, "0")}
-              </span>
-              <span className="text-ui-caption font-medium text-tertiary">
-                requerem atenção
-              </span>
-            </div>
-
-            <div className="mt-4 flex items-center gap-2 rounded-xl bg-input px-3 py-1.5">
-              <Clock size={15} className="text-tertiary" />
-              <span className="truncate text-xs text-text-secondary">
-                2 vencimentos para hoje
-              </span>
-            </div>
-          </div>
-
-          <div className="flex flex-col justify-between rounded-2xl bg-surface p-5 shadow-sm">
-            <div className="mb-3 flex items-center justify-between">
-              <span className="text-xs font-medium text-text-secondary">
-                Aguardando Seu Pix
-              </span>
-              <span className="rounded-full bg-red-50 px-2 py-0.5 text-ui-caption font-semibold text-red-700">
-                2 pendências
-              </span>
-            </div>
-
-            <div className="flex items-baseline gap-1">
-              <span className="text-xs font-medium text-text-secondary">R$</span>
-              <span className="text-4xl font-bold leading-none tracking-tight">
-                90,00
-              </span>
-            </div>
-
-            <div className="mt-4 flex items-center justify-between">
-              <span className="truncate text-xs text-text-secondary">
-                Churrasco + Futebol
-              </span>
-
+        <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-2">
+          {FILTROS.map((item) => {
+            const Icone = item.icone;
+            const ativo = filtro === item.id;
+            const dados = contagem[item.id];
+            return (
               <button
+                key={item.id}
                 type="button"
-                className="flex items-center gap-1 text-ui-caption font-semibold text-tertiary hover:underline"
+                aria-pressed={ativo}
+                onClick={() => setFiltro(item.id)}
+                className={`flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold shadow-sm transition-all ${
+                  ativo ? "" : "bg-white hover:bg-[#e6eeff] hover:text-[#121c2a]"
+                }`}
+                style={
+                  ativo
+                    ? { backgroundColor: C.primaryContainer, color: "#fff" }
+                    : { color: C.onSurfaceVariant }
+                }
               >
-                Pagar tudo
-                <ArrowRight size={13} />
+                <Icone className="h-[18px] w-[18px]" />
+                <span>
+                  {item.nome} ({dados.total})
+                </span>
+                {item.id !== "all" && dados.naoLidas > 0 && (
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: ativo ? "#fff" : C.secondary }}
+                  />
+                )}
               </button>
-            </div>
-          </div>
-
-          <div className="flex flex-col justify-between rounded-2xl bg-surface p-5 shadow-sm">
-            <div className="mb-3 flex items-center justify-between">
-              <span className="text-xs font-medium text-text-secondary">
-                Recebidos Hoje
-              </span>
-              <span className="rounded-full bg-input px-2 py-0.5 text-ui-caption font-semibold text-secondary">
-                3 pessoas
-              </span>
-            </div>
-
-            <div className="flex items-baseline gap-1">
-              <span className="text-xs font-medium text-text-secondary">R$</span>
-              <span className="text-4xl font-bold leading-none tracking-tight text-secondary">
-                340,00
-              </span>
-            </div>
-
-            <div className="mt-4 flex items-center gap-2 text-text-secondary">
-              <BadgeCheck size={16} className="text-secondary" />
-              <span className="truncate text-xs">
-                Conciliado via Banco Central
-              </span>
-            </div>
-          </div>
-
-          <div className="flex flex-col justify-between rounded-2xl bg-surface p-5 shadow-sm">
-            <div className="mb-3 flex items-center justify-between">
-              <span className="text-xs font-medium text-text-secondary">
-                Lembretes Automáticos
-              </span>
-              <span className="rounded-full bg-input px-2 py-0.5 text-ui-caption font-semibold text-secondary">
-                24h
-              </span>
-            </div>
-
-            <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-bold leading-none tracking-tight">
-                03
-              </span>
-              <span className="text-ui-caption text-text-secondary">
-                disparos via bot
-              </span>
-            </div>
-
-            <div className="mt-4 flex items-center gap-2 text-text-secondary">
-              <MessageCircle size={16} className="text-tertiary" />
-              <span className="truncate text-xs">Sem atrito entre amigos</span>
-            </div>
-          </div>
+            );
+          })}
         </div>
 
-        {/* LISTA + LATERAL */}
-        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
-          {/* Lista */}
-          <div className="flex flex-col gap-6 lg:col-span-8">
-            {/* Filtros e busca */}
-            <div className="flex flex-col items-stretch justify-between gap-4 rounded-2xl bg-surface p-4 shadow-sm sm:flex-row sm:items-center">
-              <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
-                {abas.map((aba) => {
-                  const quantidade =
-                    aba.id === "todas"
-                      ? notificacoes.length
-                      : notificacoes.filter((n) => n.categorias.includes(aba.id))
-                          .length;
-                  const ativo = filtro === aba.id;
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+          {/* =====================================================
+              FEED
+          ====================================================== */}
 
-                  return (
-                    <button
-                      key={aba.id}
-                      type="button"
-                      onClick={() => setFiltro(aba.id)}
-                      className={`ui-button ui-button--md ${`shrink-0 rounded-xl px-3 py-1.5 text-ui-caption font-semibold transition ${
-                        ativo
-                          ? "bg-secondary text-white shadow-sm"
-                          : "text-text-secondary hover:bg-input"
-                      }`}`}
-                    >
-                      {aba.nome} ({quantidade})
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="flex shrink-0 items-center gap-2">
-                <div className="relative w-full sm:w-48">
-                  <Search
-                    size={16}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary"
-                  />
-
-                  <input
-                    type="text"
-                    value={busca}
-                    onChange={(evento) => setBusca(evento.target.value)}
-                    placeholder="Buscar..."
-                    className="ui-control ui-control--leading w-full rounded-xl bg-input py-1.5 pl-9 pr-3 text-xs outline-none transition placeholder:text-text-secondary focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setMaisAntigasPrimeiro(!maisAntigasPrimeiro)}
-                  title={
-                    maisAntigasPrimeiro
-                      ? "Mais antigas primeiro"
-                      : "Mais recentes primeiro"
-                  }
-                  className="ui-button ui-button--md rounded-xl p-2 text-text-secondary transition hover:bg-input hover:text-text-primary"
-                >
-                  <ArrowDownUp size={18} />
-                </button>
-              </div>
-            </div>
-
-            {/* Seções */}
-            {visiveis.length === 0 ? (
-              <div className="flex flex-col items-center gap-3 rounded-2xl bg-surface p-12 text-center shadow-sm">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-input text-secondary">
-                  <Bell size={22} />
-                </div>
-
-                <h3 className="text-base font-semibold">
-                  Nenhuma notificação por aqui
-                </h3>
-
-                <p className="max-w-md text-xs text-text-secondary">
-                  Você está em dia! Novas cobranças e confirmações de Pix
-                  aparecem aqui em tempo real.
-                </p>
-              </div>
-            ) : (
-              secoesOrdenadas.map((secao) => {
-                const itens = visiveis.filter((n) => n.secao === secao.nome);
-
-                if (itens.length === 0) return null;
-
-                return (
-                  <section key={secao.nome} className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between px-2">
-                      <span className="text-xs font-bold uppercase tracking-wider text-secondary">
-                        {secao.nome}
-                      </span>
-
-                      <span className="text-xs text-text-secondary">
-                        {secao.legenda}
+          <div className="flex flex-col gap-10 lg:col-span-8">
+            {SECOES.map((secao, indice) => {
+              const itens = visiveis.filter((n) => n.secao === secao);
+              if (itens.length === 0) return null;
+              const novas = itens.filter((n) => !n.lida).length;
+              return (
+                <section key={secao} className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base font-bold">{secao}</h2>
+                      <span
+                        className="rounded-full px-2 py-0.5 text-xs font-semibold"
+                        style={
+                          novas > 0
+                            ? { backgroundColor: C.primaryFixed, color: C.onPrimaryFixed }
+                            : { backgroundColor: C.surfaceHighest, color: C.onSurfaceVariant }
+                        }
+                      >
+                        {novas > 0
+                          ? `${novas} ${novas === 1 ? "nova" : "novas"}`
+                          : `${itens.length} ${itens.length === 1 ? "registro" : "registros"}`}
                       </span>
                     </div>
-
+                    <span className="text-xs font-medium" style={{ color: C.onSurfaceVariant }}>
+                      {indice < 2 ? dataPorExtenso(indice) : "Anteriores"}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-3">
                     {itens.map((n) => (
-                      <article
+                      <CartaoNotificacao
                         key={n.id}
-                        className={`relative flex flex-col items-start justify-between gap-4 overflow-hidden rounded-2xl p-5 shadow-sm transition md:flex-row md:items-center ${
-                          n.naoLida
-                            ? "bg-surface hover:shadow-md"
-                            : "bg-surface/70 hover:bg-surface"
-                        }`}
+                        notificacao={n}
+                        onAbrir={() => !n.lida && atualizar(n.id, { lida: true })}
                       >
-                        {n.naoLida && n.destaque && (
-                          <span
-                            className={`absolute bottom-0 left-0 top-0 w-1 ${
-                              n.destaque === "primary"
-                                ? "bg-primary"
-                                : "bg-secondary"
-                            }`}
-                          />
-                        )}
-
-                        <div className="flex min-w-0 flex-1 items-start gap-4">
-                          <div
-                            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${n.corIcone}`}
-                          >
-                            {n.icone}
-                          </div>
-
-                          <div className="flex min-w-0 flex-col">
-                            <div className="flex flex-wrap items-center gap-2">
-                              {n.naoLida && (
-                                <span
-                                  className={`h-2 w-2 rounded-full ${
-                                    n.destaque === "secondary"
-                                      ? "bg-secondary"
-                                      : "bg-primary"
-                                  }`}
-                                />
-                              )}
-
-                              <h2 className="truncate text-ui-section-title font-semibold">
-                                {n.titulo}
-                              </h2>
-
-                              <span
-                                className={`rounded-full px-2 py-0.5 text-ui-caption font-medium ${n.corSelo}`}
-                              >
-                                {n.selo}
-                              </span>
-                            </div>
-
-                            <p className="mt-1 line-clamp-2 text-sm text-text-secondary">
-                              {n.descricao}
-                            </p>
-
-                            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-ui-caption text-text-secondary">
-                              {n.meta.map((item, indice) => (
-                                <span
-                                  key={indice}
-                                  className="flex items-center gap-3"
-                                >
-                                  {indice > 0 && <span>•</span>}
-                                  {item}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex w-full shrink-0 items-center gap-2 self-end pt-2 md:w-auto md:self-center md:pt-0">
-                          {renderAcao(n)}
-
-                          {(n.acao === "pix" || n.acao === "comprovante") && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                n.acao === "comprovante"
-                                  ? dispensar(n.id)
-                                  : undefined
-                              }
-                              title={
-                                n.acao === "comprovante"
-                                  ? "Dispensar"
-                                  : "Mais opções"
-                              }
-                              className="ui-button ui-button--md rounded-xl p-2 text-text-secondary transition hover:bg-input hover:text-text-primary"
-                            >
-                              {n.acao === "comprovante" ? (
-                                <X size={18} />
-                              ) : (
-                                <MoreVertical size={18} />
-                              )}
-                            </button>
-                          )}
-                        </div>
-                      </article>
+                        <AcoesNotificacao
+                          notificacao={n}
+                          onComprovante={() => setModal("comprovante")}
+                          onConfirmar={confirmarRecebimento}
+                          onConvite={responderConvite}
+                          onTarefa={() => setModal("tarefa")}
+                          onPix={() => setModal("pix")}
+                          onRelatorio={() =>
+                            setAviso("O relatório final ficará disponível no histórico do grupo.")
+                          }
+                        />
+                      </CartaoNotificacao>
                     ))}
-                  </section>
-                );
-              })
+                  </div>
+                </section>
+              );
+            })}
+
+            {visiveis.length === 0 && (
+              <p
+                className="rounded-xl bg-white p-8 text-center text-sm shadow-sm"
+                style={{ color: C.onSurfaceVariant }}
+              >
+                Nenhuma notificação nesta categoria.
+              </p>
             )}
           </div>
 
-          {/* Lateral */}
+          {/* =====================================================
+              LATERAL
+          ====================================================== */}
+
           <aside className="flex flex-col gap-6 lg:col-span-4">
-            <div className="flex flex-col gap-5 rounded-2xl bg-surface p-6 shadow-sm">
+            {/* Canais ativos */}
+            <div className="flex flex-col gap-4 rounded-xl bg-white p-6 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-input text-secondary">
-                    <BellRing size={17} />
+                  <div
+                    className="flex h-8 w-8 items-center justify-center rounded-lg"
+                    style={{ backgroundColor: C.primaryFixed, color: C.primary }}
+                  >
+                    <RadioTower className="h-5 w-5" />
                   </div>
-
-                  <h3 className="text-base font-semibold">Canais de Envio</h3>
+                  <h3 className="text-lg font-semibold">Canais Ativos</h3>
                 </div>
-
-                <span className="rounded-full bg-input px-2 py-0.5 text-ui-caption font-semibold text-secondary">
-                  Ativos
-                </span>
+                <span
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{
+                    backgroundColor: Object.values(canais).some(Boolean)
+                      ? C.primaryContainer
+                      : C.surfaceHighest,
+                  }}
+                />
               </div>
-
-              <p className="text-xs text-text-secondary">
-                Defina como você e seus amigos recebem cobranças e lembretes
-                para evitar constrangimentos.
+              <p className="text-sm" style={{ color: C.onSurfaceVariant }}>
+                Configure os canais integrados para não perder prazos de
+                fechamento e repasses.
               </p>
-
-              <div className="flex flex-col gap-4 pt-2">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex gap-3">
-                    <MessageCircle
-                      size={19}
-                      className="mt-0.5 shrink-0 text-secondary"
-                    />
-
-                    <div className="flex flex-col">
-                      <span className="text-xs font-semibold">
-                        Avisos no WhatsApp
-                      </span>
-                      <span className="text-xs text-text-secondary">
-                        Lembretes 24h antes do vencimento
-                      </span>
-                    </div>
-                  </div>
-
-                  <Toggle
-                    ativo={whatsapp}
-                    onChange={() => setWhatsapp(!whatsapp)}
-                    cor="bg-secondary"
-                    label="Avisos no WhatsApp"
-                  />
-                </div>
-
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex gap-3">
-                    <Mail size={19} className="mt-0.5 shrink-0 text-secondary" />
-
-                    <div className="flex flex-col">
-                      <span className="text-xs font-semibold">
-                        Resumo por E-mail
-                      </span>
-                      <span className="text-xs text-text-secondary">
-                        Relatório semanal de comprovantes
-                      </span>
-                    </div>
-                  </div>
-
-                  <Toggle
-                    ativo={email}
-                    onChange={() => setEmail(!email)}
-                    cor="bg-secondary"
-                    label="Resumo por E-mail"
-                  />
-                </div>
-
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex gap-3">
-                    <Zap size={19} className="mt-0.5 shrink-0 text-tertiary" />
-
-                    <div className="flex flex-col">
-                      <span className="text-xs font-semibold">
-                        Pix Instantâneo (Push)
-                      </span>
-                      <span className="text-xs text-text-secondary">
-                        Aviso na tela assim que o dinheiro cair
-                      </span>
-                    </div>
-                  </div>
-
-                  <Toggle
-                    ativo={push}
-                    onChange={() => setPush(!push)}
-                    cor="bg-primary"
-                    label="Pix Instantâneo (Push)"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between rounded-xl bg-background p-4">
-                <span className="text-ui-caption text-text-secondary">
-                  Horário silencioso: 22h às 08h
-                </span>
-                <MoonStar size={16} className="text-secondary" />
-              </div>
-
+              <ListaCanais canais={canais} onAlternar={alternarCanal} />
               <button
                 type="button"
-                onClick={() => navigate("/perfil")}
-                className="ui-button ui-button--md rounded-xl py-2 text-center text-xs font-semibold text-secondary transition hover:bg-input"
+                onClick={() => setModal("configuracoes")}
+                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all hover:bg-[#dee9fc]"
+                style={{ backgroundColor: C.surfaceContainer }}
               >
-                Gerenciar Regras Avançadas no Perfil
+                <Settings2 className="h-[18px] w-[18px]" />
+                Gerenciar canais
               </button>
             </div>
 
-            <div className="relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-secondary to-[#315b81] p-6 text-white shadow-sm">
-              <div className="relative z-10 flex flex-col gap-2">
-                <div className="inline-flex w-max items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-ui-caption font-semibold backdrop-blur-md">
-                  <ShieldCheck size={15} />
-                  Cobrança Sem Constrangimento
+            {/* Pendências rápidas */}
+            <div className="flex flex-col gap-4 rounded-xl bg-white p-6 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="flex h-8 w-8 items-center justify-center rounded-lg"
+                    style={{ backgroundColor: C.secondaryFixed, color: C.secondary }}
+                  >
+                    <ClipboardList className="h-5 w-5" />
+                  </div>
+                  <h3 className="text-lg font-semibold">Pendências Rápidas</h3>
                 </div>
-
-                <h4 className="mt-2 text-base font-semibold">Você sabia?</h4>
-
-                <p className="text-xs leading-relaxed text-white/90">
-                  Grupos que utilizam lembretes via bot com chave Pix
-                  integrada recebem até <strong>3.2x mais rápido</strong> sem
-                  necessidade de mensagens manuais no privado.
-                </p>
+                <span className="text-xs font-bold" style={{ color: C.secondary }}>
+                  Ação urgente
+                </span>
               </div>
-
-              <div className="relative z-10 pt-4">
-                <button
-                  type="button"
-                  onClick={() => navigate("/criar-grupo")}
-                  className="ui-button ui-button--md inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-ui-caption font-semibold text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white"
-                >
-                  Ativar Cobrança Automática
-                  <ArrowRight size={14} />
-                </button>
+              <div className="flex flex-col gap-2.5">
+                <Pendencia
+                  numero={notificacoes.filter((n) => n.categoria === "invites" && !n.resolvida).length}
+                  titulo="Convites de grupo"
+                  detalhe="Aguardando sua resposta"
+                  fundo={C.tertiaryFixed}
+                  cor={C.tertiary}
+                  onAbrir={() => setFiltro("invites")}
+                />
+                <Pendencia
+                  numero={notificacoes.find((n) => n.id === 1)?.resolvida ? 0 : 1}
+                  titulo="Comprovante de pagamento"
+                  detalhe="Aguardando conferência"
+                  fundo={C.primaryFixed}
+                  cor={C.primary}
+                  onAbrir={() => setModal("comprovante")}
+                />
+                <Pendencia
+                  numero={1}
+                  titulo="Tarefa com prazo"
+                  detalhe="Expira nas próximas 24h"
+                  fundo={C.secondaryFixed}
+                  cor={C.secondary}
+                  onAbrir={() => setModal("tarefa")}
+                />
               </div>
             </div>
 
-            <div className="flex items-center justify-between rounded-2xl bg-surface p-5 shadow-sm">
-              <div className="flex items-center gap-3">
-                <span className="flex h-3 w-3 items-center justify-center rounded-full bg-blue-100">
-                  <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
-                </span>
-
-                <div className="flex flex-col">
-                  <span className="text-xs font-semibold">
-                    Integração Pix &amp; Bacen
-                  </span>
-                  <span className="text-xs text-text-secondary">
-                    Operando normalmente (100%)
-                  </span>
+            {/* Dica */}
+            <div
+              className="relative flex flex-col gap-3 overflow-hidden rounded-xl p-6 shadow-sm"
+              style={{
+                background: `linear-gradient(to bottom right, ${C.primaryFixed}, ${C.surfaceLow}, ${C.surfaceContainer})`,
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <div
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-white"
+                  style={{ backgroundColor: C.primaryContainer }}
+                >
+                  <Lightbulb className="h-4 w-4" />
                 </div>
+                <span className="text-[11px] font-bold uppercase tracking-wider">Dica Racha+</span>
               </div>
-
-              <CloudCheck size={20} className="text-secondary" />
+              <p className="text-base font-medium leading-relaxed">
+                Ative as notificações do WhatsApp para receber o código Copia e
+                Cola do Pix assim que um amigo ratear uma despesa.
+              </p>
+              <button
+                type="button"
+                onClick={() => navigate("/faq")}
+                className="relative z-10 inline-flex w-fit cursor-pointer items-center gap-1 text-sm font-semibold transition-colors hover:text-[#ff8c42]"
+                style={{ color: C.primary }}
+              >
+                Como funciona a integração
+                <ArrowRight className="h-4 w-4" />
+              </button>
+              <QrCode
+                className="pointer-events-none absolute -bottom-2 -right-2 h-12 w-12 select-none"
+                style={{ color: `${C.primaryFixedDim}66` }}
+                aria-hidden="true"
+              />
             </div>
           </aside>
         </div>
-      </main>
+      </div>
 
-      {/* RODAPÉ */}
-      <footer className="mt-12 w-full bg-surface py-8">
-        <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-4 px-6 md:flex-row">
-          <div className="flex items-center gap-3">
-            <span className="font-semibold text-secondary">Racha+</span>
+      {/* =====================================================
+          MODAIS
+      ====================================================== */}
 
-            <span className="text-xs text-text-secondary">
-              • Organização descomplicada de despesas e tarefas coletivas
+      {modal === "comprovante" && (
+        <JanelaModal titulo="Comprovante de Pagamento" icone={Receipt} onFechar={() => setModal(null)}>
+          <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase" style={{ color: C.onSurfaceVariant }}>
+                Instituição Bancária
+              </span>
+              <span className="text-sm font-bold" style={{ color: C.primary }}>Banco Inter S.A.</span>
+            </div>
+            <div className="h-px" style={{ backgroundColor: C.surfaceContainer }} />
+            <div className="flex flex-col">
+              <span className="text-xs" style={{ color: C.onSurfaceVariant }}>Valor transferido via Pix</span>
+              <span className="text-[1.75rem] font-bold">R$ 112,50</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <span className="block text-xs" style={{ color: C.onSurfaceVariant }}>Pagador</span>
+                <span className="text-sm font-semibold">Mariana Silva</span>
+              </div>
+              <div>
+                <span className="block text-xs" style={{ color: C.onSurfaceVariant }}>Destinatário</span>
+                <span className="text-sm font-semibold">Você</span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-0.5 rounded-lg p-2.5" style={{ backgroundColor: C.surfaceLow }}>
+              <span className="text-xs" style={{ color: C.onSurfaceVariant }}>Referente ao rateio:</span>
+              <span className="text-sm font-medium">“Comprar bebidas, gelo e carvão”</span>
+              <span className="text-xs" style={{ color: C.primary }}>Grupo: Viagem Florianópolis</span>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-1 text-xs" style={{ color: C.onSurfaceVariant }}>
+              <span>ID Pix: E00416968202405241420x992</span>
+              <span>24/05 • 14:18</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {notificacoes.find((n) => n.id === 1)?.resolvida ? (
+              <p className="flex-1 text-sm font-semibold" style={{ color: C.tertiary }}>
+                Pagamento já confirmado.
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={confirmarRecebimento}
+                className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#ff8c42] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#9b4500]"
+              >
+                <BadgeCheck className="h-[18px] w-[18px]" />
+                Confirmar e Liquidar
+              </button>
+            )}
+            <BotaoSecundario onClick={() => setModal(null)}>Fechar</BotaoSecundario>
+          </div>
+        </JanelaModal>
+      )}
+
+      {modal === "pix" && (
+        <JanelaModal titulo="Pagar Cota via Pix" icone={QrCode} onFechar={() => setModal(null)}>
+          <div className="text-center">
+            <span className="text-xs" style={{ color: C.onSurfaceVariant }}>
+              Você está pagando para {destaque("Lucas M.")}
+            </span>
+            <div className="mt-1 text-[2.5rem] font-extrabold leading-tight" style={{ color: C.primary }}>
+              R$ 85,00
+            </div>
+            <span className="text-xs" style={{ color: C.onSurfaceVariant }}>
+              Grupo: Apê 302 República • Internet Fibra
             </span>
           </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-text-secondary">
-            <button type="button" className="transition hover:text-secondary">
-              Sobre
-            </button>
-
-            <button type="button" className="transition hover:text-secondary">
-              Segurança Pix
-            </button>
-
-            <button type="button" className="transition hover:text-secondary">
-              Privacidade
-            </button>
-
-            <span>© 2025 Racha+. Todos os direitos reservados.</span>
+          <div className="mx-auto flex flex-col items-center rounded-xl bg-white p-4 shadow-inner">
+            <QrCode className="h-44 w-44" strokeWidth={1.2} aria-hidden="true" />
+            <span className="mt-2 text-xs" style={{ color: C.onSurfaceVariant }}>
+              Aponte a câmera do app do seu banco
+            </span>
           </div>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="codigo-pix" className="text-left text-xs font-semibold">
+              Pix Copia e Cola:
+            </label>
+            <div className="flex items-center gap-2 rounded-lg p-2" style={{ backgroundColor: C.surfaceLow }}>
+              <input
+                id="codigo-pix"
+                readOnly
+                value={CODIGO_PIX}
+                onFocus={(event) => event.target.select()}
+                className="w-full truncate bg-transparent text-xs outline-none"
+                style={{ color: C.onSurfaceVariant }}
+              />
+              <button
+                type="button"
+                onClick={copiarPix}
+                className="flex shrink-0 cursor-pointer items-center gap-1 rounded-lg bg-[#ff8c42] px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-[#9b4500]"
+              >
+                <Copy className="h-4 w-4" />
+                Copiar
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={notificarPagamento}
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all hover:bg-[#e6eeff]"
+            style={{ backgroundColor: C.surfaceHighest }}
+          >
+            <Send className="h-[18px] w-[18px]" />
+            Já fiz o Pix • Notificar Lucas
+          </button>
+        </JanelaModal>
+      )}
+
+      {modal === "tarefa" && (
+        <JanelaModal titulo="Alugar carro 7 lugares" icone={AlarmClock} onFechar={() => setModal(null)}>
+          <div className="flex flex-col gap-2 rounded-lg p-4" style={{ backgroundColor: C.surfaceLow }}>
+            <p className="text-sm">
+              <span style={{ color: C.onSurfaceVariant }}>Grupo: </span>
+              <strong>Viagem Florianópolis</strong>
+            </p>
+            <p className="text-sm">
+              <span style={{ color: C.onSurfaceVariant }}>Prazo: </span>
+              <strong>Amanhã às 11:30</strong>
+            </p>
+            <p className="text-sm" style={{ color: C.onSurfaceVariant }}>
+              Após a reserva, anexe o comprovante com o valor total estimado.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate("/grupo")}
+              className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#ff8c42] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#9b4500]"
+            >
+              <ExternalLink className="h-[18px] w-[18px]" />
+              Abrir no grupo
+            </button>
+            <BotaoSecundario onClick={() => setModal(null)}>Fechar</BotaoSecundario>
+          </div>
+        </JanelaModal>
+      )}
+
+      {modal === "configuracoes" && (
+        <JanelaModal titulo="Configurar alertas" icone={SlidersHorizontal} onFechar={() => setModal(null)}>
+          <p className="text-sm" style={{ color: C.onSurfaceVariant }}>
+            Escolha por onde quer receber cobranças, confirmações de Pix e
+            lembretes de prazo.
+          </p>
+          <ListaCanais canais={canais} onAlternar={alternarCanal} />
+          <p className="flex items-start gap-1.5 text-xs" style={{ color: C.onSurfaceVariant }}>
+            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: C.tertiary }} />
+            Prévia: as preferências ainda não são salvas na sua conta.
+          </p>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                setModal(null);
+                setAviso("Preferências de alerta atualizadas.");
+              }}
+              className="cursor-pointer rounded-lg bg-[#ff8c42] px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#9b4500]"
+            >
+              Concluir
+            </button>
+          </div>
+        </JanelaModal>
+      )}
+
+      {/* Aviso flutuante */}
+      {aviso && (
+        <div
+          role="status"
+          className="fixed bottom-6 right-6 z-[110] flex items-center gap-2 rounded-xl px-4 py-2 font-jakarta text-sm font-semibold shadow-xl"
+          style={{ backgroundColor: C.inverseSurface, color: C.inverseOnSurface }}
+        >
+          <CheckCircle2 className="h-[18px] w-[18px]" style={{ color: C.tertiaryFixed }} />
+          {aviso}
         </div>
-      </footer>
+      )}
+    </AppShell>
+  );
+}
+
+/* =====================================================
+   COMPONENTES AUXILIARES
+====================================================== */
+
+function CartaoNotificacao({
+  notificacao: n,
+  onAbrir,
+  children,
+}: {
+  notificacao: Notificacao;
+  onAbrir: () => void;
+  children: ReactNode;
+}) {
+  const tom = TONS[n.tom];
+  const Icone = n.icone;
+  return (
+    <article
+      onClick={onAbrir}
+      className={`relative flex flex-col items-start gap-4 rounded-xl bg-white p-4 shadow-sm transition-all duration-200 hover:bg-[#eff4ff] sm:flex-row ${
+        n.lida ? "opacity-90 hover:opacity-100" : "border-l-4"
+      }`}
+      style={n.lida ? undefined : { borderLeftColor: tom.borda }}
+    >
+      <div className="relative shrink-0">
+        <div
+          className="flex h-12 w-12 items-center justify-center rounded-xl"
+          style={
+            n.lida
+              ? { backgroundColor: C.surfaceHigh, color: n.icone === CheckCircle2 ? C.primary : C.onSurfaceVariant }
+              : { backgroundColor: tom.fundoIcone, color: tom.corIcone }
+          }
+        >
+          <Icone className="h-6 w-6" />
+        </div>
+        {!n.lida && (
+          <span
+            className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full ring-2 ring-white"
+            style={{ backgroundColor: tom.borda }}
+            aria-label="Não lida"
+          />
+        )}
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="flex flex-col items-start justify-between gap-1 sm:flex-row sm:gap-2">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-[17px] font-semibold leading-snug">{n.titulo}</h3>
+              <span
+                className="rounded-full px-2 py-0.5 text-xs font-semibold"
+                style={{ backgroundColor: n.corSelo.fundo, color: n.corSelo.texto }}
+              >
+                {n.selo}
+              </span>
+            </div>
+            <p className="mt-1 text-base" style={{ color: C.onSurfaceVariant }}>
+              {n.descricao}
+            </p>
+          </div>
+          <span
+            className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-medium"
+            style={{ color: C.onSurfaceVariant }}
+          >
+            <Clock className="h-3.5 w-3.5" />
+            {n.quando}
+          </span>
+        </div>
+        {children}
+      </div>
+    </article>
+  );
+}
+
+function AcoesNotificacao({
+  notificacao: n,
+  onComprovante,
+  onConfirmar,
+  onConvite,
+  onTarefa,
+  onPix,
+  onRelatorio,
+}: {
+  notificacao: Notificacao;
+  onComprovante: () => void;
+  onConfirmar: () => void;
+  onConvite: (aceito: boolean) => void;
+  onTarefa: () => void;
+  onPix: () => void;
+  onRelatorio: () => void;
+}) {
+  if (!n.acao) return null;
+
+  const resolvida = n.resolvida && (
+    <span className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: C.tertiary }}>
+      <CheckCircle2 className="h-4 w-4" />
+      {n.resolvida}
+    </span>
+  );
+
+  switch (n.acao.tipo) {
+    case "comprovante":
+      return (
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <BotaoSecundario onClick={onComprovante} icone={ReceiptText}>
+              Ver Comprovante
+            </BotaoSecundario>
+            {!n.resolvida && (
+              <BotaoPrimario onClick={onConfirmar} icone={CheckCircle2}>
+                Confirmar Recebimento
+              </BotaoPrimario>
+            )}
+          </div>
+          {resolvida || (
+            <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: C.onSurfaceVariant }}>
+              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: C.primaryContainer }} />
+              Aguardando sua conferência
+            </span>
+          )}
+        </div>
+      );
+    case "convite":
+      return (
+        <>
+          <div className="flex flex-wrap items-center gap-3 py-1">
+            <div className="flex -space-x-2">
+              {[
+                { t: "LM", f: C.primaryFixed, c: C.primary },
+                { t: "AB", f: C.surfaceHigh, c: C.onSurface },
+                { t: "GS", f: C.tertiaryFixed, c: C.tertiary },
+                { t: "+5", f: C.surfaceHighest, c: C.onSurfaceVariant },
+              ].map((a) => (
+                <span
+                  key={a.t}
+                  className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ring-2 ring-white"
+                  style={{ backgroundColor: a.f, color: a.c }}
+                >
+                  {a.t}
+                </span>
+              ))}
+            </div>
+            <span className="text-xs font-medium" style={{ color: C.onSurfaceVariant }}>
+              Data do evento: 08/06 no Espaço Gourmet
+            </span>
+          </div>
+          {resolvida || (
+            <div className="flex items-center gap-2 pt-1">
+              <BotaoPrimario onClick={() => onConvite(true)} icone={UserPlus}>
+                Aceitar Convite
+              </BotaoPrimario>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onConvite(false);
+                }}
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition-all hover:bg-[#ffdad6] hover:text-[#ba1a1a] active:scale-95"
+                style={{ backgroundColor: C.surfaceContainer, color: C.onSurfaceVariant }}
+              >
+                <X className="h-[18px] w-[18px]" />
+                Recusar
+              </button>
+            </div>
+          )}
+        </>
+      );
+    case "tarefa":
+      return (
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+          <BotaoSecundario onClick={onTarefa} icone={ExternalLink}>
+            Ver Tarefa
+          </BotaoSecundario>
+          <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: C.secondary }}>
+            <CircleAlert className="h-4 w-4" />
+            Restam 21h para expirar
+          </span>
+        </div>
+      );
+    case "pix":
+      return (
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+          {resolvida || (
+            <BotaoPrimario onClick={onPix} icone={ArrowLeftRight}>
+              Pagar com Pix
+            </BotaoPrimario>
+          )}
+          <span className="flex items-center gap-1 text-xs font-medium" style={{ color: C.onSurfaceVariant }}>
+            <Info className="h-4 w-4" style={{ color: C.tertiary }} />
+            Chave Pix cadastrada automaticamente
+          </span>
+        </div>
+      );
+    case "relatorio":
+      return (
+        <div className="pt-1">
+          <BotaoSecundario onClick={onRelatorio} icone={ChartColumn}>
+            Ver Relatório Final
+          </BotaoSecundario>
+        </div>
+      );
+  }
+}
+
+function BotaoPrimario({
+  onClick,
+  icone: Icone,
+  children,
+}: {
+  onClick: () => void;
+  icone: LucideIcon;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
+      className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#ff8c42] px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#9b4500] active:scale-95"
+    >
+      <Icone className="h-[18px] w-[18px]" />
+      {children}
+    </button>
+  );
+}
+
+function BotaoSecundario({
+  onClick,
+  icone: Icone,
+  children,
+}: {
+  onClick: () => void;
+  icone?: LucideIcon;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
+      className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-all hover:bg-[#dee9fc] active:scale-95"
+      style={{ backgroundColor: C.surfaceContainer, color: C.onSurface }}
+    >
+      {Icone && <Icone className="h-[18px] w-[18px]" />}
+      {children}
+    </button>
+  );
+}
+
+function ListaCanais({
+  canais,
+  onAlternar,
+}: {
+  canais: { push: boolean; whatsapp: boolean; email: boolean };
+  onAlternar: (canal: "push" | "whatsapp" | "email") => void;
+}) {
+  const itens = [
+    { id: "push" as const, nome: "Push no Navegador", detalhe: "Alertas sonoros & desktop", icone: Bell, cor: C.primary },
+    { id: "whatsapp" as const, nome: "WhatsApp Instantâneo", detalhe: "Cobranças e Pix Copia & Cola", icone: MessageCircle, cor: C.tertiary },
+    { id: "email" as const, nome: "E-mail Diário / Resumo", detalhe: "Consolidação às 19:00", icone: Mail, cor: C.onSurfaceVariant },
+  ];
+  return (
+    <div className="flex flex-col gap-3">
+      {itens.map((item) => {
+        const Icone = item.icone;
+        const ligado = canais[item.id];
+        return (
+          <label
+            key={item.id}
+            className="flex cursor-pointer items-center justify-between gap-3 rounded-lg p-2.5 transition-colors hover:bg-[#e6eeff]"
+            style={{ backgroundColor: C.surfaceLow }}
+          >
+            <span className="flex items-center gap-3">
+              <Icone className="h-[22px] w-[22px] shrink-0" style={{ color: item.cor }} />
+              <span className="flex flex-col">
+                <span className="text-sm font-semibold">{item.nome}</span>
+                <span className="text-xs" style={{ color: C.onSurfaceVariant }}>{item.detalhe}</span>
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              role="switch"
+              checked={ligado}
+              onChange={() => onAlternar(item.id)}
+              className="peer sr-only"
+            />
+            <span
+              aria-hidden="true"
+              className="relative h-6 w-11 shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#9b4500]"
+              style={{ backgroundColor: ligado ? C.primaryContainer : C.surfaceHighest }}
+            >
+              <span
+                className={`absolute left-[2px] top-[2px] h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                  ligado ? "translate-x-5" : ""
+                }`}
+              />
+            </span>
+          </label>
+        );
+      })}
     </div>
   );
 }
 
-export default Notificacoes;
+function Pendencia({
+  numero,
+  titulo,
+  detalhe,
+  fundo,
+  cor,
+  onAbrir,
+}: {
+  numero: number;
+  titulo: string;
+  detalhe: string;
+  fundo: string;
+  cor: string;
+  onAbrir: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onAbrir}
+      className="flex w-full cursor-pointer items-center gap-3 rounded-lg p-3 text-left transition-all hover:bg-[#e6eeff]"
+      style={{ backgroundColor: C.surfaceLow }}
+    >
+      <span
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+        style={{ backgroundColor: fundo, color: cor }}
+      >
+        {numero}
+      </span>
+      <span className="flex-1">
+        <span className="block text-sm font-semibold">{titulo}</span>
+        <span className="block text-sm" style={{ color: C.onSurfaceVariant }}>{detalhe}</span>
+      </span>
+      <ArrowRight className="h-5 w-5 shrink-0" style={{ color: C.primary }} />
+    </button>
+  );
+}
+
+function JanelaModal({
+  titulo,
+  icone: Icone,
+  onFechar,
+  children,
+}: {
+  titulo: string;
+  icone: LucideIcon;
+  onFechar: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-[#27313f66] p-4 font-jakarta backdrop-blur-sm"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onFechar();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={titulo}
+        className="flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+        style={{ color: C.onSurface }}
+      >
+        <div className="flex items-center justify-between p-4" style={{ backgroundColor: C.surfaceLow }}>
+          <div className="flex items-center gap-2">
+            <Icone className="h-[22px] w-[22px]" style={{ color: C.primary }} />
+            <span className="text-lg font-semibold">{titulo}</span>
+          </div>
+          <button
+            type="button"
+            aria-label="Fechar"
+            onClick={onFechar}
+            className="cursor-pointer rounded-lg p-1 transition-colors hover:bg-[#e6eeff]"
+            style={{ color: C.onSurfaceVariant }}
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="flex flex-col gap-4 overflow-y-auto p-6">{children}</div>
+      </div>
+    </div>
+  );
+}

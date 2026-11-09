@@ -1,27 +1,110 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useLocation } from "react-router-dom";
-import { useAppNavigate as useNavigate } from "../lib/navigation";
-
 import {
-  AlarmClock,
-  ArrowDown,
-  Bell,
-  ChevronDown,
-  CircleCheckBig,
-  CircleDollarSign,
-  MailCheck,
-  MessageCircle,
+  ArrowRight,
+  Check,
+  CheckCircle2,
+  Clock,
+  Hourglass,
+  PieChart,
   Plus,
+  Receipt,
+  ReceiptText,
+  Rocket,
   Search,
-  ShieldCheck,
-  Sparkles,
-  Users,
-  WalletCards,
-  Zap,
+  UserPlus,
+  Wallet,
+  Banknote,
+  X,
 } from "lucide-react";
-
-import Aba from "../components/aba-perfil";
+import AppShell from "../components/app-shell";
 import { ApiError, apiRequest } from "../lib/api";
+import { money } from "../lib/finance";
+import { useAppNavigate as useNavigate } from "../lib/navigation";
+import MeusGruposVazio from "./meus-grupos-vazio";
+
+/* =====================================================
+   TOKENS DO DESIGN
+
+   Ficam aqui dentro (e não no tema do Tailwind) para que
+   esta tela não interfira nas demais páginas do projeto.
+====================================================== */
+
+const C = {
+  primary: "#9b4500",
+  primaryContainer: "#ff8c42",
+  primaryFixed: "#ffdbc9",
+  onPrimaryFixed: "#331200",
+
+  secondary: "#ab3425",
+  secondaryContainer: "#fc6f5a",
+  secondaryFixed: "#ffdad4",
+  onSecondaryFixed: "#410100",
+
+  tertiary: "#855300",
+  tertiaryContainer: "#ed9800",
+  tertiaryFixed: "#ffddb8",
+  onTertiaryContainer: "#5b3700",
+
+  surfaceLowest: "#ffffff",
+  surfaceLow: "#eff4ff",
+  surfaceContainer: "#e6eeff",
+  surfaceHigh: "#dee9fc",
+  surfaceHighest: "#d9e3f6",
+
+  onSurface: "#121c2a",
+  onSurfaceVariant: "#564338",
+};
+
+type Categoria = "Viagem" | "Moradia" | "Evento";
+type Tom = "primary" | "tertiary" | "secondary";
+
+// Cores usadas pelo selo de status e pela barra de quitação
+const TONS: Record<Tom, { selo: string; textoSelo: string; ponto: string; texto: string; barra: string }> = {
+  primary: {
+    selo: C.primaryFixed,
+    textoSelo: C.onPrimaryFixed,
+    ponto: C.primary,
+    texto: C.primary,
+    barra: `linear-gradient(to right, ${C.primaryContainer}, ${C.primary})`,
+  },
+  tertiary: {
+    selo: C.surfaceHighest,
+    textoSelo: C.onSurface,
+    ponto: C.tertiary,
+    texto: C.tertiary,
+    barra: C.tertiaryContainer,
+  },
+  secondary: {
+    selo: C.secondaryFixed,
+    textoSelo: C.onSecondaryFixed,
+    ponto: C.secondary,
+    texto: C.secondary,
+    barra: C.secondaryContainer,
+  },
+};
+
+type Financeiro = {
+  total: number;
+  suaParte: number;
+  quitacao: number;
+  rodape: string;
+  rodapeIcone: "recibo" | "ok" | "prazo";
+};
+
+type GrupoCartao = {
+  id: string;
+  nome: string;
+  subtitulo: string;
+  emoji: string;
+  categoria?: Categoria;
+  status: string;
+  tom: Tom;
+  participantes?: number;
+  membros: string[];
+  financeiro?: Financeiro;
+  destino: { path: string; state?: unknown };
+};
 
 type GrupoApi = {
   id: string;
@@ -29,224 +112,105 @@ type GrupoApi = {
   descricao: string;
 };
 
-type Filtro =
-  | "todos"
-  | "organizador"
-  | "pendentes"
-  | "viagens"
-  | "moradia"
-  | "finalizados";
-
-type Ordenacao = "recentes" | "antigos" | "pendencias" | "alfabetico";
-
-interface Grupo {
-  id: number;
-  nome: string;
-  categoria: string;
-  corCategoria: string;
-  etiqueta: string;
-  corEtiqueta: string;
-  avatares: number[];
-  extras: number;
-  rotuloParticipantes: string;
-  progressoTitulo: string;
-  progressoPercentual: number;
-  corProgresso: string;
-  saldoIcone: "pendente" | "pago" | "carteira" | "confirmado";
-  saldoTexto: string;
-  saldoValor: string;
-  corSaldoValor: string;
-  saldoBadge: string;
-  corSaldoBadge: string;
-  acaoSecundaria: "pix" | "whatsapp" | null;
-  rotuloDetalhes: string;
-  organizador: boolean;
-  pendente: boolean;
-  finalizado: boolean;
-  criadoEm: number;
-  pendenciaValor: number;
-}
-
-const grupos: Grupo[] = [
+// Dados demonstrativos usados na rota de prévia
+const GRUPOS_DEMO: GrupoCartao[] = [
   {
-    id: 1,
-    nome: "Churrasco de Fim de Ano 🥩",
-    categoria: "Evento / Lazer",
-    corCategoria: "text-primary",
-    etiqueta: "Acerto em 3 dias",
-    corEtiqueta: "bg-red-50 text-red-700",
-    avatares: [12, 47, 33, 68, 24],
-    extras: 3,
-    rotuloParticipantes: "8 participantes",
-    progressoTitulo: "6 de 8 pagaram",
-    progressoPercentual: 75,
-    corProgresso: "bg-secondary/60",
-    saldoIcone: "pendente",
-    saldoTexto: "Sua cota:",
-    saldoValor: "R$ 65,00",
-    corSaldoValor: "text-tertiary",
-    saldoBadge: "Pendente",
-    corSaldoBadge: "bg-red-50 text-red-700",
-    acaoSecundaria: "pix",
-    rotuloDetalhes: "Ver Detalhes",
-    organizador: true,
-    pendente: true,
-    finalizado: false,
-    criadoEm: 5,
-    pendenciaValor: 65,
-  },
-  {
-    id: 2,
-    nome: "Apê 402 - Despesas Fixas 🏠",
-    categoria: "República & Moradia",
-    corCategoria: "text-secondary",
-    etiqueta: "Mensal • Junho",
-    corEtiqueta: "bg-input text-secondary",
-    avatares: [5, 15, 26, 51],
-    extras: 0,
-    rotuloParticipantes: "4 moradores",
-    progressoTitulo: "4 de 4 pagaram",
-    progressoPercentual: 100,
-    corProgresso: "bg-secondary",
-    saldoIcone: "pago",
-    saldoTexto: "Você pagou",
-    saldoValor: "R$ 450,00",
-    corSaldoValor: "text-text-primary",
-    saldoBadge: "Quitado",
-    corSaldoBadge: "bg-blue-50 text-secondary",
-    acaoSecundaria: null,
-    rotuloDetalhes: "Ver Detalhes do Mês",
-    organizador: true,
-    pendente: false,
-    finalizado: false,
-    criadoEm: 4,
-    pendenciaValor: 0,
-  },
-  {
-    id: 3,
-    nome: "Viagem Floripa Réveillon 🏖️",
+    id: "demo-ubatuba",
+    nome: "Viagem Ubatuba",
+    subtitulo: "Praia Vermelha do Norte",
+    emoji: "🏖️",
     categoria: "Viagem",
-    corCategoria: "text-tertiary",
-    etiqueta: "Em planejamento",
-    corEtiqueta: "bg-input text-text-secondary",
-    avatares: [9, 32, 60, 41],
-    extras: 2,
-    rotuloParticipantes: "6 viajantes",
-    progressoTitulo: "R$ 1.840,00 de R$ 3.000,00",
-    progressoPercentual: 61,
-    corProgresso: "bg-primary",
-    saldoIcone: "carteira",
-    saldoTexto: "Você adiantou:",
-    saldoValor: "R$ 600,00",
-    corSaldoValor: "text-text-primary",
-    saldoBadge: "Receber R$ 350,00",
-    corSaldoBadge: "bg-blue-50 text-secondary",
-    acaoSecundaria: "whatsapp",
-    rotuloDetalhes: "Ver Detalhes",
-    organizador: true,
-    pendente: true,
-    finalizado: false,
-    criadoEm: 3,
-    pendenciaValor: 350,
+    status: "Ativo",
+    tom: "primary",
+    participantes: 6,
+    membros: ["R", "M", "F", "L", "P", "B"],
+    financeiro: { total: 2450, suaParte: 380, quitacao: 75, rodape: "8 lançamentos", rodapeIcone: "recibo" },
+    destino: { path: "/grupo" },
   },
   {
-    id: 4,
-    nome: "Racha do Futebol de Terça ⚽",
-    categoria: "Esportes & Lazer",
-    corCategoria: "text-secondary",
-    etiqueta: "Semanal",
-    corEtiqueta: "bg-input text-text-secondary",
-    avatares: [11, 18, 55],
-    extras: 9,
-    rotuloParticipantes: "12 jogadores",
-    progressoTitulo: "10 de 12 confirmados",
-    progressoPercentual: 83,
-    corProgresso: "bg-secondary",
-    saldoIcone: "confirmado",
-    saldoTexto: "Sua cota:",
-    saldoValor: "R$ 25,00",
-    corSaldoValor: "text-text-primary",
-    saldoBadge: "Pago",
-    corSaldoBadge: "bg-blue-50 text-secondary",
-    acaoSecundaria: null,
-    rotuloDetalhes: "Ver Detalhes da Partida",
-    organizador: false,
-    pendente: false,
-    finalizado: false,
-    criadoEm: 2,
-    pendenciaValor: 0,
+    id: "demo-augusta",
+    nome: "República Augusta",
+    subtitulo: "Despesas mensais / Aluguel",
+    emoji: "🏠",
+    categoria: "Moradia",
+    status: "Em dia",
+    tom: "tertiary",
+    participantes: 4,
+    membros: ["M", "T", "L", "B"],
+    financeiro: { total: 3820, suaParte: 955, quitacao: 100, rodape: "Tudo acertado", rodapeIcone: "ok" },
+    destino: { path: "/grupo" },
   },
   {
-    id: 5,
-    nome: "Aniversário da Bia 🎂",
-    categoria: "Evento / Lazer",
-    corCategoria: "text-primary",
-    etiqueta: "Encerrado",
-    corEtiqueta: "bg-input text-text-secondary",
-    avatares: [23, 36, 44],
-    extras: 4,
-    rotuloParticipantes: "7 participantes",
-    progressoTitulo: "7 de 7 pagaram",
-    progressoPercentual: 100,
-    corProgresso: "bg-secondary",
-    saldoIcone: "pago",
-    saldoTexto: "Você pagou",
-    saldoValor: "R$ 80,00",
-    corSaldoValor: "text-text-primary",
-    saldoBadge: "Quitado",
-    corSaldoBadge: "bg-blue-50 text-secondary",
-    acaoSecundaria: null,
-    rotuloDetalhes: "Ver Resumo Final",
-    organizador: false,
-    pendente: false,
-    finalizado: true,
-    criadoEm: 1,
-    pendenciaValor: 0,
+    id: "demo-churrasco",
+    nome: "Churrasco Fim de Ano",
+    subtitulo: "Sítio dos Manacás",
+    emoji: "🥩",
+    categoria: "Evento",
+    status: "Pendente",
+    tom: "secondary",
+    participantes: 12,
+    membros: ["A", "R", "D", "C", "E", "G", "H", "I", "J", "K", "N", "O"],
+    financeiro: { total: 890, suaParte: 74, quitacao: 40, rodape: "Expira em 3 dias", rodapeIcone: "prazo" },
+    destino: { path: "/grupo" },
   },
 ];
 
-const filtros: { id: Filtro; nome: string }[] = [
-  { id: "todos", nome: "Todos" },
-  { id: "organizador", nome: "Como Organizador" },
-  { id: "pendentes", nome: "Contas Pendentes" },
-  { id: "viagens", nome: "Viagens & Eventos" },
-  { id: "moradia", nome: "República & Moradia" },
-  { id: "finalizados", nome: "Finalizados" },
-];
-
-function pertenceAoFiltro(grupo: Grupo, filtro: Filtro) {
-  if (filtro === "todos") return !grupo.finalizado;
-  if (filtro === "organizador") return grupo.organizador && !grupo.finalizado;
-  if (filtro === "pendentes") return grupo.pendente && !grupo.finalizado;
-  if (filtro === "viagens")
-    return (
-      !grupo.finalizado &&
-      (grupo.categoria.includes("Viagem") || grupo.categoria.includes("Evento"))
-    );
-  if (filtro === "moradia") return grupo.categoria.includes("República");
-
-  return grupo.finalizado;
+function deApi(grupo: GrupoApi): GrupoCartao {
+  return {
+    id: grupo.id,
+    nome: grupo.nome,
+    subtitulo: grupo.descricao || "Sem descrição",
+    emoji: "👥",
+    status: "Ativo",
+    tom: "primary",
+    membros: [],
+    destino: {
+      path: `/grupo/${encodeURIComponent(grupo.id)}/membros`,
+      state: { nomeGrupo: grupo.nome },
+    },
+  };
 }
 
-const iconesSaldo = {
-  pendente: <AlarmClock size={17} className="text-tertiary" />,
-  pago: <CircleCheckBig size={17} className="text-secondary" />,
-  carteira: <WalletCards size={17} className="text-secondary" />,
-  confirmado: <CircleCheckBig size={17} className="text-secondary" />,
-};
+const FILTROS: { id: Categoria | "todos"; nome: string }[] = [
+  { id: "todos", nome: "Todos" },
+  { id: "Viagem", nome: "Viagens" },
+  { id: "Moradia", nome: "Casa" },
+  { id: "Evento", nome: "Eventos" },
+];
 
-function MeusGrupos() {
+// Os ids batem com as categorias da tela de criação manual
+const CATEGORIAS_MODAL = [
+  { id: "viagem", nome: "Viagem 🏖️" },
+  { id: "republica", nome: "Moradia 🏠" },
+  { id: "evento", nome: "Evento 🥩" },
+  { id: "outro", nome: "Outro 💼" },
+];
+
+const CORES_AVATAR = [
+  { fundo: C.secondaryContainer, texto: "#6d0300" },
+  { fundo: C.primaryFixed, texto: C.onPrimaryFixed },
+  { fundo: C.surfaceHighest, texto: C.onSurface },
+];
+
+function formatarPercentual(valor: number) {
+  return `${valor.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+}
+
+export default function MeusGrupos() {
   const navigate = useNavigate();
   const preview = useLocation().pathname.startsWith("/previa");
 
   const [gruposApi, setGruposApi] = useState<GrupoApi[]>([]);
-  const [carregandoGruposApi, setCarregandoGruposApi] = useState(!preview);
-  const [erroGruposApi, setErroGruposApi] = useState("");
-  const [tentativaGruposApi, setTentativaGruposApi] = useState(0);
-  const [abaAberta, setAbaAberta] = useState(false);
+  const [carregando, setCarregando] = useState(!preview);
+  const [erro, setErro] = useState("");
+  const [tentativa, setTentativa] = useState(0);
+
+  const [filtro, setFiltro] = useState<Categoria | "todos">("todos");
   const [busca, setBusca] = useState("");
-  const [filtro, setFiltro] = useState<Filtro>("todos");
-  const [ordenacao, setOrdenacao] = useState<Ordenacao>("recentes");
+  const [modalAberto, setModalAberto] = useState(false);
+  const [nomeNovo, setNomeNovo] = useState("");
+  const [categoriaNova, setCategoriaNova] = useState("viagem");
+  const [aviso, setAviso] = useState("");
 
   useEffect(() => {
     if (preview) return;
@@ -258,689 +222,671 @@ function MeusGrupos() {
       })
       .catch((error: unknown) => {
         if (!ativo) return;
-        setErroGruposApi(
+        setErro(
           error instanceof ApiError
             ? error.message
             : "Não foi possível carregar seus grupos.",
         );
       })
       .finally(() => {
-        if (ativo) setCarregandoGruposApi(false);
+        if (ativo) setCarregando(false);
       });
 
     return () => {
       ativo = false;
     };
-  }, [tentativaGruposApi, preview]);
+  }, [tentativa, preview]);
+
+  // Esconde o aviso depois de alguns segundos
+  useEffect(() => {
+    if (!aviso) return;
+    const id = window.setTimeout(() => setAviso(""), 3200);
+    return () => window.clearTimeout(id);
+  }, [aviso]);
+
+  // Fecha o modal com Esc
+  useEffect(() => {
+    if (!modalAberto) return;
+    function aoPressionar(event: KeyboardEvent) {
+      if (event.key === "Escape") setModalAberto(false);
+    }
+    window.addEventListener("keydown", aoPressionar);
+    return () => window.removeEventListener("keydown", aoPressionar);
+  }, [modalAberto]);
+
+  const grupos = useMemo(
+    () => (preview ? GRUPOS_DEMO : gruposApi.map(deApi)),
+    [preview, gruposApi],
+  );
+
+  const temCategorias = grupos.some((grupo) => grupo.categoria);
 
   const gruposVisiveis = useMemo(() => {
     const termo = busca.trim().toLowerCase();
-
-    const filtrados = grupos.filter((grupo) => {
-      if (!pertenceAoFiltro(grupo, filtro)) return false;
-
-      if (!termo) return true;
-
-      return (
-        grupo.nome.toLowerCase().includes(termo) ||
-        grupo.categoria.toLowerCase().includes(termo)
-      );
+    return grupos.filter((grupo) => {
+      if (filtro !== "todos" && grupo.categoria !== filtro) return false;
+      return !termo || grupo.nome.toLowerCase().includes(termo);
     });
+  }, [grupos, filtro, busca]);
 
-    return [...filtrados].sort((a, b) => {
-      if (ordenacao === "antigos") return a.criadoEm - b.criadoEm;
-      if (ordenacao === "pendencias") return b.pendenciaValor - a.pendenciaValor;
-      if (ordenacao === "alfabetico") return a.nome.localeCompare(b.nome);
+  // Métricas só existem para grupos com dados financeiros
+  const metricas = useMemo(() => {
+    const comFinanceiro = grupos.filter((grupo) => grupo.financeiro);
+    if (comFinanceiro.length === 0) return null;
+    let suaParte = 0;
+    let total = 0;
+    let quitadoPonderado = 0;
+    let participantes = 0;
+    let abertos = 0;
+    let resolvidos = 0;
+    for (const grupo of comFinanceiro) {
+      const f = grupo.financeiro!;
+      suaParte += f.suaParte;
+      total += f.total;
+      quitadoPonderado += f.total * f.quitacao;
+      participantes += grupo.participantes ?? 0;
+      if (f.quitacao >= 100) resolvidos++;
+      else abertos++;
+    }
+    return {
+      suaParte,
+      total,
+      participantes,
+      abertos,
+      resolvidos,
+      indice: total > 0 ? quitadoPonderado / total : 0,
+    };
+  }, [grupos]);
 
-      return b.criadoEm - a.criadoEm;
+  function abrirModal() {
+    setNomeNovo("");
+    setModalAberto(true);
+  }
+
+  function criarGrupo(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    navigate("/criar-grupo/manual", {
+      state: { nome: nomeNovo.trim(), categoria: categoriaNova },
     });
-  }, [busca, filtro, ordenacao]);
+  }
+
+  async function copiarConvite() {
+    const link = `${window.location.origin}/cadastro`;
+    try {
+      await navigator.clipboard.writeText(link);
+      setAviso("Link de convite copiado para sua área de transferência!");
+    } catch {
+      setAviso(`Não foi possível copiar. Compartilhe: ${link}`);
+    }
+  }
+
+  // Sem nenhum grupo na conta: mostra a tela de primeiro acesso
+  if (!preview && !carregando && !erro && gruposApi.length === 0) {
+    return <MeusGruposVazio />;
+  }
 
   return (
-    <div className="min-h-screen bg-background text-text-primary">
-      {/* HEADER */}
-      <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-gray-100 bg-surface px-6">
-        {/* Logo */}
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F3F6FA]">
-            <span className="text-xs font-bold text-secondary">R+</span>
-          </div>
+    <AppShell title="Meus grupos">
+      <div
+        className="flex w-full flex-col gap-6 font-jakarta"
+        style={{ color: C.onSurface }}
+      >
+        {/* =====================================================
+            CABEÇALHO
+        ====================================================== */}
 
-          <div>
-            <p className="text-sm font-semibold text-text-primary">Racha+</p>
-
-            <p className="text-ui-caption text-text-secondary">
-              Divisão Inteligente
-            </p>
-          </div>
-        </div>
-
-        {/* Navegação */}
-        <nav className="hidden items-center gap-6 md:flex">
-          <button
-            type="button"
-            className="ui-button ui-button--md rounded-lg bg-input px-3 py-1.5 text-xs font-semibold text-secondary"
-          >
-            Meus Grupos
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate("/criar-grupo")}
-            className="text-xs text-gray-700 transition hover:text-secondary"
-          >
-            Criar com IA
-          </button>
-
-          <button
-            type="button"
-            className="text-xs text-gray-700 transition hover:text-secondary"
-          >
-            Histórico &amp; Pix
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate("/perfil")}
-            className="text-xs text-gray-700 transition hover:text-secondary"
-          >
-            Perfil
-          </button>
-        </nav>
-
-        {/* Ações do usuário */}
-        <div className="flex items-center gap-4">
-          <button
-            type="button"
-            onClick={() => navigate("/criar-grupo")}
-            className="ui-button ui-button--md hidden items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-text-primary transition hover:bg-tertiary hover:text-white sm:flex"
-          >
-            <Plus size={14} />
-            Novo Grupo
-          </button>
-
-          <button
-            type="button"
-            aria-label="Notificações"
-            onClick={() => navigate("/notificacoes")}
-            className="relative text-gray-600"
-          >
-            <Bell size={17} />
-
-            <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-primary" />
-          </button>
-
-          {/* Perfil */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setAbaAberta(!abaAberta)}
-              className="ui-button ui-button--md flex items-center gap-2 rounded-xl px-2 py-1.5 transition hover:bg-gray-50"
-            >
-              <img
-                src="https://i.pravatar.cc/100?img=47"
-                alt="Foto de perfil"
-                className="h-9 w-9 rounded-full object-cover"
-              />
-
-              <div className="hidden text-left xl:block">
-                <p className="text-xs font-semibold">Mariana S.</p>
-
-                <p className="text-ui-caption text-text-secondary">Online</p>
-              </div>
-
-              <ChevronDown
-                size={15}
-                className={`text-gray-500 transition-transform ${
-                  abaAberta ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            {abaAberta && <Aba onClose={() => setAbaAberta(false)}/>}
-          </div>
-        </div>
-      </header>
-
-      {/* CONTEÚDO */}
-      <main className="mx-auto flex max-w-[1280px] flex-col gap-8 px-6 py-8">
-        {/* TÍTULO E AÇÕES */}
-        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+        <section className="flex flex-col justify-between gap-4 pb-2 md:flex-row md:items-end">
           <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <span className="text-ui-caption font-semibold uppercase tracking-wide text-secondary">
-                Visão Geral de Grupos
-              </span>
-
-              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-
-              <span className="text-ui-caption text-text-secondary">
-                Junho 2025
-              </span>
+            <div
+              className="flex items-center gap-1 text-xs font-medium uppercase tracking-wider"
+              style={{ color: C.primary }}
+            >
+              <span
+                className="inline-block h-1.5 w-1.5 rounded-full"
+                style={{ backgroundColor: C.primary }}
+              />
+              <span>Visão Geral • {new Date().getFullYear()}</span>
             </div>
-
-            <h1 className="text-ui-page-title font-bold tracking-tight">Meus Grupos</h1>
-
-            <p className="max-w-2xl text-sm text-text-secondary">
-              Gerencie despesas compartilhadas, acompanhe quem já pagou e
-              acesse seus compromissos ativos sem atrito.
+            <h1 className="text-[2rem] font-bold leading-10 tracking-tight">
+              Meus grupos
+            </h1>
+            <p className="max-w-xl text-sm" style={{ color: C.onSurfaceVariant }}>
+              Acompanhe despesas compartilhadas, saldos pendentes e divisão
+              instantânea com amigos e colegas de casa.
             </p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => navigate("/criar-grupo")}
-              className="ui-button ui-button--md flex items-center gap-2 rounded-lg bg-surface px-4 py-2.5 text-xs font-medium text-secondary shadow-sm transition hover:bg-input"
+          {!carregando && !erro && (
+            <span
+              className="self-start rounded-xl px-4 py-2 text-xs font-semibold shadow-sm md:self-auto"
+              style={{ backgroundColor: C.surfaceLowest }}
             >
-              <Sparkles size={15} className="text-primary" />
-              Criar com IA
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate("/criar-grupo")}
-              className="ui-button ui-button--md flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-medium text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white"
-            >
-              <Users size={15} />+ Novo Grupo Manual
-            </button>
-          </div>
-        </div>
-
-        <section
-          hidden={preview} aria-labelledby="grupos-reais-heading"
-          className="rounded-xl border border-secondary/15 bg-white p-5 shadow-sm sm:p-6"
-        >
-          <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
-            <div>
-              <h2
-                id="grupos-reais-heading"
-                className="text-ui-section-title font-bold text-text-primary"
-              >
-                Seus grupos
-              </h2>
-              <p className="mt-1 text-sm text-text-secondary">
-                Grupos carregados da sua conta. Abra um grupo para gerenciar
-                seus membros.
-              </p>
-            </div>
-            <span className="text-xs text-text-secondary">
-              {gruposApi.length} {gruposApi.length === 1 ? "grupo" : "grupos"}
+              Ativos ({grupos.length})
             </span>
-          </div>
-
-          {carregandoGruposApi ? (
-            <p role="status" className="mt-5 text-sm text-text-secondary">
-              Carregando seus grupos...
-            </p>
-          ) : erroGruposApi ? (
-            <div className="mt-5 rounded-lg bg-red-50 p-4">
-              <p role="alert" className="text-sm text-red-800">
-                {erroGruposApi}
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setErroGruposApi("");
-                  setCarregandoGruposApi(true);
-                  setTentativaGruposApi((tentativa) => tentativa + 1);
-                }}
-                className="mt-2 text-sm font-semibold text-red-800 underline"
-              >
-                Tentar novamente
-              </button>
-            </div>
-          ) : gruposApi.length === 0 ? (
-            <p className="mt-5 rounded-lg bg-input p-4 text-sm text-text-secondary">
-              Você ainda não participa de nenhum grupo.
-            </p>
-          ) : (
-            <ul className="mt-5 grid gap-3 sm:grid-cols-2">
-              {gruposApi.map((grupo) => (
-                <li
-                  key={grupo.id}
-                  className="flex flex-col justify-between gap-4 rounded-xl border border-slate-200 p-4"
-                >
-                  <div className="min-w-0">
-                    <h3 className="truncate font-semibold text-text-primary">
-                      {grupo.nome}
-                    </h3>
-                    {grupo.descricao && (
-                      <p className="mt-1 line-clamp-2 text-sm text-text-secondary">
-                        {grupo.descricao}
-                      </p>
-                    )}
-                    <p className="mt-2 break-all text-xs text-text-secondary">
-                      ID: {grupo.id}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      navigate(
-                        `/grupo/${encodeURIComponent(grupo.id)}/membros`,
-                        { state: { nomeGrupo: grupo.nome } },
-                      )
-                    }
-                    className="ui-button ui-button--md w-full rounded-lg bg-secondary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-secondary/90"
-                  >
-                    Gerenciar membros
-                  </button>
-                </li>
-              ))}
-            </ul>
           )}
         </section>
 
-        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-          Abaixo há uma prévia visual com dados demonstrativos; ela ainda não
-          está conectada aos grupos reais da API.
-        </div>
-
-        {/* RESUMO FINANCEIRO */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Saldo a receber */}
-          <div className="flex flex-col justify-between rounded-xl bg-surface p-6 shadow-sm">
-            <div className="flex items-start justify-between">
-              <span className="text-xs font-medium text-text-secondary">
-                Saldo a Receber
-              </span>
-
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-input text-secondary">
-                <ArrowDown size={15} />
-              </div>
-            </div>
-
-            <div className="mt-4 flex flex-col">
-              <span className="text-2xl font-bold tracking-tight text-secondary">
-                R$ 340,00
-              </span>
-
-              <div className="mt-1 flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-secondary" />
-
-                <span className="text-ui-caption font-medium text-text-secondary">
-                  + 2 pessoas pendentes com você
-                </span>
-              </div>
-            </div>
+        {carregando ? (
+          <p role="status" className="text-sm" style={{ color: C.onSurfaceVariant }}>
+            Carregando seus grupos...
+          </p>
+        ) : erro ? (
+          <div className="rounded-xl bg-red-50 p-4">
+            <p role="alert" className="text-sm text-red-800">
+              {erro}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setErro("");
+                setCarregando(true);
+                setTentativa((valor) => valor + 1);
+              }}
+              className="mt-2 cursor-pointer text-sm font-semibold text-red-800 underline"
+            >
+              Tentar novamente
+            </button>
           </div>
+        ) : (
+          <>
+            {/* =====================================================
+                MÉTRICAS
+            ====================================================== */}
 
-          {/* Cotas pendentes */}
-          <div className="flex flex-col justify-between rounded-xl bg-surface p-6 shadow-sm">
-            <div className="flex items-start justify-between">
-              <span className="text-xs font-medium text-text-secondary">
-                Minhas Cotas Pendentes
-              </span>
-
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-tertiary">
-                <AlarmClock size={15} />
+            {metricas && (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <Metrica
+                  rotulo="Sua parte total a pagar"
+                  valor={money(metricas.suaParte)}
+                  detalhe={`${metricas.abertos} ${metricas.abertos === 1 ? "grupo" : "grupos"} em aberto`}
+                  detalheIcone={<Clock className="h-4 w-4" />}
+                  corDetalhe={C.tertiary}
+                  icone={<Wallet className="h-6 w-6" />}
+                  fundoIcone={C.surfaceHigh}
+                  corIcone={C.primary}
+                />
+                <Metrica
+                  rotulo="Despesas totais movimentadas"
+                  valor={money(metricas.total)}
+                  detalhe={`${metricas.participantes} participantes no total`}
+                  detalheIcone={<ReceiptText className="h-4 w-4" />}
+                  icone={<Banknote className="h-6 w-6" />}
+                  fundoIcone={C.surfaceContainer}
+                  corIcone={C.onSurfaceVariant}
+                />
+                <Metrica
+                  rotulo="Índice de quitação"
+                  valor={formatarPercentual(metricas.indice)}
+                  corValor={C.tertiaryContainer}
+                  detalhe={`${metricas.resolvidos} ${metricas.resolvidos === 1 ? "grupo" : "grupos"} 100% resolvido${metricas.resolvidos === 1 ? "" : "s"}`}
+                  detalheIcone={<CheckCircle2 className="h-4 w-4" />}
+                  icone={<PieChart className="h-6 w-6" />}
+                  fundoIcone={C.tertiaryFixed}
+                  corIcone={C.onTertiaryContainer}
+                />
               </div>
-            </div>
+            )}
 
-            <div className="mt-4 flex flex-col">
-              <span className="text-2xl font-bold tracking-tight text-tertiary">
-                R$ 115,00
-              </span>
+            {/* =====================================================
+                FILTROS E BUSCA
+            ====================================================== */}
 
-              <div className="mt-2 flex items-center justify-between gap-2">
-                <span className="truncate text-ui-caption text-text-secondary">
-                  Vence em 2 dias (Churrasco)
-                </span>
-
-                <button
-                  type="button"
-                  className="text-ui-caption font-semibold text-primary underline underline-offset-2 transition hover:text-tertiary"
-                >
-                  Pagar Pix
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Grupos ativos */}
-          <div className="flex flex-col justify-between rounded-xl bg-surface p-6 shadow-sm">
-            <div className="flex items-start justify-between">
-              <span className="text-xs font-medium text-text-secondary">
-                Grupos Ativos
-              </span>
-
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-input text-secondary">
-                <Users size={15} />
-              </div>
-            </div>
-
-            <div className="mt-4 flex flex-col">
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold tracking-tight">5</span>
-
-                <span className="text-xs text-text-secondary">
-                  grupos em andamento
-                </span>
-              </div>
-
-              <span className="mt-1 text-ui-caption text-text-secondary">
-                3 organizador • 2 participante
-              </span>
-            </div>
-          </div>
-
-          {/* Pontualidade */}
-          <div className="flex flex-col justify-between rounded-xl bg-surface p-6 shadow-sm">
-            <div className="flex items-start justify-between">
-              <span className="text-xs font-medium text-text-secondary">
-                Pontualidade Geral
-              </span>
-
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-input text-secondary">
-                <ShieldCheck size={15} />
-              </div>
-            </div>
-
-            <div className="mt-4 flex flex-col">
-              <span className="text-2xl font-bold tracking-tight">96%</span>
-
-              <div className="mt-1 flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-input px-2 py-0.5 text-ui-caption font-semibold text-secondary">
-                  <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
-                  Alta Confiabilidade
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* BUSCA, ORDENAÇÃO E FILTROS */}
-        <div className="flex flex-col gap-4 rounded-xl bg-surface p-5 shadow-sm">
-          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-            {/* Busca */}
-            <div className="relative max-w-lg flex-1">
-              <Search
-                size={16}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary"
-              />
-
-              <input
-                type="text"
-                value={busca}
-                onChange={(evento) => setBusca(evento.target.value)}
-                placeholder="Buscar por grupo ou participante..."
-                className="ui-control ui-control--leading w-full rounded-lg bg-input py-2.5 pl-10 pr-4 text-xs text-text-primary outline-none transition placeholder:text-text-secondary focus:ring-2 focus:ring-primary"
-              />
-            </div>
-
-            {/* Ordenação */}
-            <div className="flex items-center gap-3 self-end lg:self-auto">
-              <label
-                htmlFor="ordenar-grupos"
-                className="whitespace-nowrap text-ui-label text-text-secondary"
-              >
-                Ordenar por:
-              </label>
-
-              <div className="relative">
-                <select
-                  id="ordenar-grupos"
-                  value={ordenacao}
-                  onChange={(evento) =>
-                    setOrdenacao(evento.target.value as Ordenacao)
-                  }
-                  className="ui-control cursor-pointer appearance-none rounded-lg bg-input py-2 pl-3 pr-8 text-xs font-medium text-text-primary outline-none"
-                >
-                  <option value="recentes">Mais recentes primeiro</option>
-                  <option value="antigos">Mais antigos</option>
-                  <option value="pendencias">Maior pendência</option>
-                  <option value="alfabetico">Nome (A - Z)</option>
-                </select>
-
-                <ChevronDown
-                  size={15}
-                  className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-text-secondary"
+            <div className="flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
+              {temCategorias ? (
+                <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+                  {FILTROS.map((item) => {
+                    const ativo = filtro === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        aria-pressed={ativo}
+                        onClick={() => setFiltro(item.id)}
+                        className={`cursor-pointer whitespace-nowrap rounded-full px-4 py-1 text-xs font-semibold transition-all ${
+                          ativo ? "" : "hover:bg-[#e6eeff] hover:text-[#121c2a]"
+                        }`}
+                        style={
+                          ativo
+                            ? { backgroundColor: C.onSurface, color: "#f8f9ff" }
+                            : { backgroundColor: C.surfaceLow, color: C.onSurfaceVariant }
+                        }
+                      >
+                        {item.id === "todos" ? `Todos (${grupos.length})` : item.nome}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <span />
+              )}
+              <div className="relative w-full sm:w-72">
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2"
+                  style={{ color: C.onSurfaceVariant }}
+                />
+                <label htmlFor="busca-grupo" className="sr-only">
+                  Buscar grupo
+                </label>
+                <input
+                  id="busca-grupo"
+                  type="search"
+                  value={busca}
+                  onChange={(event) => setBusca(event.target.value)}
+                  placeholder="Buscar por nome do grupo..."
+                  className="w-full rounded-lg bg-white py-1.5 pl-9 pr-4 text-sm outline-none transition-all placeholder:text-[#56433899] focus:shadow-md"
                 />
               </div>
             </div>
-          </div>
 
-          {/* Filtros */}
-          <div className="-mb-1 flex items-center gap-2 overflow-x-auto pb-1">
-            {filtros.map((item) => {
-              const quantidade = grupos.filter((grupo) =>
-                pertenceAoFiltro(grupo, item.id),
-              ).length;
+            {/* =====================================================
+                GRADE DE GRUPOS
+            ====================================================== */}
 
-              const ativo = filtro === item.id;
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {gruposVisiveis.map((grupo) => (
+                <CartaoGrupo
+                  key={grupo.id}
+                  grupo={grupo}
+                  onAcessar={() =>
+                    navigate(grupo.destino.path, { state: grupo.destino.state })
+                  }
+                />
+              ))}
 
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setFiltro(item.id)}
-                  className={`ui-button ui-button--md ${`whitespace-nowrap rounded-full px-4 py-1.5 text-ui-caption font-semibold transition ${
-                    ativo
-                      ? "bg-secondary text-white shadow-sm"
-                      : "bg-input text-text-secondary hover:bg-background hover:text-text-primary"
-                  }`}`}
-                >
-                  {item.nome} ({quantidade})
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* LISTA DE GRUPOS */}
-        {gruposVisiveis.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            {gruposVisiveis.map((grupo) => (
-              <div
-                key={grupo.id}
-                className="group flex flex-col justify-between gap-6 rounded-xl bg-surface p-6 shadow-sm transition hover:shadow-md"
+              <button
+                type="button"
+                onClick={abrirModal}
+                className="group flex min-h-[340px] cursor-pointer flex-col items-center justify-center rounded-xl bg-[#eff4ff99] p-6 text-center shadow-sm transition-all duration-200 hover:bg-[#eff4ff]"
+                style={{ color: C.onSurfaceVariant }}
               >
-                <div>
-                  {/* Cabeçalho do card */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex flex-col">
-                      <span
-                        className={`text-ui-caption font-bold uppercase tracking-wide ${grupo.corCategoria}`}
-                      >
-                        {grupo.categoria}
-                      </span>
-
-                      <h2 className="mt-1 text-ui-section-title font-bold transition group-hover:text-secondary">
-                        {grupo.nome}
-                      </h2>
-                    </div>
-
-                    <span
-                      className={`whitespace-nowrap rounded-full px-2.5 py-1 text-ui-caption font-semibold ${grupo.corEtiqueta}`}
-                    >
-                      {grupo.etiqueta}
-                    </span>
-                  </div>
-
-                  {/* Participantes */}
-                  <div className="mt-5 flex items-center justify-between">
-                    <div className="flex items-center -space-x-2">
-                      {grupo.avatares.map((avatar) => (
-                        <img
-                          key={avatar}
-                          src={`https://i.pravatar.cc/100?img=${avatar}`}
-                          alt="Participante do grupo"
-                          className="h-8 w-8 rounded-full object-cover ring-2 ring-surface"
-                        />
-                      ))}
-
-                      {grupo.extras > 0 && (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-input text-ui-caption font-bold text-text-secondary ring-2 ring-surface">
-                          +{grupo.extras}
-                        </div>
-                      )}
-                    </div>
-
-                    <span className="text-ui-caption text-text-secondary">
-                      {grupo.rotuloParticipantes}
-                    </span>
-                  </div>
-
-                  {/* Progresso */}
-                  <div className="mt-5 flex flex-col gap-2">
-                    <div className="flex items-center justify-between text-ui-caption">
-                      <span className="font-semibold">
-                        {grupo.progressoTitulo}
-                      </span>
-
-                      <span className="font-bold text-secondary">
-                        {grupo.progressoPercentual}%
-                      </span>
-                    </div>
-
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-input">
-                      <div
-                        className={`h-full rounded-full ${grupo.corProgresso}`}
-                        style={{ width: `${grupo.progressoPercentual}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Saldo pessoal */}
-                  <div className="mt-5 flex items-center justify-between rounded-xl bg-input p-3">
-                    <div className="flex items-center gap-2">
-                      {iconesSaldo[grupo.saldoIcone]}
-
-                      <span className="text-xs font-medium">
-                        {grupo.saldoTexto}{" "}
-                        <strong className={`font-bold ${grupo.corSaldoValor}`}>
-                          {grupo.saldoValor}
-                        </strong>
-                      </span>
-                    </div>
-
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-ui-caption font-semibold ${grupo.corSaldoBadge}`}
-                    >
-                      {grupo.saldoBadge}
-                    </span>
-                  </div>
+                <div className="mb-2 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#ff8c42] shadow-sm transition-all duration-200 group-hover:scale-105 group-hover:bg-[#ff8c42] group-hover:text-white">
+                  <Plus className="h-7 w-7" />
                 </div>
+                <span className="text-xl font-bold text-[#121c2a] transition-colors group-hover:text-[#9b4500]">
+                  Criar novo grupo
+                </span>
+                <p className="mt-1 max-w-xs text-sm">
+                  Divida contas de uma viagem, república, festa ou projeto com
+                  cálculo automático por Pix.
+                </p>
+                <span
+                  className="mt-4 inline-flex items-center gap-1 rounded-full bg-white px-4 py-1 text-xs font-semibold shadow-sm transition-shadow group-hover:shadow"
+                  style={{ color: C.primary }}
+                >
+                  Começar divisão →
+                </span>
+              </button>
+            </div>
 
-                {/* Ações */}
-                <div className="flex items-center gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => navigate("/grupo")}
-                    className={`ui-button ui-button--md ${`rounded-lg bg-input px-4 py-2.5 text-center text-xs font-medium text-text-primary transition hover:bg-background ${
-                      grupo.acaoSecundaria ? "flex-1" : "w-full"
-                    }`}`}
-                  >
-                    {grupo.rotuloDetalhes}
-                  </button>
+            {gruposVisiveis.length === 0 && (
+              <p className="text-center text-sm" style={{ color: C.onSurfaceVariant }}>
+                Nenhum grupo encontrado com esses filtros.
+              </p>
+            )}
 
-                  {grupo.acaoSecundaria === "pix" && (
-                    <button
-                      type="button"
-                      className="ui-button ui-button--md flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-xs font-semibold text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white"
-                    >
-                      <Zap size={14} />
-                      Pagar Pix
-                    </button>
-                  )}
+            {/* =====================================================
+                CONVITE
+            ====================================================== */}
 
-                  {grupo.acaoSecundaria === "whatsapp" && (
-                    <button
-                      type="button"
-                      className="ui-button ui-button--md flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-input px-4 py-2.5 text-xs font-semibold text-secondary transition hover:bg-background"
-                    >
-                      <MessageCircle size={14} />
-                      Cobrar WhatsApp
-                    </button>
-                  )}
+            <div
+              className="mt-4 flex flex-col items-center justify-between gap-6 rounded-2xl p-6 shadow-sm md:flex-row"
+              style={{ backgroundColor: C.surfaceLow }}
+            >
+              <div className="flex items-center gap-4">
+                <div
+                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-md"
+                  style={{ backgroundColor: C.primaryContainer }}
+                >
+                  <Rocket className="h-[30px] w-[30px]" />
+                </div>
+                <div className="flex flex-col">
+                  <h3 className="text-xl font-bold">
+                    Convidar amigos via Pix ou link direto
+                  </h3>
+                  <p className="mt-0.5 max-w-xl text-sm" style={{ color: C.onSurfaceVariant }}>
+                    Quem entra no grupo não precisa baixar aplicativo para
+                    conferir a conta ou confirmar o comprovante de pagamento.
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-3 rounded-xl bg-surface p-12 text-center shadow-sm">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-input text-secondary">
-              <CircleDollarSign size={22} />
+              <button
+                type="button"
+                onClick={copiarConvite}
+                className="shrink-0 cursor-pointer rounded-lg bg-white px-6 py-2 text-sm font-bold shadow-sm transition-colors hover:bg-[#e6eeff]"
+              >
+                Copiar convite rápido
+              </button>
             </div>
-
-            <h3 className="text-base font-semibold">
-              Nenhum grupo encontrado
-            </h3>
-
-            <p className="max-w-md text-xs text-text-secondary">
-              Ajuste a busca ou escolha outro filtro para visualizar seus
-              grupos.
-            </p>
-          </div>
+          </>
         )}
+      </div>
 
-        {/* AVISO - LEMBRETES AUTOMÁTICOS */}
-        <div className="flex flex-col items-start justify-between gap-4 rounded-xl bg-gradient-to-r from-input to-background p-6 shadow-sm md:flex-row md:items-center">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-surface text-primary shadow-sm">
-              <MailCheck size={24} />
+      {/* =====================================================
+          MODAL — CRIAR NOVO GRUPO
+      ====================================================== */}
+
+      {modalAberto && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-[#27313f66] p-4 font-jakarta backdrop-blur-sm"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setModalAberto(false);
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="titulo-novo-grupo"
+            className="flex w-full max-w-lg flex-col gap-4 rounded-2xl bg-white p-6 shadow-2xl"
+            style={{ color: C.onSurface }}
+          >
+            <div className="flex items-center justify-between pb-1">
+              <div className="flex items-center gap-1">
+                <div
+                  className="mr-1 flex h-9 w-9 items-center justify-center rounded-xl"
+                  style={{ backgroundColor: `${C.primaryContainer}33`, color: C.primary }}
+                >
+                  <UserPlus className="h-5 w-5" />
+                </div>
+                <h3 id="titulo-novo-grupo" className="text-xl font-bold">
+                  Criar novo grupo
+                </h3>
+              </div>
+              <button
+                type="button"
+                aria-label="Fechar"
+                onClick={() => setModalAberto(false)}
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-[#e6eeff] hover:text-[#121c2a]"
+                style={{ color: C.onSurfaceVariant }}
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
 
-            <div className="flex flex-col">
-              <h3 className="text-base font-semibold">
-                Lembretes Automáticos Racha+
-              </h3>
+            <form className="flex flex-col gap-4" onSubmit={criarGrupo}>
+              <div className="flex flex-col gap-1">
+                <label htmlFor="nome-novo-grupo" className="text-xs font-semibold">
+                  Nome do grupo
+                </label>
+                <input
+                  id="nome-novo-grupo"
+                  type="text"
+                  required
+                  autoFocus
+                  value={nomeNovo}
+                  onChange={(event) => setNomeNovo(event.target.value)}
+                  placeholder="Ex: Carnaval Salvador, Aluguel AP 402"
+                  className="w-full rounded-lg px-4 py-2 text-base outline-none transition-all focus:ring-2 focus:ring-[#ff8c42]"
+                  style={{ backgroundColor: C.surfaceLow }}
+                />
+              </div>
 
-              <p className="mt-0.5 max-w-2xl text-xs text-text-secondary">
-                Nenhum constrangimento: avisamos os participantes com
-                pendências via WhatsApp de forma amigável e com link direto do
-                Pix quando faltar 24h para o vencimento.
-              </p>
-            </div>
-          </div>
+              <div className="flex flex-col gap-1">
+                <label htmlFor="categoria-novo-grupo" className="text-xs font-semibold">
+                  Categoria
+                </label>
+                <select
+                  id="categoria-novo-grupo"
+                  value={categoriaNova}
+                  onChange={(event) => setCategoriaNova(event.target.value)}
+                  className="w-full cursor-pointer rounded-lg px-4 py-2 text-sm outline-none transition-all focus:ring-2 focus:ring-[#ff8c42]"
+                  style={{ backgroundColor: C.surfaceLow }}
+                >
+                  {CATEGORIAS_MODAL.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.nome}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-xs" style={{ color: C.onSurfaceVariant }}>
+                  Na próxima etapa você define o período e adiciona os
+                  participantes.
+                </span>
+              </div>
 
-          <div className="flex shrink-0 items-center gap-3 self-end md:self-auto">
-            <button
-              type="button"
-              className="px-3 py-2 text-xs font-semibold text-secondary transition hover:text-text-primary"
-            >
-              Configurar Regras
-            </button>
-
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-ui-caption font-bold text-secondary shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-secondary" />
-              Ativo em todos os grupos
-            </span>
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setModalAberto(false)}
+                  className="cursor-pointer rounded-lg px-4 py-2 text-sm font-semibold transition-colors hover:bg-[#e6eeff]"
+                  style={{ backgroundColor: C.surfaceLow }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="cursor-pointer rounded-lg px-6 py-2 text-sm font-bold text-white shadow-sm transition-all hover:brightness-105 active:scale-95"
+                  style={{ backgroundColor: C.primaryContainer }}
+                >
+                  Criar grupo
+                </button>
+              </div>
+            </form>
           </div>
         </div>
-      </main>
+      )}
 
-      {/* RODAPÉ */}
-      <footer className="mt-12 w-full bg-surface py-8">
-        <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-4 px-6 md:flex-row">
-          <div className="flex items-center gap-3">
-            <span className="font-semibold text-secondary">Racha+</span>
-
-            <span className="text-xs text-text-secondary">
-              • Organização descomplicada de despesas e tarefas coletivas
-            </span>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-text-secondary">
-            <button type="button" className="transition hover:text-secondary">
-              Sobre
-            </button>
-
-            <button type="button" className="transition hover:text-secondary">
-              Segurança Pix
-            </button>
-
-            <button type="button" className="transition hover:text-secondary">
-              Privacidade
-            </button>
-
-            <span>© 2025 Racha+. Todos os direitos reservados.</span>
-          </div>
+      {/* Aviso flutuante */}
+      {aviso && (
+        <div
+          role="status"
+          className="fixed bottom-6 right-6 z-[100] flex items-center gap-1 rounded-xl px-4 py-2 font-jakarta text-sm font-semibold shadow-xl"
+          style={{ backgroundColor: "#27313f", color: "#eaf1ff" }}
+        >
+          <CheckCircle2 className="mr-1 h-[18px] w-[18px]" style={{ color: C.tertiaryFixed }} />
+          {aviso}
         </div>
-      </footer>
+      )}
+    </AppShell>
+  );
+}
+
+/* =====================================================
+   COMPONENTES AUXILIARES
+====================================================== */
+
+function Metrica({
+  rotulo,
+  valor,
+  corValor = C.onSurface,
+  detalhe,
+  detalheIcone,
+  corDetalhe = C.onSurfaceVariant,
+  icone,
+  fundoIcone,
+  corIcone,
+}: {
+  rotulo: string;
+  valor: string;
+  corValor?: string;
+  detalhe: string;
+  detalheIcone: React.ReactNode;
+  corDetalhe?: string;
+  icone: React.ReactNode;
+  fundoIcone: string;
+  corIcone: string;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
+      <div className="flex flex-col">
+        <span className="text-xs font-medium" style={{ color: C.onSurfaceVariant }}>
+          {rotulo}
+        </span>
+        <span
+          className="mt-0.5 text-[1.75rem] font-extrabold leading-9 tracking-tight"
+          style={{ color: corValor }}
+        >
+          {valor}
+        </span>
+        <span
+          className="mt-1 flex items-center gap-1 text-xs font-medium"
+          style={{ color: corDetalhe }}
+        >
+          {detalheIcone} {detalhe}
+        </span>
+      </div>
+      <div
+        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
+        style={{ backgroundColor: fundoIcone, color: corIcone }}
+      >
+        {icone}
+      </div>
     </div>
   );
 }
 
-export default MeusGrupos;
+function CartaoGrupo({
+  grupo,
+  onAcessar,
+}: {
+  grupo: GrupoCartao;
+  onAcessar: () => void;
+}) {
+  const tom = TONS[grupo.tom];
+  const f = grupo.financeiro;
+  const visiveis = grupo.membros.slice(0, 3);
+  const extras = grupo.membros.length - visiveis.length;
+  const quitado = f ? f.quitacao >= 100 : false;
+  const RodapeIcone = f?.rodapeIcone === "ok" ? Check : f?.rodapeIcone === "prazo" ? Hourglass : Receipt;
+
+  return (
+    <article className="flex flex-col justify-between rounded-xl bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-xl">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium"
+            style={{ backgroundColor: C.surfaceContainer, color: C.onSurfaceVariant }}
+          >
+            {grupo.categoria ?? "Grupo"}
+          </span>
+          <span
+            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold"
+            style={{ backgroundColor: tom.selo, color: tom.textoSelo }}
+          >
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tom.ponto }} />
+            {grupo.status}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 pt-1">
+          <div
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl"
+            style={{ backgroundColor: C.surfaceContainer }}
+            aria-hidden="true"
+          >
+            {grupo.emoji}
+          </div>
+          <div className="flex min-w-0 flex-col">
+            <h2 className="truncate text-xl font-bold">{grupo.nome}</h2>
+            <span className="truncate text-sm" style={{ color: C.onSurfaceVariant }}>
+              {grupo.subtitulo}
+            </span>
+          </div>
+        </div>
+
+        {grupo.participantes !== undefined && (
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-xs font-medium" style={{ color: C.onSurfaceVariant }}>
+              {grupo.participantes} participantes
+            </span>
+            <div className="flex items-center -space-x-2">
+              {visiveis.map((letra, indice) => {
+                const cor = CORES_AVATAR[indice % CORES_AVATAR.length];
+                return (
+                  <div
+                    key={`${letra}-${indice}`}
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold shadow-sm ring-2 ring-white"
+                    style={{ backgroundColor: cor.fundo, color: cor.texto }}
+                  >
+                    {letra}
+                  </div>
+                );
+              })}
+              {extras > 0 && (
+                <div
+                  className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold shadow-sm ring-2 ring-white"
+                  style={{ backgroundColor: C.tertiaryFixed, color: C.onTertiaryContainer }}
+                >
+                  +{extras}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {f && (
+          <>
+            <div
+              className="mt-2 flex flex-col gap-1 rounded-lg p-2"
+              style={{ backgroundColor: C.surfaceLow }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-sm" style={{ color: C.onSurfaceVariant }}>
+                  Total despesas
+                </span>
+                <span className="text-sm font-bold">{money(f.total)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span
+                  className="text-sm font-semibold"
+                  style={{ color: quitado ? C.onSurface : tom.texto }}
+                >
+                  Sua parte
+                </span>
+                <span
+                  className="text-xl font-extrabold"
+                  style={{ color: quitado ? C.onSurface : tom.texto }}
+                >
+                  {money(f.suaParte)}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1 pt-1">
+              <div className="flex items-center justify-between text-xs font-medium">
+                <span style={{ color: C.onSurfaceVariant }}>Quitação do grupo</span>
+                <span className="font-bold" style={{ color: tom.texto }}>
+                  {quitado ? "100% quitado" : `${f.quitacao}%`}
+                </span>
+              </div>
+              <div
+                className="h-2 w-full overflow-hidden rounded-full"
+                style={{ backgroundColor: C.surfaceContainer }}
+                role="progressbar"
+                aria-valuenow={f.quitacao}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`Quitação de ${grupo.nome}`}
+              >
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(f.quitacao, 100)}%`, background: tom.barra }}
+                />
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="mt-1 flex items-center justify-between pt-4">
+        <span
+          className="flex items-center gap-1 text-xs font-medium"
+          style={{ color: C.onSurfaceVariant }}
+        >
+          {f && (
+            <>
+              <RodapeIcone className="h-4 w-4" /> {f.rodape}
+            </>
+          )}
+        </span>
+        <button
+          type="button"
+          onClick={onAcessar}
+          className="flex cursor-pointer items-center gap-1 text-sm font-bold transition-colors hover:text-[#ff8c42]"
+          style={{ color: C.primary }}
+        >
+          <span>Acessar</span>
+          <ArrowRight className="h-[18px] w-[18px]" />
+        </button>
+      </div>
+    </article>
+  );
+}
