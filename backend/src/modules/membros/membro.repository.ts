@@ -1,7 +1,12 @@
 import { AppError } from "../../errors/AppError.js";
 import { prisma } from "../../lib/prisma.js";
-import { Funcao } from "../../generated/prisma/enums.js";
+import {
+  Funcao,
+  TipoNotificacao,
+} from "../../generated/prisma/enums.js";
 import { Prisma } from "../../generated/prisma/client.js";
+import { notificacaoRepository } from "../notificacoes/notificacao.repository.js";
+import { randomUUID } from "node:crypto";
 
 const MAX_TENTATIVAS_TRANSACAO = 3;
 
@@ -102,7 +107,7 @@ export const membroRepository = {
     idGrupo: string,
   ) {
     try {
-      return await tx.membro.create({
+      const membro = await tx.membro.create({
         data: { idUser, idGrupo, funcao: Funcao.membro },
         select: {
           idUser: true,
@@ -111,6 +116,21 @@ export const membroRepository = {
           user: { select: { id: true, name: true, image: true } },
         },
       });
+      const grupo = await tx.grupo.findUniqueOrThrow({
+        where: { id: idGrupo },
+        select: { nome: true },
+      });
+      await notificacaoRepository.criarNaTransacao(tx, [
+        {
+          idUser,
+          tipo: TipoNotificacao.MEMBRO_ADICIONADO,
+          titulo: "Você foi adicionado a um grupo",
+          mensagem: `Você agora faz parte do grupo "${grupo.nome}".`,
+          idGrupo,
+          chaveEvento: `membro-adicionado:${idGrupo}:${idUser}:${randomUUID()}`,
+        },
+      ]);
+      return membro;
     } catch (erro) {
       if (erroPrismaComCodigo(erro, "P2002")) {
         throw new AppError(409, "Este usuário já participa do grupo");

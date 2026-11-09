@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { sendPasswordResetEmail } from "./email.js";
 import { prisma } from "./prisma.js";
 
 export const auth = betterAuth({
@@ -16,5 +17,8 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
+    sendResetPassword: async ({ user, url }) => {
+      await sendPasswordResetEmail({ to: user.email, url });
+    },
   },
 });

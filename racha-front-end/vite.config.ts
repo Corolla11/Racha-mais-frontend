@@ -30,6 +30,22 @@ export default defineConfig(({ mode }) => {
           target: backendTarget,
           changeOrigin: true,
         },
+        '/notificacoes': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
+        '/planos': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
+        '/assinaturas': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
+        '/ia': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
       },
     },
   }

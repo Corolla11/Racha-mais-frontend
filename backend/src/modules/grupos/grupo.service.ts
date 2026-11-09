@@ -78,6 +78,12 @@ export const grupoService = {
 
   async excluir(idUser: string, idGrupo: string) {
     await exigirDono(idUser, idGrupo);
+    if (await grupoRepository.temAssinaturaProAtivaOuPendente(idGrupo)) {
+      throw new AppError(
+        409,
+        "Cancele o checkout ou a assinatura Pro antes de excluir o grupo",
+      );
+    }
     await grupoRepository.excluir(idGrupo);
   },
 };

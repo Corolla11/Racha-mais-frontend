@@ -26,12 +26,14 @@
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "^1.7.5",
+    "@google/genai": "^3.0.0",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "better-auth": "^1.7.5",
     "dotenv": "^18.0.5",
     "express": "^5.2.1",
     "pg": "^8.23.1",
+    "resend": "^6.37.0",
     "zod": "^4.6.5"
   }
 }
