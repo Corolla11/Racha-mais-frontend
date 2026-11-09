@@ -1,7 +1,11 @@
 import AppShell from "../components/app-shell";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
 import GroupFlows, { type GroupFlowControl, type Activity } from "../components/group-flows";
+import { useAuth } from "../auth/auth-context";
+import { apiRequest } from "../lib/api";
+import { ENDPOINTS } from "../lib/endpoints";
 import { share, type Payment } from "../lib/finance";
 import {
   CalendarDays,
@@ -132,6 +136,34 @@ const tarefasIniciais: DadosTarefa[] = [
   },
 ];
 
+type GrupoDetalheApi = {
+  id: string;
+  nome: string;
+  descricao: string;
+  membros: {
+    idUser: string;
+    funcao: "dono" | "membro";
+    user: { id: string; name: string; image: string | null };
+  }[];
+};
+
+type TarefaDetalheApi = {
+  id: string;
+  idGrupo: string;
+  idUserCriador: string | null;
+  nome: string;
+  descricao: string | null;
+  valorTotal: string | number | null;
+  dataInicio: string;
+  dataFinal: string;
+  statusAndamento: "AGENDADA" | "EM_ANDAMENTO" | "FINALIZADA" | "ATRASADA" | "CANCELADA";
+  partes?: {
+    id: string;
+    idUser: string | null;
+    valor: string | number;
+    status: "AGENDADA" | "EM_ANDAMENTO" | "FINALIZADA" | "ATRASADA" | "CANCELADA";
+  }[];
+};
 
 function moeda(valor: number) {
   return valor.toLocaleString("pt-BR", {
@@ -154,15 +186,15 @@ function iniciais(nome: string) {
     .toUpperCase();
 }
 
-function nomeResponsavel(tarefa: DadosTarefa) {
+function nomeResponsavel(tarefa: DadosTarefa, currentUserId: string, currentUserName?: string) {
   const participante = tarefa.participantes.find(
     (p) => p.id === tarefa.responsavelId
   );
 
   if (!participante) return "Não definido";
 
-  return participante.id === "1"
-    ? "Você (Rodrigo)"
+  return participante.id === currentUserId
+    ? `Você (${currentUserName?.split(" ")[0] || "Rodrigo"})`
     : participante.nome;
 }
 
@@ -173,11 +205,14 @@ function quantidadeParticipantes(tarefa: DadosTarefa) {
 // Converte os dados utilizados na edição para o formato
 // utilizado pela tela de visualização.
 
-function converterParaVisualizacao(dados: DadosTarefa, payments: Record<string, Payment>): Tarefa {
+function converterParaVisualizacao(
+  dados: DadosTarefa,
+  payments: Record<string, Payment>,
+  groupLabel: string,
+): Tarefa {
   const participantesSelecionados = dados.participantes.filter(
     (p) => p.selecionado
   );
-
 
   const participantes: ParticipanteVisualizacao[] =
     participantesSelecionados.map((p, index) => ({
@@ -206,7 +241,7 @@ function converterParaVisualizacao(dados: DadosTarefa, payments: Record<string, 
   return {
     id: dados.id,
     titulo: dados.titulo,
-    grupo: nomeGrupo,
+    grupo: groupLabel,
     status: dados.concluida ? "concluida" : dados.emAndamento ? "andamento" : "pendente",
     descricao: dados.descricao,
     responsavelId: dados.responsavelId,
@@ -248,7 +283,14 @@ type FiltroTarefas =
   | "concluidas";
 
 export default function Grupo() {
+  const { idGrupo } = useParams<{ idGrupo?: string }>();
+  const { user } = useAuth();
+  const currentUserId = idGrupo && user?.id ? user.id : "1";
+
   const [groupName, setGroupName] = useState(nomeGrupo);
+  const [participantesAtuais, setParticipantesAtuais] =
+    useState<ParticipanteTarefa[]>(participantesGrupo);
+  const [parteIds, setParteIds] = useState<Record<string, string>>({});
   const [closed, setClosed] = useState(false);
   const [memberMode, setMemberMode] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -258,18 +300,115 @@ export default function Grupo() {
   function record(text: string) { setFeedback(text); setTaskEvents(old => [{ text, date: new Date().toISOString() }, ...old]); }
   const flowControl = useRef<GroupFlowControl>(null);
 
-  const [tarefas, setTarefas] = useState<DadosTarefa[]>(tarefasIniciais);
+  const [tarefas, setTarefas] = useState<DadosTarefa[]>(idGrupo ? [] : tarefasIniciais);
   const [tarefaSelecionadaId, setTarefaSelecionadaId] =
     useState<string | null>(null);
 
   const [editarAberto, setEditarAberto] = useState(false);
   const [filtro, setFiltro] = useState<FiltroTarefas>("todas");
 
+  useEffect(() => {
+    if (!idGrupo) return;
+    let ativo = true;
+
+    async function carregarGrupo() {
+      try {
+        const grupo = await apiRequest<GrupoDetalheApi>(ENDPOINTS.grupos.byId(idGrupo!));
+        if (!ativo) return;
+        setGroupName(grupo.nome);
+
+        const listaParticipantes: ParticipanteTarefa[] = grupo.membros.map((m) => ({
+          id: m.idUser,
+          nome: m.user.name,
+          selecionado: true,
+        }));
+        if (listaParticipantes.length > 0) {
+          setParticipantesAtuais(listaParticipantes);
+        }
+
+        const meuMembro = grupo.membros.find((m) => m.idUser === user?.id);
+        if (meuMembro) {
+          setMemberMode(meuMembro.funcao !== "dono");
+        }
+
+        const listaTarefas = await apiRequest<TarefaDetalheApi[]>(
+          `${ENDPOINTS.tarefas.base}?idGrupo=${encodeURIComponent(idGrupo!)}`,
+        );
+        if (!ativo) return;
+
+        const detalhes = await Promise.all(
+          listaTarefas.map((t) =>
+            apiRequest<TarefaDetalheApi>(ENDPOINTS.tarefas.byId(t.id)).catch(() => t),
+          ),
+        );
+        if (!ativo) return;
+
+        const novosPagamentos: Record<string, Payment> = {};
+        const novasPartes: Record<string, string> = {};
+
+        const mapeadas: DadosTarefa[] = detalhes.map((t) => {
+          const valor = t.valorTotal != null ? Number(t.valorTotal) : 0;
+          const partes = t.partes ?? [];
+          const idsNasPartes = new Set(
+            partes.map((p) => p.idUser).filter((id): id is string => Boolean(id)),
+          );
+          const responsavel =
+            t.idUserCriador ?? listaParticipantes[0]?.id ?? currentUserId;
+
+          for (const p of partes) {
+            if (p.idUser) {
+              const key = `${t.id}:${p.idUser}`;
+              novasPartes[key] = p.id;
+              if (p.status === "FINALIZADA") {
+                novosPagamentos[key] = { status: "confirmado" };
+              } else if (p.status === "EM_ANDAMENTO") {
+                novosPagamentos[key] = { status: "informado" };
+              }
+            }
+          }
+
+          return {
+            id: t.id,
+            titulo: t.nome,
+            descricao: t.descricao ?? "",
+            dataLimite: t.dataFinal ? t.dataFinal.slice(0, 10) : "",
+            horario: t.dataFinal ? t.dataFinal.slice(11, 16) || "09:00" : "09:00",
+            responsavelId: responsavel,
+            participantes: (listaParticipantes.length > 0
+              ? listaParticipantes
+              : participantesGrupo
+            ).map((m) => ({
+              ...m,
+              selecionado: idsNasPartes.size > 0 ? idsNasPartes.has(m.id) : true,
+            })),
+            possuiDespesa: valor > 0,
+            valorTotal: valor,
+            pagadorId: responsavel,
+            comprovante: "",
+            concluida: t.statusAndamento === "FINALIZADA",
+            emAndamento: t.statusAndamento === "EM_ANDAMENTO",
+          };
+        });
+
+        setParteIds(novasPartes);
+        setPayments(novosPagamentos);
+        setTarefas(mapeadas);
+      } catch {
+        // Mantém estado atual caso a API não esteja disponível
+      }
+    }
+
+    void carregarGrupo();
+    return () => {
+      ativo = false;
+    };
+  }, [idGrupo, user?.id, currentUserId]);
+
   const tarefaSelecionada =
     tarefas.find((t) => t.id === tarefaSelecionadaId) ?? null;
 
   const tarefaVisualizacao = tarefaSelecionada
-    ? converterParaVisualizacao(tarefaSelecionada, payments)
+    ? converterParaVisualizacao(tarefaSelecionada, payments, groupName)
     : null;
 
   const totalDespesas = tarefas.reduce(
@@ -282,7 +421,7 @@ export default function Grupo() {
     if (
       !tarefa.possuiDespesa ||
       !tarefa.participantes.some(
-        (p) => p.id === "1" && p.selecionado
+        (p) => p.id === currentUserId && p.selecionado
       )
     ) {
       return total;
@@ -290,8 +429,10 @@ export default function Grupo() {
 
     const quantidade = quantidadeParticipantes(tarefa);
     const selected = tarefa.participantes.filter(p => p.selecionado);
-    const confirmed = payments[`${tarefa.id}:1`]?.status === "confirmado" || (!payments[`${tarefa.id}:1`] && tarefa.pagadorId === "1");
-    return total + (quantidade > 0 && !confirmed ? share(tarefa.valorTotal, quantidade, selected.findIndex(p => p.id === "1")) : 0);
+    const confirmed =
+      payments[`${tarefa.id}:${currentUserId}`]?.status === "confirmado" ||
+      (!payments[`${tarefa.id}:${currentUserId}`] && tarefa.pagadorId === currentUserId);
+    return total + (quantidade > 0 && !confirmed ? share(tarefa.valorTotal, quantidade, selected.findIndex(p => p.id === currentUserId)) : 0);
   }, 0);
 
   const tarefasConcluidas = tarefas.filter((t) => t.concluida).length;
@@ -328,14 +469,83 @@ export default function Grupo() {
     setEditarAberto(true);
   }
 
-  function salvarEdicao(atualizada: DadosTarefa) {
+  async function salvarEdicao(atualizada: DadosTarefa) {
     if (memberMode || closed) return;
     const previous = tarefas.find(t => t.id === atualizada.id);
     const hasPayments = Object.entries(payments).some(([key, value]) => key.startsWith(`${atualizada.id}:`) && value.status !== "pendente");
     if (previous && hasPayments && (previous.valorTotal !== atualizada.valorTotal || previous.pagadorId !== atualizada.pagadorId || previous.possuiDespesa !== atualizada.possuiDespesa || JSON.stringify(previous.participantes.filter(p => p.selecionado).map(p => p.id)) !== JSON.stringify(atualizada.participantes.filter(p => p.selecionado).map(p => p.id)))) { setFeedback("Existem pagamentos registrados. Preserve o valor e os participantes desta tarefa."); return; }
+
+    let idFinal = creating ? crypto.randomUUID() : atualizada.id;
+
+    if (idGrupo) {
+      const agora = new Date();
+      const dataFinal = atualizada.dataLimite
+        ? new Date(`${atualizada.dataLimite}T${atualizada.horario || "23:59"}:00`)
+        : new Date(agora.getTime() + 86400_000);
+      const dataInicio = dataFinal > agora ? agora : new Date(dataFinal.getTime() - 3600_000);
+
+      try {
+        if (creating) {
+          const criada = await apiRequest<{ id: string }>(ENDPOINTS.tarefas.base, {
+            method: "POST",
+            body: {
+              idGrupo,
+              nome: atualizada.titulo,
+              descricao: atualizada.descricao || undefined,
+              valorTotal: atualizada.possuiDespesa ? atualizada.valorTotal : undefined,
+              dataInicio: dataInicio.toISOString(),
+              dataFinal: dataFinal.toISOString(),
+              tipoTarefa: atualizada.possuiDespesa ? "contribuinte" : "comum",
+              statusAndamento: atualizada.concluida ? "FINALIZADA" : "AGENDADA",
+            },
+          });
+          idFinal = criada.id;
+
+          if (atualizada.possuiDespesa && atualizada.valorTotal > 0) {
+            const selecionados = atualizada.participantes.filter((p) => p.selecionado);
+            for (let i = 0; i < selecionados.length; i++) {
+              const cota = share(atualizada.valorTotal, selecionados.length, i);
+              if (cota > 0) {
+                const parte = await apiRequest<{ id: string }>(
+                  ENDPOINTS.tarefas.partes(idFinal),
+                  {
+                    method: "POST",
+                    body: {
+                      idUser: selecionados[i].id,
+                      descricao: `Cota: ${atualizada.titulo}`,
+                      valor: cota.toFixed(2),
+                    },
+                  },
+                ).catch(() => null);
+                if (parte?.id) {
+                  setParteIds((old) => ({
+                    ...old,
+                    [`${idFinal}:${selecionados[i].id}`]: parte.id,
+                  }));
+                }
+              }
+            }
+          }
+        } else {
+          await apiRequest(ENDPOINTS.tarefas.byId(atualizada.id), {
+            method: "PATCH",
+            body: {
+              nome: atualizada.titulo,
+              descricao: atualizada.descricao,
+              valorTotal: atualizada.possuiDespesa ? atualizada.valorTotal : null,
+              dataFinal: dataFinal.toISOString(),
+              statusAndamento: atualizada.concluida ? "FINALIZADA" : "EM_ANDAMENTO",
+            },
+          });
+        }
+      } catch {
+        // Segue com atualização otimista
+      }
+    }
+
     record(`${creating ? "Tarefa criada" : "Tarefa editada"}: ${atualizada.titulo}`);
     setTarefas((anteriores) =>
-      creating ? [...anteriores, { ...atualizada, id: crypto.randomUUID() }] : anteriores.map((tarefa) =>
+      creating ? [...anteriores, { ...atualizada, id: idFinal }] : anteriores.map((tarefa) =>
         tarefa.id === atualizada.id ? atualizada : tarefa
       )
     );
@@ -345,6 +555,12 @@ export default function Grupo() {
 
   function concluirTarefa(tarefa: Tarefa) {
     if (memberMode || closed) return;
+    if (idGrupo) {
+      void apiRequest(ENDPOINTS.tarefas.byId(tarefa.id), {
+        method: "PATCH",
+        body: { statusAndamento: "FINALIZADA" },
+      }).catch(() => {});
+    }
     record(`Tarefa concluida: ${tarefa.titulo}`);
     setTarefas((anteriores) =>
       anteriores.map((item) =>
@@ -357,6 +573,12 @@ export default function Grupo() {
 
   function reabrirTarefa(tarefa: Tarefa) {
     if (memberMode || closed) return;
+    if (idGrupo) {
+      void apiRequest(ENDPOINTS.tarefas.byId(tarefa.id), {
+        method: "PATCH",
+        body: { statusAndamento: "EM_ANDAMENTO" },
+      }).catch(() => {});
+    }
     record(`Tarefa reaberta: ${tarefa.titulo}`);
     setTarefas((anteriores) =>
       anteriores.map((item) =>
@@ -368,6 +590,11 @@ export default function Grupo() {
   function excluirTarefa(tarefa: Tarefa) {
     if (memberMode || closed) return;
     if (Object.keys(payments).some(key => key.startsWith(`${tarefa.id}:`))) { setFeedback("Preserve tarefas com pagamentos registrados no historico."); return; }
+    if (idGrupo) {
+      void apiRequest(ENDPOINTS.tarefas.byId(tarefa.id), {
+        method: "DELETE",
+      }).catch(() => {});
+    }
     record(`Tarefa excluida: ${tarefa.titulo}`);
     setTarefas((anteriores) =>
       anteriores.filter((item) => item.id !== tarefa.id)
@@ -386,7 +613,7 @@ export default function Grupo() {
                 <Users size={14} />
                 <span>Meus grupos</span>
                 <ChevronRight size={13} />
-                <span className="text-slate-600">{nomeGrupo}</span>
+                <span className="text-slate-600">{groupName}</span>
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
@@ -397,7 +624,7 @@ export default function Grupo() {
                   {groupName}
                 </h1>
                 <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-600">
-                  ● Ativo • 6 participantes
+                  ● Ativo • {participantesAtuais.length} participantes
                 </span>
                 <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600">
                   Praia & Lazer
@@ -414,7 +641,7 @@ export default function Grupo() {
           </div>
 
           <div className="racha-role-preview"><label>Prévia de permissões: <select aria-label="Papel na demonstração" value={memberMode ? "member" : "admin"} onChange={event => setMemberMode(event.target.value === "member")} ><option value="admin">Administrador</option><option value="member">Membro comum</option></select></label></div>
-          <GroupFlows taskEvents={taskEvents} ref={flowControl} payments={payments} setPayments={setPayments} tasks={tarefas} name={groupName} onName={setGroupName} closed={closed} onCloseGroup={() => setClosed(true)} memberMode={memberMode}/>
+          <GroupFlows idGrupo={idGrupo} currentUserId={currentUserId} parteIds={parteIds} taskEvents={taskEvents} ref={flowControl} payments={payments} setPayments={setPayments} tasks={tarefas} name={groupName} onName={setGroupName} closed={closed} onCloseGroup={() => setClosed(true)} memberMode={memberMode}/>
           {!closed && <>
           {/* RESUMO */}
           <section className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -559,7 +786,7 @@ export default function Grupo() {
                       {tarefa.titulo}
                     </h3>
                     <p className="mt-0.5 text-xs text-slate-500">
-                      Responsável: {nomeResponsavel(tarefa)}
+                      Responsável: {nomeResponsavel(tarefa, currentUserId, user?.name)}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-500">
                       <span className="flex items-center gap-1">
@@ -661,8 +888,8 @@ export default function Grupo() {
       {(tarefaSelecionada || creating) && editarAberto && !closed && !memberMode && (
         <EditarTarefa
           modo={creating ? "criar" : "editar"}
-          tarefa={creating ? { id: "tarefa-nova", titulo: "", descricao: "", dataLimite: "", horario: "09:00", responsavelId: "1", participantes: participantesGrupo, possuiDespesa: true, valorTotal: 0, pagadorId: "1", comprovante: "", concluida: false } : tarefaSelecionada!}
-          nomeGrupo={nomeGrupo}
+          tarefa={creating ? { id: "tarefa-nova", titulo: "", descricao: "", dataLimite: "", horario: "09:00", responsavelId: currentUserId, participantes: participantesAtuais, possuiDespesa: true, valorTotal: 0, pagadorId: currentUserId, comprovante: "", concluida: false } : tarefaSelecionada!}
+          nomeGrupo={groupName}
           onClose={() => { setEditarAberto(false); setCreating(false); }}
           onSave={salvarEdicao}
         />

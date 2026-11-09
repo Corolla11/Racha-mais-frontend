@@ -1,5 +1,5 @@
 ﻿import { useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   ArrowRight,
   BadgeCheck,
@@ -12,6 +12,8 @@ import {
   LockKeyhole,
   RotateCcw,
 } from "lucide-react";
+import { useAuth } from "../auth/auth-context";
+import { ApiError } from "../lib/api";
 import RecuperacaoLayout, { BannerErro } from "../components/recuperacao-layout";
 import { CR } from "../lib/recuperacao-tokens";
 
@@ -30,23 +32,34 @@ function nivelForca(senha: string) {
 }
 
 export default function RedefinirSenha() {
+  const { resetPassword } = useAuth();
+  const [params] = useSearchParams();
+  const token = params.get("token") ?? "";
+
   const [senha, setSenha] = useState("");
   const [confirmacao, setConfirmacao] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false);
-  const [erro, setErro] = useState(false);
+  const [erro, setErro] = useState("");
   const [concluido, setConcluido] = useState(false);
 
   const forca = nivelForca(senha);
 
-  // Prévia: a troca de senha ainda não é enviada ao backend
-  function salvar(event: FormEvent<HTMLFormElement>) {
+  async function salvar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (senha !== confirmacao) {
-      setErro(true);
+      setErro("A confirmação de senha deve ser idêntica à nova senha digitada.");
       return;
     }
-    setErro(false);
+    setErro("");
+    if (token) {
+      try {
+        await resetPassword(senha, token);
+      } catch (err) {
+        setErro(err instanceof ApiError ? err.message : "Não foi possível redefinir a senha.");
+        return;
+      }
+    }
     setConcluido(true);
   }
 
@@ -61,12 +74,6 @@ export default function RedefinirSenha() {
           <p className="text-sm" style={{ color: CR.onSurfaceVariant }}>
             Tudo pronto! Agora você já pode entrar e continuar organizando
             seus rachas.
-          </p>
-          <p
-            className="w-full rounded-lg px-3 py-2 text-xs"
-            style={{ backgroundColor: CR.primaryFixed, color: CR.onPrimaryFixed }}
-          >
-            Prévia: nenhuma credencial real foi alterada.
           </p>
           <Link
             to="/login"
@@ -85,9 +92,9 @@ export default function RedefinirSenha() {
       <div className="flex flex-col gap-6">
         {erro && (
           <BannerErro
-            titulo="As senhas não coincidem"
-            descricao="A confirmação de senha deve ser idêntica à nova senha digitada."
-            onFechar={() => setErro(false)}
+            titulo="Não foi possível atualizar a senha"
+            descricao={erro}
+            onFechar={() => setErro("")}
           />
         )}
 
@@ -170,12 +177,12 @@ export default function RedefinirSenha() {
               valor={confirmacao}
               onChange={(valor) => {
                 setConfirmacao(valor);
-                if (erro) setErro(false);
+                if (erro) setErro("");
               }}
               visivel={mostrarConfirmacao}
               onAlternar={() => setMostrarConfirmacao((v) => !v)}
               placeholder="Repita sua nova senha"
-              invalido={erro}
+              invalido={!!erro}
             />
           </div>
 

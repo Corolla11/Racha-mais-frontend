@@ -11,6 +11,8 @@ import {
   X,
 } from "lucide-react";
 import Link from "../components/app-link";
+import { futureModules, type IaSugestaoGrupo } from "../lib/endpoints";
+import { useAppNavigate as useNavigate } from "../lib/navigation";
 
 /* =====================================================
    TOKENS DO DESIGN
@@ -56,9 +58,12 @@ const EXEMPLOS = [
 ];
 
 export default function EscolherCriacao() {
+  const navigate = useNavigate();
   const [assistente, setAssistente] = useState(false);
   const [descricao, setDescricao] = useState("");
   const [sugestaoPronta, setSugestaoPronta] = useState(false);
+  const [carregandoIa, setCarregandoIa] = useState(false);
+  const [sugestaoIa, setSugestaoIa] = useState<IaSugestaoGrupo | null>(null);
   const blocoAssistente = useRef<HTMLDivElement>(null);
 
   // Leva o usuário até o assistente quando ele é aberto
@@ -76,9 +81,18 @@ export default function EscolherCriacao() {
     setAssistente(true);
   }
 
-  function gerarSugestao(event: FormEvent<HTMLFormElement>) {
+  async function gerarSugestao(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSugestaoPronta(true);
+    setCarregandoIa(true);
+    try {
+      const resultado = await futureModules.ia.sugerirGrupo(descricao.trim());
+      setSugestaoIa(resultado);
+    } catch {
+      setSugestaoIa(null);
+    } finally {
+      setCarregandoIa(false);
+      setSugestaoPronta(true);
+    }
   }
 
   return (
@@ -293,7 +307,7 @@ export default function EscolherCriacao() {
           </div>
 
           {/* =====================================================
-              ASSISTENTE (PRÉVIA)
+              ASSISTENTE (PRÉVIA / MÓDULO IA)
           ====================================================== */}
 
           {assistente && (
@@ -306,8 +320,7 @@ export default function EscolherCriacao() {
                 <div>
                   <h2 className="text-xl font-semibold">Conte um pouco sobre o seu plano</h2>
                   <p className="mt-1 text-sm" style={{ color: C.onSurfaceVariant }}>
-                    Prévia do assistente com modelo local. A integração com IA
-                    ainda não está conectada.
+                    Descreva o evento para gerar uma sugestão inicial de grupo e tarefas.
                   </p>
                 </div>
                 <button
@@ -343,29 +356,40 @@ export default function EscolherCriacao() {
                 />
                 <button
                   type="submit"
-                  className="flex h-11 cursor-pointer items-center justify-center gap-1 self-start rounded-lg bg-[#ff8c42] px-6 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#9b4500]"
+                  disabled={carregandoIa}
+                  className="flex h-11 cursor-pointer items-center justify-center gap-1 self-start rounded-lg bg-[#ff8c42] px-6 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#9b4500] disabled:opacity-60"
                 >
                   <Sparkles className="h-4 w-4" />
-                  Visualizar sugestão
+                  {carregandoIa ? "Consultando IA..." : "Visualizar sugestão"}
                 </button>
               </form>
 
               {sugestaoPronta && (
                 <div className="mt-5 rounded-lg p-4" style={{ backgroundColor: C.surfaceLow }}>
-                  <h3 className="font-semibold">Sugestão inicial</h3>
+                  <h3 className="font-semibold">
+                    {sugestaoIa?.nome ? `Sugestão: ${sugestaoIa.nome}` : "Sugestão inicial"}
+                  </h3>
                   <p className="mt-1 text-sm" style={{ color: C.onSurfaceVariant }}>
-                    Organize tarefas para hospedagem, transporte e alimentação.
-                    Selecione os participantes e o valor de cada tarefa na
-                    revisão.
+                    {sugestaoIa?.descricao ||
+                      "Organize tarefas para hospedagem, transporte e alimentação. Selecione os participantes e o valor de cada tarefa na revisão."}
                   </p>
-                  <Link
-                    to="/criar-grupo/manual"
-                    className="mt-3 inline-flex items-center gap-1 text-sm font-bold transition-colors hover:text-[#ff8c42]"
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate("/criar-grupo/manual", {
+                        state: {
+                          nome: sugestaoIa?.nome || descricao.slice(0, 40),
+                          categoria: sugestaoIa?.categoria || "viagem",
+                          descricao: sugestaoIa?.descricao || descricao,
+                        },
+                      })
+                    }
+                    className="mt-3 inline-flex cursor-pointer items-center gap-1 text-sm font-bold transition-colors hover:text-[#ff8c42]"
                     style={{ color: C.primary }}
                   >
                     Revisar e personalizar
                     <ArrowRight className="h-4 w-4" />
-                  </Link>
+                  </button>
                 </div>
               )}
             </div>
