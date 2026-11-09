@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import AppShell from "../components/app-shell";
 import { ApiError, apiRequest } from "../lib/api";
+import { ENDPOINTS } from "../lib/endpoints";
 import { money } from "../lib/finance";
 import { useAppNavigate as useNavigate } from "../lib/navigation";
 import MeusGruposVazio from "./meus-grupos-vazio";
@@ -165,7 +166,7 @@ function deApi(grupo: GrupoApi): GrupoCartao {
     tom: "primary",
     membros: [],
     destino: {
-      path: `/grupo/${encodeURIComponent(grupo.id)}/membros`,
+      path: `/grupo/${encodeURIComponent(grupo.id)}`,
       state: { nomeGrupo: grupo.nome },
     },
   };
@@ -216,7 +217,7 @@ export default function MeusGrupos() {
     if (preview) return;
     let ativo = true;
 
-    apiRequest<GrupoApi[]>("/grupos")
+    apiRequest<GrupoApi[]>(ENDPOINTS.grupos.base)
       .then((resultado) => {
         if (ativo) setGruposApi(resultado);
       })

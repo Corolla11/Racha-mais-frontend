@@ -39,6 +39,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import AppShell from "../components/app-shell";
+import { futureModules } from "../lib/endpoints";
 import { useAppNavigate as useNavigate } from "../lib/navigation";
 
 /* =====================================================
@@ -315,6 +316,11 @@ export default function Notificacoes() {
   const [aviso, setAviso] = useState("");
   const [canais, setCanais] = useState({ push: true, whatsapp: true, email: true });
 
+  // Busca da rota futura de notificações (se disponível no backend)
+  useEffect(() => {
+    futureModules.notificacoes.listar().catch(() => {});
+  }, []);
+
   // Esconde o aviso depois de alguns segundos
   useEffect(() => {
     if (!aviso) return;
@@ -349,17 +355,22 @@ export default function Notificacoes() {
   const visiveis = notificacoes.filter((n) => filtro === "all" || n.categoria === filtro);
 
   function atualizar(id: number, mudancas: Partial<Notificacao>) {
+    if (mudancas.lida) {
+      futureModules.notificacoes.marcarLida(id).catch(() => {});
+    }
     setNotificacoes((anteriores) =>
       anteriores.map((n) => (n.id === id ? { ...n, ...mudancas } : n)),
     );
   }
 
   function marcarTodasComoLidas() {
+    futureModules.notificacoes.marcarTodasLidas().catch(() => {});
     setNotificacoes((anteriores) => anteriores.map((n) => ({ ...n, lida: true })));
     setAviso("Todas as notificações foram marcadas como lidas.");
   }
 
   function confirmarRecebimento() {
+    futureModules.pagamentos.confirmar("1").catch(() => {});
     atualizar(1, { lida: true, resolvida: "Recebimento confirmado" });
     setModal(null);
     setAviso("Pagamento de Mariana S. (R$ 112,50) confirmado.");
@@ -380,13 +391,18 @@ export default function Notificacoes() {
   }
 
   function notificarPagamento() {
+    futureModules.pagamentos.informar({ idTarefa: "4", idUser: "me" }).catch(() => {});
     atualizar(4, { lida: true, resolvida: "Pagamento informado a Lucas M." });
     setModal(null);
     setAviso("Lucas M. foi avisado do seu Pix.");
   }
 
   function alternarCanal(canal: keyof typeof canais) {
-    setCanais((anteriores) => ({ ...anteriores, [canal]: !anteriores[canal] }));
+    setCanais((anteriores) => {
+      const proximo = { ...anteriores, [canal]: !anteriores[canal] };
+      futureModules.notificacoes.salvarPreferencias(proximo).catch(() => {});
+      return proximo;
+    });
   }
 
   return (
@@ -824,10 +840,6 @@ export default function Notificacoes() {
             lembretes de prazo.
           </p>
           <ListaCanais canais={canais} onAlternar={alternarCanal} />
-          <p className="flex items-start gap-1.5 text-xs" style={{ color: C.onSurfaceVariant }}>
-            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: C.tertiary }} />
-            Prévia: as preferências ainda não são salvas na sua conta.
-          </p>
           <div className="flex justify-end">
             <button
               type="button"

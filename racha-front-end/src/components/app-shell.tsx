@@ -1,6 +1,7 @@
 ﻿import { useState, type ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { Bell, ChevronRight, CircleHelp, EllipsisVertical, Menu, Plus, Search, Settings, Users, X } from "lucide-react";
+import { useAuth } from "../auth/auth-context";
 import Link from "./app-link";
 import { previewPath } from "../lib/navigation";
 import Aba from "./aba-perfil";
@@ -13,9 +14,13 @@ const navigation = [
 
 export default function AppShell({ title, children }: { title: string; children: ReactNode }) {
   const { pathname } = useLocation();
+  const { user } = useAuth();
   const preview = pathname.startsWith("/previa") || pathname.startsWith("/revisao");
   const [menu, setMenu] = useState(false);
   const [profile, setProfile] = useState(false);
+  const displayName = user?.name || "Rodrigo M.";
+  const displayEmail = user?.email || "rodrigo@exemplo.com";
+
   return (
     <div className="racha-app">
       <aside className={menu ? "is-open" : ""}>
@@ -33,7 +38,7 @@ export default function AppShell({ title, children }: { title: string; children:
           <Link className="racha-help-link" to="/faq"><CircleHelp size={15}/>Ajuda e suporte</Link>
           <div className="racha-sidebar-profile">
             <Link to="/perfil" className="racha-avatar" aria-label="Abrir meu perfil"><Users size={16}/></Link>
-            <div className="racha-sidebar-identity"><strong>Rodrigo M.</strong><small>rodrigo@exemplo.com</small></div>
+            <div className="racha-sidebar-identity"><strong>{displayName}</strong><small>{displayEmail}</small></div>
             <button className="racha-icon" aria-label="Menu do perfil" aria-expanded={profile} onClick={() => setProfile(!profile)}><EllipsisVertical size={16}/></button>
             {profile && <Aba placement="above" onClose={() => setProfile(false)}/>}
           </div>

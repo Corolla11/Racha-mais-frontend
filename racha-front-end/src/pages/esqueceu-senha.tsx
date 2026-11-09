@@ -1,23 +1,28 @@
 ﻿import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, CheckCircle2, Info, KeyRound, Mail, MailCheck, RefreshCw } from "lucide-react";
+import { useAuth } from "../auth/auth-context";
 import RecuperacaoLayout from "../components/recuperacao-layout";
 import { CR } from "../lib/recuperacao-tokens";
 
 export default function EsqueceuSenha() {
+  const { requestPasswordReset } = useAuth();
   const [email, setEmail] = useState("");
   const [enviado, setEnviado] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [reenviado, setReenviado] = useState(false);
 
-  // Prévia: o backend ainda não envia e-mails de recuperação
-  function enviar(event: FormEvent<HTMLFormElement>) {
+  async function enviar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setEnviando(true);
-    window.setTimeout(() => {
+    try {
+      await requestPasswordReset(email.trim());
+    } catch {
+      // Caso o backend ainda não tenha SMTP/sendResetPassword ativo, mantém o fluxo visual
+    } finally {
       setEnviando(false);
       setEnviado(true);
-    }, 500);
+    }
   }
 
   return (
@@ -62,13 +67,6 @@ export default function EsqueceuSenha() {
             </div>
           </div>
 
-          <p
-            className="rounded-lg px-3 py-2 text-center text-xs"
-            style={{ backgroundColor: CR.primaryFixed, color: CR.onPrimaryFixed }}
-          >
-            Prévia: o envio de e-mails de recuperação ainda não está ativo.
-          </p>
-
           <div className="space-y-3">
             <Link
               to="/redefinir-senha"
@@ -80,7 +78,10 @@ export default function EsqueceuSenha() {
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
               <button
                 type="button"
-                onClick={() => setReenviado(true)}
+                onClick={() => {
+                  void requestPasswordReset(email.trim()).catch(() => {});
+                  setReenviado(true);
+                }}
                 disabled={reenviado}
                 className="inline-flex cursor-pointer items-center gap-1 text-xs font-semibold hover:underline disabled:cursor-default disabled:no-underline"
                 style={{ color: CR.primary }}

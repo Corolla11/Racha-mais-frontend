@@ -19,7 +19,8 @@ import {
 import Link from "../components/app-link";
 import { useAuth } from "../auth/auth-context";
 import { ApiError, apiRequest } from "../lib/api";
-import { money } from "../lib/finance";
+import { ENDPOINTS } from "../lib/endpoints";
+import { money, share } from "../lib/finance";
 import {
   ehOrganizador,
   extrairEmail,
@@ -132,7 +133,7 @@ export default function ConfirmarGrupo() {
   const semEmail = outros.length - convidaveis.length;
 
   function irParaGrupo(alvo: GrupoCriado) {
-    navigate(`/grupo/${encodeURIComponent(alvo.id)}/membros`, {
+    navigate(`/grupo/${encodeURIComponent(alvo.id)}`, {
       state: { nomeGrupo: alvo.nome },
       replace: true,
     });
@@ -142,22 +143,66 @@ export default function ConfirmarGrupo() {
     setErro("");
     setCriando(true);
     try {
-      const novo = await apiRequest<GrupoCriado>("/grupos", {
+      const novo = await apiRequest<GrupoCriado>(ENDPOINTS.grupos.base, {
         method: "POST",
         body: { nome: grupo.nome.trim(), descricao: grupo.descricao.trim() },
       });
 
       // Adiciona quem já tem conta no Racha+ pelo e-mail informado
       const naoAdicionados: string[] = [];
+      const idsAdicionados: string[] = user?.id ? [user.id] : [];
+
       for (const { membro, email } of convidaveis) {
         try {
-          await apiRequest(`/grupos/${encodeURIComponent(novo.id)}/membros`, {
-            method: "POST",
-            body: { email },
-          });
+          const adicionado = await apiRequest<{ idUser: string }>(
+            ENDPOINTS.grupos.membros(novo.id),
+            { method: "POST", body: { email } },
+          );
+          if (adicionado?.idUser) idsAdicionados.push(adicionado.idUser);
         } catch (error) {
           const motivo = error instanceof ApiError ? error.message : "falha ao adicionar";
           naoAdicionados.push(`${membro.nome} (${email}): ${motivo}`);
+        }
+      }
+
+      // Persiste as tarefas iniciais planejadas no grupo e suas partes
+      const agora = new Date();
+      const amanha = new Date(agora.getTime() + 24 * 60 * 60 * 1000);
+      for (const item of grupo.itens) {
+        try {
+          const dataFinal = item.dataLimite ? new Date(`${item.dataLimite}T23:59:59`) : amanha;
+          const dataInicio = dataFinal > agora ? agora : new Date(dataFinal.getTime() - 3600_000);
+          const tarefaCriada = await apiRequest<{ id: string }>(ENDPOINTS.tarefas.base, {
+            method: "POST",
+            body: {
+              idGrupo: novo.id,
+              nome: item.titulo.trim(),
+              descricao: (item.descricao ?? item.detalhe ?? "").trim() || undefined,
+              valorTotal: item.valor > 0 ? item.valor : undefined,
+              dataInicio: dataInicio.toISOString(),
+              dataFinal: dataFinal.toISOString(),
+              tipoTarefa: item.valor > 0 ? "contribuinte" : "comum",
+              statusAndamento: item.pago ? "FINALIZADA" : "AGENDADA",
+            },
+          });
+
+          if (item.valor > 0 && idsAdicionados.length > 0) {
+            for (let i = 0; i < idsAdicionados.length; i++) {
+              const cota = share(item.valor, idsAdicionados.length, i);
+              if (cota > 0) {
+                await apiRequest(ENDPOINTS.tarefas.partes(tarefaCriada.id), {
+                  method: "POST",
+                  body: {
+                    idUser: idsAdicionados[i],
+                    descricao: `Cota: ${item.titulo.trim()}`,
+                    valor: cota.toFixed(2),
+                  },
+                }).catch(() => {});
+              }
+            }
+          }
+        } catch {
+          // Segue mesmo se alguma tarefa opcional falhar
         }
       }
 
@@ -380,8 +425,7 @@ export default function ConfirmarGrupo() {
                   ))}
                 </ul>
                 <p className="text-xs" style={{ color: C.onSurfaceVariant }}>
-                  As tarefas ficam no rascunho por enquanto: depois de criar o
-                  grupo, cadastre-as dentro dele.
+                  Essas tarefas serão criadas automaticamente junto com o grupo.
                 </p>
               </div>
             )}
