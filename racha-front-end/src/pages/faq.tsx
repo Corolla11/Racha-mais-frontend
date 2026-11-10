@@ -1,249 +1,297 @@
-import { useState } from "react";
-import type { ReactNode } from "react";
-import { useAppNavigate as useNavigate } from "../lib/navigation";
-
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
+  ArrowLeftRight,
   ArrowRight,
-  Bell,
-  Bot,
-  Building2,
+  BadgeCheck,
+  BellRing,
+  BookOpen,
+  Check,
+  CheckCircle2,
   ChevronDown,
-  ChevronRight,
-  CircleCheckBig,
-  Wallet,
-  ExternalLink,
-  FileScan,
-  Home,
-  Lightbulb,
+  CloudUpload,
+  Crown,
+  Headset,
+  Info,
+  ListChecks,
   Mail,
   MessageCircle,
-  MessagesSquare,
-  PlayCircle,
-  Plus,
+  MonitorPlay,
+  Play,
   QrCode,
-  Repeat,
-  ScanLine,
   Search,
+  SearchX,
+  Send,
   ShieldCheck,
-  Smile,
-  ThumbsDown,
-  ThumbsUp,
+  Star,
+  TriangleAlert,
   UserPlus,
   Users,
-  Headset,
-  Zap,
-  Hand,
+  X,
+  type LucideIcon,
 } from "lucide-react";
+import AppShell from "../components/app-shell";
+import { useAppNavigate as useNavigate } from "../lib/navigation";
 
-import Aba from "../components/aba-perfil";
+/* =====================================================
+   TOKENS DO DESIGN
 
-type Categoria = "all" | "ia" | "pix" | "lembretes" | "seguranca" | "grupos";
+   Ficam aqui dentro (e não no tema do Tailwind) para que
+   esta tela não interfira nas demais páginas do projeto.
+====================================================== */
+
+const C = {
+  primary: "#9b4500",
+  primaryContainer: "#ff8c42",
+  primaryFixed: "#ffdbc9",
+  primaryFixedDim: "#ffb68d",
+  onPrimaryFixedVariant: "#763300",
+  onPrimaryContainer: "#6a2d00",
+
+  secondary: "#ab3425",
+  secondaryFixed: "#ffdad4",
+
+  tertiary: "#855300",
+  tertiaryContainer: "#ed9800",
+  tertiaryFixed: "#ffddb8",
+  onTertiaryContainer: "#5b3700",
+
+  error: "#ba1a1a",
+  outline: "#897266",
+  outlineVariant: "#ddc1b3",
+
+  surfaceLowest: "#ffffff",
+  surfaceLow: "#eff4ff",
+  surfaceContainer: "#e6eeff",
+  surfaceHigh: "#dee9fc",
+  surfaceHighest: "#d9e3f6",
+
+  onSurface: "#121c2a",
+  onSurfaceVariant: "#564338",
+};
+
+const EMAIL_SUPORTE = "suporte@plusracha.com.br";
+
+/* =====================================================
+   CONTEÚDO
+====================================================== */
+
+type Categoria = "groups" | "tasks" | "payments" | "audit" | "plans";
 
 interface Pergunta {
   id: string;
+  categoria: Categoria;
   pergunta: string;
-  texto: string;
-  conteudo: ReactNode;
+  // Texto simples usado pela busca
+  palavras: string;
+  resposta: ReactNode;
 }
 
-interface GrupoFaq {
+interface Secao {
   id: string;
   titulo: string;
-  icone: ReactNode;
-  corIcone: string;
-  categorias: Categoria[];
-  itens: Pergunta[];
+  descricao: string;
+  icone: LucideIcon;
+  fundo: string;
+  cor: string;
+  perguntas: Pergunta[];
 }
 
-const filtros: { id: Categoria; nome: string }[] = [
-  { id: "all", nome: "Todas as dúvidas" },
-  { id: "ia", nome: "Divisão com IA ✨" },
-  { id: "pix", nome: "Pagamentos & Pix" },
-  { id: "lembretes", nome: "Cobrança sem Constrangimento" },
-  { id: "seguranca", nome: "Segurança & Privacidade" },
-  { id: "grupos", nome: "Grupos & Participantes" },
-];
+const forte = (texto: string, cor: string = C.onSurface) => (
+  <strong className="font-semibold" style={{ color: cor }}>
+    {texto}
+  </strong>
+);
 
-const populares = [
+const SECOES: Secao[] = [
   {
-    alvo: "faq-ia-1",
-    icone: <FileScan size={22} />,
-    hover: "group-hover:bg-primary group-hover:text-text-primary",
-    cor: "text-tertiary",
-    bolha: "bg-primary/10",
-    titulo: "Como a IA divide os gastos automaticamente?",
-    texto:
-      "Envie foto da nota fiscal ou digite em linguagem livre. O motor OCR e IA extrai itens, taxas de serviço e divide com precisão.",
-    cta: "Ler explicação",
-  },
-  {
-    alvo: "faq-pix-2",
-    icone: <ShieldCheck size={22} />,
-    hover: "group-hover:bg-secondary group-hover:text-white",
-    cor: "text-secondary",
-    bolha: "bg-blue-100/60",
-    titulo: "Existe alguma taxa ou cobrança escondida?",
-    texto:
-      "Zero mensalidades ocultas. O Pix é transferido de participante para recebedor sem intermediação ou retenção percentual.",
-    cta: "Ver política de taxas",
-  },
-  {
-    alvo: "faq-lembrete-1",
-    icone: <Smile size={22} />,
-    hover: "group-hover:bg-primary group-hover:text-text-primary",
-    cor: "text-tertiary",
-    bolha: "bg-primary/10",
-    titulo: "Como funcionam os lembretes educados via WhatsApp?",
-    texto:
-      "O bot do Racha+ assume o papel chato de cobrar. Envia mensagens cordiais com resumo claro e link Pix Copia e Cola.",
-    cta: "Exemplos de lembretes",
-  },
-  {
-    alvo: "faq-pix-1",
-    icone: <Building2 size={22} />,
-    hover: "group-hover:bg-primary group-hover:text-text-primary",
-    cor: "text-tertiary",
-    bolha: "bg-blue-100/60",
-    titulo: "Preciso ter conta no mesmo banco que meus amigos?",
-    texto:
-      "Não! Usamos o protocolo aberto do Banco Central. Qualquer banco ou carteira digital (Nubank, Itaú, Inter, etc.) funciona normalmente.",
-    cta: "Ver compatibilidade",
-  },
-];
-
-const grupos: GrupoFaq[] = [
-  {
-    id: "fluxos-revisados",
-    titulo: "Tarefas, pagamentos e encerramento",
-    icone: <CircleCheckBig size={19}/>,
-    corIcone: "text-secondary",
-    categorias: ["grupos", "pix"],
-    itens: [
-      { id: "revisao-criar", pergunta: "Como criar um grupo e convidar participantes?", texto: "criar grupo manual IA convidar participantes membros", conteudo: <p>Em Meus grupos, escolha Novo Racha e a criação manual ou assistida. Revise os dados antes de criar. Dentro do grupo, use Membros para preparar convites e gerenciar permissões.</p> },
-      { id: "revisao-tarefa", pergunta: "Como criar tarefas e dividir os valores?", texto: "tarefas despesa rateio igual participantes valor individual", conteudo: <p>Use Nova tarefa para informar título, responsável, prazo, participantes e a despesa opcional em um único formulário. Toda despesa pertence a uma tarefa. O valor é dividido igualmente entre os participantes selecionados; diferenças de centavos são distribuídas para preservar o total.</p> },
-      { id: "revisao-pagar", pergunta: "Informar pagamento significa que minha cota está quitada?", texto: "pagamento informado confirmado pendente contestado comprovante", conteudo: <p>Não. Abra os pagamentos da tarefa, consulte o recebedor, anexe um comprovante se desejar e informe o pagamento. A cota fica aguardando confirmação. Somente o responsável confirma o recebimento; ele pode contestar o pagamento com um motivo.</p> },
-      { id: "revisao-encerrar", pergunta: "Quando posso encerrar um grupo?", texto: "encerrar grupo pendencias tarefas concluidas quitada historico", conteudo: <p>O administrador deve concluir as atividades e resolver todos os pagamentos pendentes, informados ou contestados. A auditoria bloqueia o encerramento enquanto houver pendências. Depois de confirmar o encerramento, o resumo e o histórico ficam em modo somente leitura.</p> },
-      { id: "revisao-conta", pergunta: "Como alterar minha conta e gerenciar o plano?", texto: "conta perfil seguranca pix assinatura cancelar pro planos", conteudo: <p>Em Configurações, acesse Perfil, Segurança e Conta, Pagamentos e Pix ou Minha assinatura. Os planos são Grátis, Pro (R$ 12 por mês ou R$ 80 por ano) e Pro+ (R$ 20 por mês ou R$ 200 por ano). Na prévia, as alterações e cobranças são simuladas.</p> },
-    ],
-  },
-  {
-    id: "g1",
-    titulo: "1. Primeiros Passos e Criação de Grupos",
-    icone: <UserPlus size={19} />,
-    corIcone: "text-secondary",
-    categorias: ["grupos", "ia"],
-    itens: [
+    id: "tarefas",
+    titulo: "Tarefas e Divisão Justa de Despesas",
+    descricao: "Entenda a regra central do Racha+: toda despesa está conectada a uma ação clara.",
+    icone: ListChecks,
+    fundo: C.primaryFixed,
+    cor: C.primary,
+    perguntas: [
       {
-        id: "faq-grupo-1",
-        pergunta:
-          "Preciso que todos os meus amigos tenham cadastro para pagar a cota?",
-        texto:
-          "cadastro link whatsapp organizador convidados pix copia e cola qr code sem app senha",
-        conteudo: (
+        id: "divisao",
+        categoria: "tasks",
+        pergunta: "Como funciona a divisão de valores entre os membros?",
+        palavras:
+          "divisão de tarefas valores membros tarefa específica participantes partes iguais desmarcar cobrado justo",
+        resposta: (
           <>
             <p>
-              <strong className="font-semibold text-text-primary">
-                Absolutamente não!
-              </strong>{" "}
-              Essa é uma das principais facilidades do Racha+. Apenas o
-              organizador do evento, churrasco ou república precisa criar a
-              sala.
+              No {forte("Racha+")}, a divisão não é cega nem genérica. Cada
+              valor gasto precisa estar atrelado a uma {forte("Tarefa específica")}{" "}
+              (por exemplo: "Compra de Bebidas para o Churrasco" ou
+              "Combustível da Van").
             </p>
             <p>
-              Os demais convidados recebem um link seguro único via WhatsApp.
-              Ao abrir no navegador do celular, eles já visualizam a
-              discriminação dos itens, valor devido individual e a chave Pix
-              (com botão direto de "Copia e Cola" ou QR Code dinâmico).
+              Ao cadastrar a tarefa, o organizador marca exatamente quem
+              participa daquela atividade. O valor total lançado é fatiado{" "}
+              {forte("em partes iguais exclusivamente entre os participantes assinalados", C.primary)}.
+              Se um amigo não for beber ou não for ao passeio, basta
+              desmarcá-lo da tarefa para que nenhuma fração seja cobrada dele.
             </p>
-            <div className="flex items-center gap-3 rounded-xl bg-input p-4">
-              <Zap size={22} className="shrink-0 text-secondary" />
-              <span className="text-ui-label text-text-primary">
-                Zero fricção: sem baixar app na hora, sem formulários cansativos
-                ou cadastros com senhas.
+            <div
+              className="flex items-center gap-2 rounded-lg p-2 text-xs font-medium"
+              style={{ backgroundColor: C.surfaceLow, color: C.onSurface }}
+            >
+              <BadgeCheck className="h-[18px] w-[18px] shrink-0" style={{ color: C.primaryContainer }} />
+              Resultado: contas 100% justas e sem ressentimentos no grupo.
+            </div>
+          </>
+        ),
+      },
+      {
+        id: "despesa-sem-tarefa",
+        categoria: "tasks",
+        pergunta: "Posso criar uma despesa sem vinculá-la a uma tarefa?",
+        palavras:
+          "despesa sem tarefa vincular tarefa mãe gastos fantasmas rastreabilidade auditoria nova tarefa notinha",
+        resposta: (
+          <>
+            <div
+              className="flex items-start gap-2 rounded-xl p-4"
+              style={{ backgroundColor: C.surfaceContainer, color: C.onSurface }}
+            >
+              <Info className="mt-0.5 h-[22px] w-[22px] shrink-0" style={{ color: C.tertiary }} />
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-bold" style={{ color: C.onTertiaryContainer }}>
+                  Regra Arquitetural do Racha+
+                </span>
+                <p className="text-sm" style={{ color: C.onSurfaceVariant }}>
+                  Não. No Racha+, {forte("toda despesa requer obrigatoriamente uma tarefa mãe")}.
+                  Esse método impede "gastos fantasmas", notas soltas sem
+                  contexto e garante rastreabilidade e auditoria instantânea
+                  para qualquer membro do grupo.
+                </p>
+              </div>
+            </div>
+            <p>
+              Precisa registrar um gasto rápido? Basta clicar em{" "}
+              {forte("+ Nova Tarefa")}, dar um nome objetivo (ex: "Farmácia -
+              Remédios de Uso Geral"), definir os beneficiados e salvar o valor
+              com a foto da notinha.
+            </p>
+          </>
+        ),
+      },
+      {
+        id: "tarefa-concluida",
+        categoria: "tasks",
+        pergunta: 'O que acontece quando marco uma tarefa como "Concluída"?',
+        palavras:
+          "tarefa concluída responsabilidade compra realizada não quita dívidas liquidação pagamentos pix aprovações",
+        resposta: (
+          <>
+            <p>
+              Marcar uma tarefa como concluída sinaliza operacionalmente que a
+              responsabilidade ou compra foi realizada com sucesso pelo
+              encarregado.
+            </p>
+            <div
+              className="flex items-center gap-2 rounded-lg p-2"
+              style={{ backgroundColor: C.surfaceHigh, color: C.onSurface }}
+            >
+              <TriangleAlert className="h-5 w-5 shrink-0" style={{ color: C.secondary }} />
+              <span className="text-sm">
+                <strong>Importante:</strong> Concluir a tarefa não quita as
+                dívidas automaticamente! A liquidação financeira entre os
+                membros depende dos pagamentos individuais via Pix e de suas
+                respectivas aprovações.
               </span>
             </div>
           </>
         ),
       },
+    ],
+  },
+  {
+    id: "pagamentos",
+    titulo: "Pagamentos, Chaves Pix e Comprovantes",
+    descricao: "Transferências diretas sem intermediários e auditoria visual de recibos.",
+    icone: QrCode,
+    fundo: C.tertiaryFixed,
+    cor: C.tertiary,
+    perguntas: [
       {
-        id: "faq-grupo-2",
-        pergunta:
-          "Posso criar divisões desiguais (ex: quem não bebe paga menos)?",
-        texto:
-          "divisão desigual consumo exclusão item cotas peso percentual cerveja bebida",
-        conteudo: (
+        id: "acertar-cota",
+        categoria: "payments",
+        pergunta: "Como acertar minha cota usando o Pix no Racha+?",
+        palavras:
+          "acertar cota pix chave pix chaves qr code copia e cola pagar comprovante informar pagamento saldos",
+        resposta: (
           <>
-            <p>
-              Sim, de maneira super simples! O Racha+ oferece suporte completo
-              a divisões por consumo individualizado, cotas ponderadas ou
-              proporção customizada.
-            </p>
-            <ul className="flex list-disc flex-col gap-2 pl-4">
+            <p>O processo foi desenhado para ser feito em menos de 30 segundos:</p>
+            <ol className="list-decimal space-y-2 pl-5 text-sm">
+              <li>Abra o grupo e localize a tarefa pendente ou acesse a aba {forte('"Meus Saldos"')}.</li>
+              <li>Clique no botão primário {forte('"Acertar Pagamento"', C.primary)}.</li>
               <li>
-                <strong className="font-semibold text-text-primary">
-                  Exclusão por item:
-                </strong>{" "}
-                marque que cerveja e drinques são divididos somente entre quem
-                consumiu bebidas alcoólicas.
+                O aplicativo exibirá instantaneamente a chave Pix cadastrada
+                pelo pagador original e um {forte("QR Code Pix Copia e Cola")} com o
+                valor exato calculado.
               </li>
-              <li>
-                <strong className="font-semibold text-text-primary">
-                  Cotas por peso:
-                </strong>{" "}
-                atribua pesos diferentes (ex: hóspedes de casal vs. solteiro no
-                aluguel da casa de praia).
-              </li>
-              <li>
-                <strong className="font-semibold text-text-primary">
-                  Divisão por percentual:
-                </strong>{" "}
-                defina porcentagens de rateio personalizadas com total
-                transparência para o grupo.
-              </li>
-            </ul>
+              <li>Abra o app do seu banco, pague via Pix e tire uma captura de tela do comprovante.</li>
+              <li>Volte ao Racha+ e anexe a imagem/PDF do comprovante no botão {forte('"Informar Pagamento"')}.</li>
+            </ol>
           </>
         ),
       },
       {
-        id: "faq-ia-1",
-        pergunta:
-          "Como o escaneamento de nota fiscal e texto livre por IA funciona?",
-        texto:
-          "ia nota fiscal cupom foto pdf ocr itens taxas gorjeta frete atribuição texto livre churrasco",
-        conteudo: (
+        id: "confirmar-pagamento",
+        categoria: "payments",
+        pergunta: "Como o responsável confirma que o pagamento caiu na conta?",
+        palavras:
+          "responsável confirma pagamento comprovantes recibo notificação estados pendente informado confirmado contestado",
+        resposta: (
           <>
             <p>
-              Basta tirar uma foto do cupom fiscal da compra do supermercado ou
-              do restaurante, ou encaminhar o comprovante em PDF. Nosso modelo
-              de visão computacional e linguagem extrai:
+              Assim que o devedor anexa o recibo, o responsável pelo
+              recebimento recebe uma notificação instantânea. A conferência
+              ocorre através de um ciclo de 4 estados:
             </p>
-            <div className="grid grid-cols-1 gap-3 py-1 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-2">
               {[
-                ["Etapa 1", "Leitura de Itens", "Nome, valor unitário e quantidade exata"],
-                ["Etapa 2", "Taxas e Gorjeta", "Rateio justo dos 10% ou frete"],
-                ["Etapa 3", "Atribuição", "Toque no nome dos amigos que consumiram"],
-              ].map(([etapa, titulo, texto]) => (
+                { t: "1. Pendente", d: "Aguardando o participante realizar o Pix.", c: C.outline },
+                { t: "2. Informado", d: "Comprovante enviado pelo devedor sob verificação.", c: C.tertiary },
+                { t: "3. Confirmado", d: "Recebedor validou o crédito no extrato bancário.", c: C.primaryContainer },
+                { t: "4. Contestado", d: "Valor divergente ou comprovante ilegível para reenvio.", c: C.error },
+              ].map((estado) => (
                 <div
-                  key={etapa}
-                  className="flex flex-col gap-1 rounded-xl bg-input p-3 text-center"
+                  key={estado.t}
+                  className="flex flex-col gap-1 rounded-lg p-2"
+                  style={{ backgroundColor: C.surfaceLow }}
                 >
-                  <span className="text-ui-caption font-semibold uppercase text-secondary">
-                    {etapa}
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: estado.c }} />
+                    <span className="text-xs font-bold" style={{ color: C.onSurface }}>
+                      {estado.t}
+                    </span>
                   </span>
-                  <span className="text-sm font-semibold text-text-primary">
-                    {titulo}
-                  </span>
-                  <span className="text-ui-label">{texto}</span>
+                  <span className="text-sm">{estado.d}</span>
                 </div>
               ))}
             </div>
+          </>
+        ),
+      },
+      {
+        id: "taxas",
+        categoria: "payments",
+        pergunta: "O Racha+ cobra taxas sobre as transferências Pix?",
+        palavras:
+          "taxas transferências pix zero carteira digital custodia peer to peer banco central porcentagem saque",
+        resposta: (
+          <>
             <p>
-              Você também pode simplesmente digitar:{" "}
-              <em className="rounded bg-input px-2 py-0.5 font-normal text-text-primary">
-                "Gastei R$ 180 no churrasco ontem, carne com Leo e cerveja
-                comigo e Julia"
-              </em>{" "}
-              e a IA monta o rateio pronto para revisão.
+              {forte("Zero taxas!")} O Racha+ não funciona como carteira
+              digital fechada e não custodia o dinheiro do grupo.
+            </p>
+            <p>
+              Todas as transferências são liquidadas ponto a ponto
+              (peer-to-peer) direto da sua conta bancária para a conta do seu
+              amigo via Pix. Você nunca paga porcentagem ou taxa de saque pelo
+              Racha+.
             </p>
           </>
         ),
@@ -251,733 +299,653 @@ const grupos: GrupoFaq[] = [
     ],
   },
   {
-    id: "g2",
-    titulo: "2. Pagamentos, Pix e Confirmação Automática",
-    icone: <Wallet size={19} />,
-    corIcone: "text-tertiary",
-    categorias: ["pix", "seguranca"],
-    itens: [
+    id: "grupos",
+    titulo: "Grupos e Gestão Colaborativa",
+    descricao: "Convites, papéis de membros e critérios para fechamento seguro do grupo.",
+    icone: Users,
+    fundo: C.secondaryFixed,
+    cor: C.secondary,
+    perguntas: [
       {
-        id: "faq-pix-1",
-        pergunta: "O dinheiro das contas passa pela conta bancária do Racha+?",
-        texto:
-          "dinheiro conta bancária intermediário saldo pix direto segurança banco compatibilidade nubank itaú inter taxa",
-        conteudo: (
+        id: "convidar",
+        categoria: "groups",
+        pergunta: "Como convidar amigos para o meu grupo?",
+        palavras:
+          "convidar amigos grupo convidar membros link whatsapp telegram código 6 dígitos entrar em grupo qr code",
+        resposta: (
           <>
             <p>
-              <strong className="font-semibold text-text-primary">Não!</strong>{" "}
-              Para garantir total segurança e transparência financeira, nós não
-              somos intermediários nem retemos o saldo dos usuários.
+              Dentro de qualquer grupo ativo, acesse o botão{" "}
+              {forte('"Convidar Membros"')} no topo da página. O Racha+ gera:
             </p>
-            <p>
-              O dinheiro vai diretamente da conta bancária de quem deve para a
-              chave Pix de quem pagou a despesa original. O Racha+ atua como
-              orquestrador inteligente que gera a cobrança Pix correta (com
-              centavos exatos para fácil identificação) e gerencia o status de
-              conciliação.
-            </p>
-          </>
-        ),
-      },
-      {
-        id: "faq-pix-2",
-        pergunta:
-          "Como o Racha+ sabe que uma pessoa já realizou o pagamento?",
-        texto:
-          "pagamento conciliação comprovante upload open finance bacen baixa confirmação organizador recebido taxa escondida",
-        conteudo: (
-          <>
-            <p>O pagamento passa por informação, conferência e confirmação:</p>
-            <div className="flex flex-col gap-3">
-              {[
-                [
-                  <ScanLine key="i" size={19} />,
-                  "Upload de Comprovante:",
-                  "O participante informa o pagamento e pode anexar JPG, PNG ou PDF. O comprovante fica disponível para conferência; o envio não quita a cota.",
-                ],
-                [
-                  <Hand key="i" size={19} />,
-                  "Confirmação em 1 Toque pelo Organizador:",
-                  'O responsável confere o recebimento e confirma no painel. Se houver divergência, contesta o pagamento e informa o motivo.',
-                ],
-                [
-                  <Repeat key="i" size={19} />,
-                  "Quitação da tarefa:",
-                  "A tarefa só fica quitada quando todos os pagamentos forem confirmados. A conclusão da atividade é um estado separado.",
-                ],
-              ].map(([icone, titulo, texto]) => (
-                <div key={titulo as string} className="flex items-start gap-3">
-                  <span className="mt-0.5 text-secondary">{icone}</span>
-                  <div>
-                    <strong className="font-semibold text-text-primary">
-                      {titulo}
-                    </strong>
-                    <p className="text-ui-label">{texto}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        ),
-      },
-    ],
-  },
-  {
-    id: "g3",
-    titulo: "3. Lembretes e Cobranças Amigáveis",
-    icone: <MessageCircle size={19} />,
-    corIcone: "text-tertiary",
-    categorias: ["lembretes", "seguranca"],
-    itens: [
-      {
-        id: "faq-lembrete-1",
-        pergunta: "Meus amigos vão se incomodar com a mensagem do WhatsApp?",
-        texto:
-          "lembrete whatsapp bot mensagem educada constrangimento climão exemplo notificação pizza",
-        conteudo: (
-          <>
-            <p>
-              Desenvolvemos a inteligência de lembretes justamente para acabar
-              com o "climão". O bot do Racha+ se apresenta com tom descontraído
-              e educado, sem culpabilizar ninguém.
-            </p>
-            <div className="flex flex-col gap-2 rounded-xl bg-input p-4 text-text-primary">
-              <div className="flex items-center justify-between">
-                <span className="text-ui-caption font-semibold uppercase text-secondary">
-                  Exemplo de Notificação Real
-                </span>
-                <span className="text-ui-caption text-text-secondary">
-                  WhatsApp Oficial
-                </span>
-              </div>
-
-              <div className="flex flex-col gap-2 rounded-xl bg-surface p-4 text-ui-label shadow-sm">
-                <p>
-                  "Oi Leo! Tudo bem? Aqui é o bot do <strong>Racha+</strong> 🍕
-                  Passando rapidinho para avisar que a cota da pizza de sexta
-                  com a galera deu <strong>R$ 34,50</strong>."
-                </p>
-                <p>
-                  "Segue a chave Pix Copia e Cola facilitada para acertar
-                  direto com o Gui em 10 segundos: [Link Seguro]"
-                </p>
-              </div>
-            </div>
-            <p>
-              O destinatário tem o conforto de conferir a conta e pagar sem
-              cobrança constrangedora feita diretamente por uma pessoa física.
-            </p>
-          </>
-        ),
-      },
-      {
-        id: "faq-lembrete-2",
-        pergunta: "Como pausar ou personalizar os horários dos lembretes?",
-        texto:
-          "pausar personalizar horário lembretes silencioso frequência configurações do grupo diária vencimento",
-        conteudo: (
-          <>
-            <p>
-              Você tem total controle. Dentro de qualquer grupo criado, acesse
-              as <em>Configurações do Grupo &gt; Lembretes Inteligentes</em>.
-              Você pode:
-            </p>
-            <ul className="flex list-disc flex-col gap-2 pl-4">
-              <li>
-                Definir <strong>horário silencioso</strong> (por exemplo,
-                nenhum lembrete após as 20h ou antes das 10h).
-              </li>
-              <li>
-                Escolher a <strong>frequência</strong>: diária, a cada 3 dias
-                ou somente no dia do vencimento estipulado.
-              </li>
-              <li>
-                Pausar individualmente para participantes que você já sabe que
-                irão pagar em outra data.
-              </li>
+            <ul className="list-disc space-y-1 pl-5 text-sm">
+              <li>Um link direto pronto para compartilhar no WhatsApp ou Telegram;</li>
+              <li>Um código único que qualquer usuário logado pode digitar em "Entrar com link ou código";</li>
+              <li>Um QR Code na tela para seus amigos escanearem na hora da reunião presencial.</li>
             </ul>
           </>
         ),
       },
+      {
+        id: "encerrar",
+        categoria: "audit",
+        pergunta: "Quando e como posso encerrar um grupo definitivamente?",
+        palavras:
+          "encerrar grupo encerramento arquivamento auditoria tarefas concluídas comprovantes aprovados saldo zero somente leitura relatório pdf",
+        resposta: (
+          <>
+            <p>
+              Para preservar a segurança financeira de todos os envolvidos, o
+              encerramento definitivo só é liberado pela nossa{" "}
+              {forte("Regra de Auditoria")} quando:
+            </p>
+            <div
+              className="flex flex-col gap-2 rounded-xl p-4"
+              style={{ backgroundColor: C.surfaceContainer }}
+            >
+              {[
+                "100% das tarefas foram marcadas como concluídas;",
+                "Todos os comprovantes foram aprovados e o saldo pendente do grupo está em R$ 0,00.",
+              ].map((texto) => (
+                <span
+                  key={texto}
+                  className="flex items-center gap-2 text-sm font-semibold"
+                  style={{ color: C.onSurface }}
+                >
+                  <CheckCircle2 className="h-5 w-5 shrink-0" style={{ color: C.primaryContainer }} />
+                  {texto}
+                </span>
+              ))}
+            </div>
+            <p className="text-sm">
+              Após encerrado, o grupo é congelado em modo somente-leitura, com
+              o histórico disponível para consulta.
+            </p>
+          </>
+        ),
+      },
+    ],
+  },
+  {
+    id: "planos",
+    titulo: "Planos e Assinaturas",
+    descricao: "Conheça os recursos ilimitados para viagens frequentes e repúblicas.",
+    icone: Crown,
+    fundo: C.primaryFixedDim,
+    cor: C.onPrimaryFixedVariant,
+    perguntas: [
+      {
+        id: "planos-pro",
+        categoria: "plans",
+        pergunta: "Quais as vantagens dos planos Pro e Pro+?",
+        palavras:
+          "planos pro pro+ assinatura gratuito grupos ativos comprovantes exportação pdf excel ilimitado preço mensal anual",
+        resposta: <PlanosResposta />,
+      },
     ],
   },
 ];
 
-const statusSistema = [
-  { icone: <QrCode size={16} />, nome: "Motor Pix & Bacen", valor: "Operando normal" },
-  { icone: <Bot size={16} />, nome: "IA de Leitura de Recibos", valor: "0.4s latência" },
-  { icone: <MessagesSquare size={16} />, nome: "Disparo WhatsApp API", valor: "Sem filas" },
+const TODAS = SECOES.flatMap((secao) => secao.perguntas);
+
+const CATEGORIAS: { id: Categoria | "all"; nome: string; icone?: LucideIcon }[] = [
+  { id: "all", nome: "Todas as Dúvidas" },
+  { id: "groups", nome: "Criando e Convidando", icone: UserPlus },
+  { id: "tasks", nome: "Tarefas & Divisão", icone: ListChecks },
+  { id: "payments", nome: "Pagamentos & Pix", icone: ArrowLeftRight },
+  { id: "audit", nome: "Encerramento & Auditoria", icone: ShieldCheck },
+  { id: "plans", nome: "Conta & Assinaturas", icone: Star },
 ];
 
-function Faq() {
-  const navigate = useNavigate();
+const BUSCAS_COMUNS = ["Divisão de tarefas", "Chaves Pix", "Encerrar grupo", "Planos Pro", "Comprovantes"];
 
-  const [abaAberta, setAbaAberta] = useState(false);
-  const [categoria, setCategoria] = useState<Categoria>("all");
+// Remove acentos e caixa para comparar textos
+function normalizar(texto: string) {
+  return texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+}
+
+// Cada palavra da busca precisa aparecer (pelo radical) na pergunta
+function corresponde(pergunta: Pergunta, busca: string) {
+  const termos = normalizar(busca).split(/\s+/).filter((t) => t.length >= 2 && t !== "de" && t !== "do" && t !== "da");
+  if (termos.length === 0) return true;
+  const alvo = normalizar(`${pergunta.pergunta} ${pergunta.palavras}`);
+  return termos.every((termo) => alvo.includes(termo.length > 5 ? termo.slice(0, termo.length - 2) : termo));
+}
+
+export default function Faq() {
   const [busca, setBusca] = useState("");
-  const [abertos, setAbertos] = useState<string[]>(["faq-grupo-1"]);
-  const [destaque, setDestaque] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState(false);
+  const [categoria, setCategoria] = useState<Categoria | "all">("all");
+  const [aberta, setAberta] = useState<string | null>(null);
+  const campoBusca = useRef<HTMLInputElement>(null);
 
-  const termo = busca.trim().toLowerCase();
+  // Esc limpa a busca
+  useEffect(() => {
+    function aoPressionar(event: KeyboardEvent) {
+      if (event.key === "Escape" && busca) {
+        setBusca("");
+        campoBusca.current?.blur();
+      }
+    }
+    window.addEventListener("keydown", aoPressionar);
+    return () => window.removeEventListener("keydown", aoPressionar);
+  }, [busca]);
 
-  function alternar(id: string) {
-    setAbertos((lista) =>
-      lista.includes(id) ? lista.filter((item) => item !== id) : [...lista, id],
-    );
-  }
+  const visiveis = useMemo(
+    () =>
+      new Set(
+        TODAS.filter(
+          (p) => (categoria === "all" || p.categoria === categoria) && corresponde(p, busca),
+        ).map((p) => p.id),
+      ),
+    [busca, categoria],
+  );
 
-  function irPara(id: string) {
+  function buscarRapido(termo: string) {
+    setBusca(termo);
     setCategoria("all");
-    setBusca("");
-    setAbertos((lista) => (lista.includes(id) ? lista : [...lista, id]));
-    setDestaque(id);
-
-    setTimeout(() => {
-      document
-        .getElementById(id)
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 50);
-
-    setTimeout(() => setDestaque(null), 2000);
+    campoBusca.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
-  const gruposVisiveis = grupos
-    .filter((g) => categoria === "all" || g.categorias.includes(categoria))
-    .map((g) => ({
-      ...g,
-      itens: termo
-        ? g.itens.filter((p) =>
-            `${p.pergunta} ${p.texto}`.toLowerCase().includes(termo),
-          )
-        : g.itens,
-    }))
-    .filter((g) => g.itens.length > 0);
+  function limparTudo() {
+    setBusca("");
+    setCategoria("all");
+  }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-text-primary">
-      {/* HEADER */}
-      <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-gray-100 bg-surface px-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F3F6FA]">
-            <span className="text-xs font-bold text-secondary">R+</span>
-          </div>
+    <AppShell title="Ajuda & FAQ">
+      <div className="flex w-full flex-col font-jakarta" style={{ color: C.onSurface }}>
+        {/* =====================================================
+            CABEÇALHO E BUSCA
+        ====================================================== */}
 
-          <div>
-            <p className="text-sm font-semibold text-text-primary">Racha+</p>
+        <div className="relative isolate mb-10 flex flex-col gap-4">
+          <div
+            className="pointer-events-none absolute -top-32 left-1/4 -z-10 h-96 w-96 rounded-full blur-3xl"
+            style={{ backgroundColor: `${C.primaryContainer}1a` }}
+          />
+          <div
+            className="pointer-events-none absolute -top-20 right-10 -z-10 h-80 w-80 rounded-full blur-3xl"
+            style={{ backgroundColor: `${C.tertiaryContainer}1a` }}
+          />
 
-            <p className="text-ui-caption text-text-secondary">
-              Divisão Inteligente
+          <div className="flex max-w-4xl flex-col gap-1">
+            <div
+              className="inline-flex w-fit items-center gap-2 rounded-full px-3 py-1"
+              style={{ backgroundColor: C.surfaceHigh }}
+            >
+              <span className="h-2 w-2 animate-pulse rounded-full" style={{ backgroundColor: C.primaryContainer }} />
+              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: C.onSurfaceVariant }}>
+                Base de Conhecimento Racha+
+              </span>
+            </div>
+            <h1 className="text-[1.75rem] font-extrabold leading-tight tracking-tight sm:text-[2rem]">
+              Central de Ajuda &amp; Perguntas Frequentes
+            </h1>
+            <p className="text-lg" style={{ color: C.onSurfaceVariant }}>
+              Tire suas dúvidas sobre criação de grupos, divisão de despesas em
+              tarefas, acertos via Pix e gerenciamento de assinaturas com total
+              transparência.
             </p>
           </div>
-        </div>
 
-        <nav className="hidden items-center gap-6 md:flex">
-          <button
-            type="button"
-            onClick={() => navigate("/meus-grupos")}
-            className="text-xs text-gray-700 transition hover:text-secondary"
+          <form
+            role="search"
+            onSubmit={(event) => event.preventDefault()}
+            className="mt-2 flex w-full max-w-3xl flex-col items-center gap-1 rounded-xl bg-white p-1 shadow-md transition-all focus-within:shadow-xl sm:flex-row"
           >
-            Meus Grupos
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate("/criar-grupo")}
-            className="text-xs text-gray-700 transition hover:text-secondary"
-          >
-            Criar com IA
-          </button>
-
-          <button
-            type="button"
-            className="text-xs text-gray-700 transition hover:text-secondary"
-          >
-            Histórico &amp; Pix
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate("/perfil")}
-            className="text-xs text-gray-700 transition hover:text-secondary"
-          >
-            Perfil
-          </button>
-        </nav>
-
-        <div className="flex items-center gap-4">
-          <button
-            type="button"
-            onClick={() => navigate("/criar-grupo")}
-            className="ui-button ui-button--md hidden items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-text-primary transition hover:bg-tertiary hover:text-white sm:flex"
-          >
-            <Plus size={14} />
-            Novo Grupo
-          </button>
-
-          <button
-            type="button"
-            aria-label="Notificações"
-            onClick={() => navigate("/notificacoes")}
-            className="relative text-gray-600"
-          >
-            <Bell size={17} />
-
-            <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-primary" />
-          </button>
-
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setAbaAberta(!abaAberta)}
-              className="ui-button ui-button--md flex items-center gap-2 rounded-xl px-2 py-1.5 transition hover:bg-gray-50"
-            >
-              <img
-                src="https://i.pravatar.cc/100?img=47"
-                alt="Foto de perfil"
-                className="h-9 w-9 rounded-full object-cover"
-              />
-
-              <div className="hidden text-left xl:block">
-                <p className="text-xs font-semibold">Mariana S.</p>
-
-                <p className="text-ui-caption text-text-secondary">Online</p>
-              </div>
-
-              <ChevronDown
-                size={15}
-                className={`text-gray-500 transition-transform ${
-                  abaAberta ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            {abaAberta && <Aba onClose={() => setAbaAberta(false)}/>}
-          </div>
-        </div>
-      </header>
-
-      {/* CONTEÚDO */}
-      <main className="relative w-full flex-1 overflow-hidden">
-        <div className="pointer-events-none absolute left-1/2 top-[-8rem] -z-0 h-72 w-[720px] -translate-x-1/2 rounded-full bg-gradient-to-br from-primary/20 via-blue-200/20 to-transparent blur-3xl" />
-
-        <div className="relative mx-auto flex w-full max-w-[1280px] flex-col gap-12 px-6 py-8">
-          {/* HERO */}
-          <section className="mx-auto flex w-full max-w-[880px] flex-col items-center gap-6 text-center">
-            <nav
-              aria-label="Breadcrumb"
-              className="flex flex-wrap items-center justify-center gap-2 text-xs font-medium text-text-secondary"
-            >
-              <button
-                type="button"
-                onClick={() => navigate("/meus-grupos")}
-                className="flex items-center gap-1 transition hover:text-tertiary"
-              >
-                <Home size={14} />
-                Início
-              </button>
-              <span className="text-gray-300">/</span>
-              <span>Central de Ajuda</span>
-              <span className="text-gray-300">/</span>
-              <span className="rounded-full bg-input px-2 py-0.5 font-semibold text-text-primary">
-                Perguntas Frequentes (FAQ)
-              </span>
-            </nav>
-
-            <div className="flex flex-col items-center gap-3">
-              <div className="inline-flex items-center gap-2 rounded-full bg-surface px-3 py-1 text-ui-caption font-semibold text-secondary shadow-sm">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
-                Central de Conhecimento Racha+ 2.0
-              </div>
-
-              <h1 className="text-ui-page-title font-bold leading-tight tracking-tight text-ui-page-title">
-                Como podemos ajudar você hoje?
-              </h1>
-
-              <p className="max-w-[640px] text-base text-text-secondary">
-                Tudo o que você precisa saber sobre divisão com IA, liquidação
-                instantânea via Pix, cálculo de contas e cobranças sem atrito
-                entre amigos.
-              </p>
-            </div>
-
-            <div className="relative mt-2 flex w-full items-center rounded-xl bg-surface p-2 shadow-md transition focus-within:shadow-xl">
-              <Search size={24} className="ml-3 shrink-0 text-secondary" />
-
+            <div className="relative flex w-full flex-1 items-center px-2">
+              <Search className="mr-2 h-6 w-6 shrink-0" style={{ color: C.outline }} />
+              <label htmlFor="busca-faq" className="sr-only">
+                Buscar na central de ajuda
+              </label>
               <input
+                ref={campoBusca}
+                id="busca-faq"
                 type="text"
                 value={busca}
-                onChange={(evento) => setBusca(evento.target.value)}
-                onKeyDown={(evento) => {
-                  if (evento.key === "Escape") setBusca("");
-                }}
-                aria-label="Buscar na central de ajuda"
-                placeholder="Buscar por dúvida, funcionalidade ou palavra-chave... ex: taxa, Pix, recibo..."
-                className="ui-control w-full bg-transparent px-3 py-2 text-sm outline-none placeholder:text-gray-400"
+                onChange={(event) => setBusca(event.target.value)}
+                placeholder="O que você está procurando? Ex: como dividir tarefas, comprovante Pix, encerrar grupo..."
+                className="w-full bg-transparent py-2 text-base outline-none placeholder:text-[#897266]"
               />
-
-              <div className="hidden items-center gap-2 pr-2 sm:flex">
-                <span className="whitespace-nowrap rounded-lg bg-input px-2 py-1 text-ui-caption font-semibold uppercase tracking-wider text-text-secondary">
-                  ESC para limpar
-                </span>
-
+              {busca && (
                 <button
                   type="button"
-                  className="ui-button ui-button--md rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-text-primary shadow-sm transition hover:bg-tertiary hover:text-white active:scale-95"
+                  aria-label="Limpar busca"
+                  onClick={() => {
+                    setBusca("");
+                    campoBusca.current?.focus();
+                  }}
+                  className="cursor-pointer rounded-full p-1 transition-colors hover:bg-[#e6eeff]"
+                  style={{ color: C.outline }}
                 >
-                  Buscar
+                  <X className="h-[18px] w-[18px]" />
                 </button>
+              )}
+            </div>
+            <div className="flex w-full items-center gap-2 px-1 pb-1 sm:w-auto sm:pb-0">
+              <span
+                className="hidden items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs md:inline-flex"
+                style={{ backgroundColor: C.surfaceLow, color: C.outline }}
+              >
+                <kbd className="font-semibold">ESC</kbd> limpa
+              </span>
+              <button
+                type="submit"
+                className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#ff8c42] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-95 active:scale-95 sm:w-auto"
+              >
+                Buscar
+                <ArrowRight className="h-[18px] w-[18px]" />
+              </button>
+            </div>
+          </form>
+
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <span className="mr-1 text-xs font-medium" style={{ color: C.outline }}>
+              Buscas comuns:
+            </span>
+            {BUSCAS_COMUNS.map((termo) => (
+              <button
+                key={termo}
+                type="button"
+                onClick={() => buscarRapido(termo)}
+                className="cursor-pointer rounded-full bg-[#e6eeff] px-3 py-1 text-xs font-medium transition-all hover:bg-[#ff8c42] hover:text-white"
+              >
+                {termo}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* =====================================================
+            CATEGORIAS
+        ====================================================== */}
+
+        <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-2">
+          {CATEGORIAS.map((item) => {
+            const ativo = categoria === item.id;
+            const Icone = item.icone;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                aria-pressed={ativo}
+                onClick={() => setCategoria(item.id)}
+                className={`flex shrink-0 cursor-pointer items-center gap-2 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
+                  ativo ? "shadow-sm" : "bg-white hover:bg-[#eff4ff] hover:text-[#121c2a]"
+                }`}
+                style={
+                  ativo
+                    ? { backgroundColor: C.primaryContainer, color: "#fff" }
+                    : { color: C.onSurfaceVariant }
+                }
+              >
+                {Icone && <Icone className="h-[18px] w-[18px]" />}
+                <span>{item.nome}</span>
+                {item.id === "all" && (
+                  <span
+                    className="rounded-full px-2 py-0.5 text-[11px] font-bold"
+                    style={
+                      ativo
+                        ? { backgroundColor: `${C.onPrimaryContainer}33`, color: "#fff" }
+                        : { backgroundColor: C.surfaceContainer }
+                    }
+                  >
+                    {TODAS.length}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+          {/* =====================================================
+              PERGUNTAS
+          ====================================================== */}
+
+          <div className="flex flex-col gap-10 lg:col-span-8">
+            {SECOES.map((secao) => {
+              const perguntas = secao.perguntas.filter((p) => visiveis.has(p.id));
+              if (perguntas.length === 0) return null;
+              const Icone = secao.icone;
+              return (
+                <section key={secao.id} className="flex flex-col gap-2" aria-labelledby={`secao-${secao.id}`}>
+                  <div className="flex items-center gap-2 pb-1">
+                    <div
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                      style={{ backgroundColor: secao.fundo, color: secao.cor }}
+                    >
+                      <Icone className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h2 id={`secao-${secao.id}`} className="text-xl font-bold">
+                        {secao.titulo}
+                      </h2>
+                      <p className="text-sm" style={{ color: C.onSurfaceVariant }}>
+                        {secao.descricao}
+                      </p>
+                    </div>
+                  </div>
+
+                  {perguntas.map((p) => {
+                    const expandida = aberta === p.id;
+                    return (
+                      <div
+                        key={p.id}
+                        className="overflow-hidden rounded-xl bg-white shadow-sm transition-all hover:shadow-md"
+                      >
+                        <h3>
+                          <button
+                            type="button"
+                            aria-expanded={expandida}
+                            aria-controls={`resposta-${p.id}`}
+                            onClick={() => setAberta(expandida ? null : p.id)}
+                            className="flex w-full cursor-pointer items-center justify-between gap-4 p-4 text-left"
+                          >
+                            <span className="text-base font-semibold">{p.pergunta}</span>
+                            <ChevronDown
+                              className={`h-[22px] w-[22px] shrink-0 transition-transform duration-200 ${
+                                expandida ? "rotate-180" : ""
+                              }`}
+                              style={{ color: C.outline }}
+                            />
+                          </button>
+                        </h3>
+                        <div
+                          id={`resposta-${p.id}`}
+                          role="region"
+                          hidden={!expandida}
+                          className="space-y-2 px-4 pb-4 pt-1 text-base"
+                          style={{ color: C.onSurfaceVariant }}
+                        >
+                          {p.resposta}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </section>
+              );
+            })}
+
+            {visiveis.size === 0 && (
+              <div className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-white p-10 text-center shadow-sm">
+                <div
+                  className="flex h-16 w-16 items-center justify-center rounded-full"
+                  style={{ backgroundColor: C.surfaceHigh, color: C.outline }}
+                >
+                  <SearchX className="h-8 w-8" />
+                </div>
+                <h3 className="text-xl font-bold">Nenhum resultado encontrado</h3>
+                <p className="max-w-md text-base" style={{ color: C.onSurfaceVariant }}>
+                  Não encontramos nenhuma resposta correspondente à sua busca.
+                  Experimente pesquisar por outras palavras-chave ou contate
+                  nosso time de atendimento direto.
+                </p>
+                <button
+                  type="button"
+                  onClick={limparTudo}
+                  className="mt-2 cursor-pointer rounded-lg px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-95"
+                  style={{ backgroundColor: C.primary }}
+                >
+                  Ver todas as perguntas
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* =====================================================
+              LATERAL
+          ====================================================== */}
+
+          <aside className="flex flex-col gap-6 lg:sticky lg:top-20 lg:col-span-4">
+            {/* Suporte */}
+            <div className="flex flex-col gap-4 rounded-xl bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-2">
+                <div
+                  className="flex h-10 w-10 items-center justify-center rounded-xl"
+                  style={{ backgroundColor: C.primaryFixed, color: C.primary }}
+                >
+                  <Headset className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Fale com o Suporte</h3>
+                  <p className="text-sm" style={{ color: C.onSurfaceVariant }}>
+                    Atendimento humano e resolutivo
+                  </p>
+                </div>
+              </div>
+              <p className="text-base" style={{ color: C.onSurfaceVariant }}>
+                Não encontrou o que precisava? Nossa equipe está disponível
+                para ajudar você e seu grupo.
+              </p>
+
+              <div className="flex flex-col gap-2 rounded-xl p-2" style={{ backgroundColor: C.surfaceLow }}>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-sm font-bold">
+                    <MessageCircle className="h-[22px] w-[22px]" style={{ color: "#25D366" }} />
+                    WhatsApp Oficial
+                  </span>
+                  <Etiqueta>Em breve</Etiqueta>
+                </div>
+                <p className="text-sm" style={{ color: C.onSurfaceVariant }}>
+                  Tire dúvidas sobre pagamentos, chaves e faturamento
+                  diretamente no app.
+                </p>
+                <button
+                  type="button"
+                  disabled
+                  title="O número oficial de WhatsApp ainda não foi definido."
+                  className="mt-1 flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold text-white opacity-60 shadow-sm"
+                  style={{ backgroundColor: C.primaryContainer }}
+                >
+                  <Send className="h-[18px] w-[18px]" />
+                  Iniciar conversa no WhatsApp
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-1 rounded-xl p-2" style={{ backgroundColor: C.surfaceLow }}>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-sm font-bold">
+                    <Mail className="h-[22px] w-[22px]" style={{ color: C.primary }} />
+                    Suporte por E-mail
+                  </span>
+                  <Etiqueta>Até 2h</Etiqueta>
+                </div>
+                <p className="text-sm" style={{ color: C.onSurfaceVariant }}>
+                  Envie relatórios complexos, anexos e solicitações de dados.
+                </p>
+                <a
+                  href={`mailto:${EMAIL_SUPORTE}`}
+                  className="mt-1 flex items-center gap-1 text-xs font-bold hover:underline"
+                  style={{ color: C.primary }}
+                >
+                  {EMAIL_SUPORTE}
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </a>
               </div>
             </div>
 
-            <div className="flex w-full flex-wrap items-center justify-center gap-2 pt-2">
-              {filtros.map((item) => {
-                const ativo = categoria === item.id;
-
+            {/* Tutoriais */}
+            <div className="flex flex-col gap-4 rounded-xl bg-white p-6 shadow-sm">
+              <div className="flex items-center justify-between">
+                <h3 className="flex items-center gap-2 text-xl font-bold">
+                  <MonitorPlay className="h-6 w-6" style={{ color: C.tertiaryContainer }} />
+                  Tutoriais Rápidos
+                </h3>
+                <Etiqueta>Em breve</Etiqueta>
+              </div>
+              {[
+                { tipo: "Vídeo · 3 min", titulo: "Dominando o Racha+", texto: "Como criar o primeiro grupo e vincular tarefas.", icone: Play, fundo: `linear-gradient(135deg, ${C.primaryFixed}, ${C.primaryFixedDim})` },
+                { tipo: "Artigo · 5 min", titulo: "Viagem Sem Brigas", texto: "Estratégias práticas para dividir passeios e refeições.", icone: BookOpen, fundo: `linear-gradient(135deg, ${C.tertiaryFixed}, ${C.surfaceHigh})` },
+              ].map((tutorial) => {
+                const Icone = tutorial.icone;
                 return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setCategoria(item.id)}
-                    className={`ui-button ui-button--md ${`rounded-full px-4 py-2 text-xs font-semibold shadow-sm transition ${
-                      ativo
-                        ? "bg-secondary text-white"
-                        : "bg-surface text-text-secondary hover:bg-input hover:text-text-primary"
-                    }`}`}
-                  >
-                    {item.nome}
-                  </button>
+                  <div key={tutorial.titulo} className="flex gap-2 rounded-xl p-2">
+                    <div
+                      className="flex h-16 w-24 shrink-0 items-center justify-center rounded-lg"
+                      style={{ background: tutorial.fundo }}
+                      aria-hidden="true"
+                    >
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/90 shadow-md">
+                        <Icone className="h-4 w-4" style={{ color: C.primary }} />
+                      </span>
+                    </div>
+                    <div className="flex min-w-0 flex-col justify-center gap-0.5">
+                      <span className="text-xs font-semibold" style={{ color: C.outline }}>
+                        {tutorial.tipo}
+                      </span>
+                      <h4 className="truncate text-sm font-bold">{tutorial.titulo}</h4>
+                      <p className="line-clamp-1 text-sm" style={{ color: C.onSurfaceVariant }}>
+                        {tutorial.texto}
+                      </p>
+                    </div>
+                  </div>
                 );
               })}
             </div>
-          </section>
 
-          {/* TÓPICOS POPULARES */}
-          <section className="flex flex-col gap-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Zap size={22} className="fill-primary text-primary" />
-
-                <h2 className="text-ui-section-title font-semibold tracking-tight">
-                  Tópicos mais consultados
-                </h2>
-              </div>
-
-              <span className="rounded-full bg-input px-3 py-1 text-ui-caption font-semibold text-text-secondary">
-                Atualizado em tempo real
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-              {populares.map((card) => (
-                <button
-                  key={card.alvo}
-                  type="button"
-                  onClick={() => irPara(card.alvo)}
-                  className="ui-button ui-button--md group relative flex flex-col justify-between overflow-hidden rounded-xl bg-surface p-6 text-left shadow-sm transition hover:shadow-md"
-                >
-                  <div
-                    className={`absolute -bottom-4 -right-4 h-20 w-20 rounded-full transition-transform group-hover:scale-150 ${card.bolha}`}
-                  />
-
-                  <div className="z-10 flex flex-col gap-3">
-                    <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-xl bg-input transition-colors ${card.cor} ${card.hover}`}
-                    >
-                      {card.icone}
-                    </div>
-
-                    <h3 className="line-clamp-2 text-ui-card-title font-semibold">
-                      {card.titulo}
-                    </h3>
-
-                    <p className="text-ui-label text-text-secondary">
-                      {card.texto}
-                    </p>
-                  </div>
-
-                  <div className="z-10 flex items-center gap-1 pt-4 text-xs font-semibold text-secondary transition-transform group-hover:translate-x-1">
-                    {card.cta}
-                    <ArrowRight size={15} />
-                  </div>
-                </button>
-              ))}
-            </div>
-          </section>
-
-          {/* ACORDEÃO + LATERAL */}
-          <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
-            <div className="flex w-full flex-col gap-8 lg:col-span-8">
-              {gruposVisiveis.length === 0 && (
-                <div className="flex flex-col items-center gap-3 rounded-xl bg-surface p-12 text-center shadow-sm">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-input text-secondary">
-                    <Search size={22} />
-                  </div>
-
-                  <h3 className="text-base font-semibold">
-                    Nenhuma dúvida encontrada
-                  </h3>
-
-                  <p className="max-w-md text-xs text-text-secondary">
-                    Tente outra palavra-chave ou fale com nosso time de suporte
-                    ao lado.
-                  </p>
-                </div>
-              )}
-
-              {gruposVisiveis.map((grupo) => (
-                <div key={grupo.id} className="flex flex-col gap-4">
-                  <div className="flex items-center gap-3 pb-2">
-                    <div
-                      className={`flex h-8 w-8 items-center justify-center rounded-lg bg-surface ${grupo.corIcone}`}
-                    >
-                      {grupo.icone}
-                    </div>
-
-                    <h3 className="text-lg font-semibold">{grupo.titulo}</h3>
-                  </div>
-
-                  <div className="flex flex-col gap-3">
-                    {grupo.itens.map((item) => {
-                      const aberto = termo
-                        ? true
-                        : abertos.includes(item.id);
-
-                      return (
-                        <div
-                          key={item.id}
-                          id={item.id}
-                          className={`overflow-hidden rounded-xl bg-surface shadow-sm transition ${
-                            destaque === item.id ? "ring-2 ring-primary" : ""
-                          }`}
-                        >
-                          <button
-                            type="button"
-                            aria-expanded={aberto}
-                            onClick={() => alternar(item.id)}
-                            className="ui-button ui-button--md flex w-full items-center justify-between gap-4 px-6 py-5 text-left transition hover:bg-input/60"
-                          >
-                            <span className="text-ui-card-title font-semibold">
-                              {item.pergunta}
-                            </span>
-
-                            <span
-                              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-input text-secondary transition-transform duration-200 ${
-                                aberto ? "rotate-180" : ""
-                              }`}
-                            >
-                              <ChevronDown size={19} />
-                            </span>
-                          </button>
-
-                          {aberto && (
-                            <div className="flex flex-col gap-4 px-6 pb-6 pt-1 text-sm text-text-secondary">
-                              {item.conteudo}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <aside className="flex flex-col gap-6 lg:sticky lg:top-24 lg:col-span-4">
-              <div className="flex flex-col gap-5 rounded-xl bg-surface p-6 shadow-md">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-text-primary shadow-sm">
-                    <Headset size={26} />
-                  </div>
-
-                  <div className="flex flex-col">
-                    <h3 className="text-ui-card-title font-semibold">
-                      Não encontrou o que procurava?
-                    </h3>
-                    <span className="text-ui-caption text-text-secondary">
-                      Nosso time humano responde rápido
-                    </span>
-                  </div>
-                </div>
-
-                <p className="text-sm text-text-secondary">
-                  Tire dúvidas complexas sobre rateio de empresas, eventos
-                  grandes ou integração bancária com nossa equipe de suporte.
-                </p>
-
-                <div className="flex flex-col gap-3">
-                  <a
-                    href="https://wa.me/5511999999999"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:brightness-105"
-                  >
-                    <MessageCircle size={19} />
-                    Falar via WhatsApp
-                  </a>
-
-                  <a
-                    href="mailto:suporte@racha.plus"
-                    className="flex w-full items-center justify-between rounded-xl bg-input px-4 py-3 text-left text-sm font-semibold transition hover:bg-background"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Mail size={19} className="text-secondary" />
-
-                      <div className="flex flex-col">
-                        <span className="leading-none">suporte@racha.plus</span>
-                        <span className="mt-0.5 text-ui-caption font-normal text-text-secondary">
-                          Resposta em ~15 minutos
-                        </span>
-                      </div>
-                    </div>
-
-                    <ExternalLink size={15} className="text-gray-400" />
-                  </a>
-                </div>
-
-                <div className="flex flex-col gap-2 pt-2">
-                  {[
-                    { icone: <PlayCircle size={18} />, nome: "Guia em vídeo de 2 minutos" },
-                    { icone: <Users size={18} />, nome: "Comunidade & Dicas de Usuários" },
-                  ].map((link) => (
-                    <button
-                      key={link.nome}
-                      type="button"
-                      className="ui-button ui-button--md flex items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold text-text-secondary transition hover:bg-input hover:text-text-primary"
-                    >
-                      <span className="flex items-center gap-2">
-                        <span className="text-secondary">{link.icone}</span>
-                        {link.nome}
-                      </span>
-
-                      <ChevronRight size={16} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-3 rounded-xl bg-surface p-5 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#2E7D32]" />
-
-                    <span className="text-ui-caption font-semibold uppercase tracking-wider">
-                      Status do Ecossistema
-                    </span>
-                  </div>
-
-                  <span className="rounded-full bg-[#E8F5E9] px-2 py-0.5 text-ui-caption font-semibold text-[#2E7D32]">
-                    100% Operacional
+            {/* Status dos serviços */}
+            <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-2 text-sm font-bold">
+                  <span className="relative flex h-3 w-3">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
                   </span>
-                </div>
-
-                <div className="flex flex-col gap-2 pt-1 text-ui-label text-text-secondary">
-                  {statusSistema.map((s) => (
-                    <div key={s.nome} className="flex items-center justify-between">
+                  Status dos Serviços
+                </span>
+                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-600">
+                  Operacional
+                </span>
+              </div>
+              <div className="flex flex-col gap-2 pt-1 text-sm" style={{ color: C.onSurfaceVariant }}>
+                {[
+                  { nome: "Pix Copia e Cola", icone: ArrowLeftRight },
+                  { nome: "Notificações Push & E-mail", icone: BellRing },
+                  { nome: "Armazenamento de Recibos", icone: CloudUpload },
+                ].map((servico, indice, lista) => {
+                  const Icone = servico.icone;
+                  return (
+                    <div
+                      key={servico.nome}
+                      className={`flex items-center justify-between py-1 ${indice < lista.length - 1 ? "border-b" : ""}`}
+                      style={{ borderColor: C.surfaceContainer }}
+                    >
                       <span className="flex items-center gap-1.5">
-                        <span className="text-secondary">{s.icone}</span>
-                        {s.nome}
+                        <Icone className="h-4 w-4" style={{ color: C.outline }} />
+                        {servico.nome}
                       </span>
-
-                      <span className="font-medium text-text-primary">
-                        {s.valor}
+                      <span className="text-xs font-semibold" style={{ color: C.onSurface }}>
+                        Disponível
                       </span>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-
-              <div className="flex flex-col gap-2 rounded-xl bg-gradient-to-br from-input to-blue-100/70 p-5">
-                <div className="flex items-center gap-2 text-xs text-tertiary">
-                  <Lightbulb size={19} />
-                  <span className="font-semibold">Dica Racha+ Pro</span>
-                </div>
-
-                <p className="text-ui-label text-text-secondary">
-                  Em viagens longas, adicione despesas à medida que ocorrem. Ao
-                  final, a ferramenta calcula a{" "}
-                  <strong>compensação mínima de transferências</strong>,
-                  evitando que todos façam dezenas de Pix entre si!
-                </p>
-              </div>
-            </aside>
-          </div>
-
-          {/* FEEDBACK */}
-          <section className="mt-4 flex flex-col items-center justify-between gap-4 rounded-xl bg-surface p-6 text-center shadow-sm sm:flex-row sm:text-left">
-            <div className="flex flex-col gap-1">
-              <h4 className="text-ui-card-title font-semibold">
-                Esta página foi útil para você?
-              </h4>
-
-              <p className="text-ui-label text-text-secondary">
-                Seu feedback nos ajuda a aprimorar as respostas e
-                funcionalidades do Racha+.
-              </p>
             </div>
-
-            <div className="flex items-center gap-3">
-              {feedback ? (
-                <span className="inline-flex items-center gap-2 rounded-xl bg-input px-4 py-2 text-xs font-semibold">
-                  <CircleCheckBig size={18} className="text-[#2E7D32]" />
-                  Obrigado pelo seu feedback!
-                </span>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setFeedback(true)}
-                    className="ui-button ui-button--md inline-flex items-center gap-2 rounded-xl bg-input px-4 py-2 text-xs font-semibold transition hover:bg-background active:scale-95"
-                  >
-                    <ThumbsUp size={17} className="text-tertiary" />
-                    Sim, ajudou
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFeedback(true)}
-                    className="ui-button ui-button--md inline-flex items-center gap-2 rounded-xl bg-input px-4 py-2 text-xs font-semibold transition hover:bg-background active:scale-95"
-                  >
-                    <ThumbsDown size={17} className="text-text-secondary" />
-                    Ainda tenho dúvidas
-                  </button>
-                </>
-              )}
-            </div>
-          </section>
+          </aside>
         </div>
-      </main>
-
-      {/* RODAPÉ */}
-      <footer className="mt-12 w-full bg-surface py-8">
-        <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-4 px-6 md:flex-row">
-          <div className="flex items-center gap-3">
-            <span className="font-semibold text-secondary">Racha+</span>
-
-            <span className="text-xs text-text-secondary">
-              • Organização descomplicada de despesas e tarefas coletivas
-            </span>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-text-secondary">
-            <button type="button" className="transition hover:text-secondary">
-              Sobre
-            </button>
-
-            <button type="button" className="transition hover:text-secondary">
-              Segurança Pix
-            </button>
-
-            <button type="button" className="transition hover:text-secondary">
-              Privacidade
-            </button>
-
-            <span>© 2025 Racha+. Todos os direitos reservados.</span>
-          </div>
-        </div>
-      </footer>
-    </div>
+      </div>
+    </AppShell>
   );
 }
 
-export default Faq;
+/* =====================================================
+   COMPONENTES AUXILIARES
+====================================================== */
+
+function Etiqueta({ children }: { children: ReactNode }) {
+  return (
+    <span
+      className="rounded-full px-2 py-0.5 text-xs font-medium"
+      style={{ backgroundColor: C.surfaceHighest, color: C.onSurfaceVariant }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function PlanosResposta() {
+  const navigate = useNavigate();
+  const planos = [
+    {
+      nome: "Plano Pro",
+      selo: "Popular",
+      corSelo: { fundo: C.primaryFixed, texto: C.primary },
+      preco: "R$ 12",
+      periodo: "/mês ou R$ 80/ano",
+      itens: ["Até 15 grupos ativos", "Armazenamento de 500 comprovantes em HD", "Exportação completa em PDF e Excel"],
+      fundo: C.surfaceLow,
+      acao: "Ver detalhes",
+      destaque: false,
+    },
+    {
+      nome: "Plano Pro+",
+      selo: "Ilimitado",
+      corSelo: { fundo: C.tertiaryContainer, texto: "#fff" },
+      preco: "R$ 20",
+      periodo: "/mês ou R$ 200/ano",
+      itens: ["Grupos ilimitados e membros sem teto", "Comprovantes e fotos sem limite", "Conciliação bancária assistida via IA"],
+      fundo: C.surfaceContainer,
+      acao: "Assinar Pro+",
+      destaque: true,
+    },
+  ];
+
+  return (
+    <>
+      <p>
+        O plano {forte("Gratuito")} já oferece criação de grupos e divisão
+        padrão. Para quem precisa de mais poder de organização, oferecemos:
+      </p>
+      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+        {planos.map((plano) => (
+          <div
+            key={plano.nome}
+            className="flex flex-col justify-between gap-2 rounded-xl p-4"
+            style={{ backgroundColor: plano.fundo }}
+          >
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-base font-bold" style={{ color: C.onSurface }}>
+                  {plano.nome}
+                </span>
+                <span
+                  className="rounded-full px-2 py-0.5 text-[11px] font-bold"
+                  style={{ backgroundColor: plano.corSelo.fundo, color: plano.corSelo.texto }}
+                >
+                  {plano.selo}
+                </span>
+              </div>
+              <div className="mt-2">
+                <span className="text-xl font-bold" style={{ color: C.onSurface }}>
+                  {plano.preco}
+                </span>
+                <span className="text-sm">{plano.periodo}</span>
+              </div>
+              <ul className="mt-3 space-y-1.5 text-sm">
+                {plano.itens.map((item) => (
+                  <li key={item} className="flex items-center gap-1.5">
+                    <Check className="h-4 w-4 shrink-0" style={{ color: C.primaryContainer }} />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate("/assinatura")}
+              className={`mt-2 cursor-pointer rounded-lg px-3 py-2 text-center text-sm font-semibold transition-colors ${
+                plano.destaque
+                  ? "bg-[#ff8c42] text-white shadow-sm hover:opacity-95"
+                  : "bg-[#d9e3f6] text-[#121c2a] hover:bg-[#9b4500] hover:text-white"
+              }`}
+            >
+              {plano.acao}
+            </button>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}

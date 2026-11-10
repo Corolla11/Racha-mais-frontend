@@ -1,0 +1,1339 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Racha+ API",
+    "version": "1.0.0",
+    "description": "Documentação da API do backend Racha+ gerada automaticamente."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Servidor Local"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Verificar status da API",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/grupos/{idGrupo}/membros/": {
+      "post": {
+        "tags": [
+          "Membros"
+        ],
+        "summary": "Adicionar membro ao grupo (informe idUser OU email)",
+        "description": "",
+        "parameters": [
+          {
+            "name": "idGrupo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "idUser": {
+                    "type": "string",
+                    "example": "user_123"
+                  },
+                  "email": {
+                    "type": "string",
+                    "example": "usuario@exemplo.com"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Membros"
+        ],
+        "summary": "Listar membros do grupo",
+        "description": "",
+        "parameters": [
+          {
+            "name": "idGrupo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/grupos/{idGrupo}/membros/{idUser}": {
+      "patch": {
+        "tags": [
+          "Membros"
+        ],
+        "summary": "Atualizar função do membro",
+        "description": "",
+        "parameters": [
+          {
+            "name": "idGrupo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idUser",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "funcao"
+                ],
+                "properties": {
+                  "funcao": {
+                    "type": "string",
+                    "enum": [
+                      "dono",
+                      "membro"
+                    ],
+                    "example": "dono"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Membros"
+        ],
+        "summary": "Remover membro do grupo",
+        "description": "",
+        "parameters": [
+          {
+            "name": "idGrupo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idUser",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/grupos/": {
+      "post": {
+        "tags": [
+          "Grupos"
+        ],
+        "summary": "Criar novo grupo",
+        "description": "",
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nome"
+                ],
+                "properties": {
+                  "nome": {
+                    "type": "string",
+                    "example": "Churrasco de Fim de Ano"
+                  },
+                  "descricao": {
+                    "type": "string",
+                    "example": "Divisão das despesas do churrasco"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Grupos"
+        ],
+        "summary": "Listar grupos do usuário",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/grupos/{id}": {
+      "get": {
+        "tags": [
+          "Grupos"
+        ],
+        "summary": "Obter grupo por ID",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Grupos"
+        ],
+        "summary": "Atualizar grupo",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nome": {
+                    "type": "string",
+                    "example": "Novo nome do grupo"
+                  },
+                  "descricao": {
+                    "type": "string",
+                    "example": "Nova descrição"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Grupos"
+        ],
+        "summary": "Excluir grupo",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/tarefas/{idTarefa}/partes/": {
+      "post": {
+        "tags": [
+          "Partes"
+        ],
+        "summary": "Criar parte vinculada à tarefa",
+        "description": "",
+        "parameters": [
+          {
+            "name": "idTarefa",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "valor"
+                ],
+                "properties": {
+                  "idUser": {
+                    "type": "string",
+                    "example": "user_123"
+                  },
+                  "valor": {
+                    "type": "string",
+                    "example": "50.00"
+                  },
+                  "descricao": {
+                    "type": "string",
+                    "example": "Parte individual"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "AGENDADA",
+                      "EM_ANDAMENTO",
+                      "FINALIZADA",
+                      "ATRASADA",
+                      "CANCELADA"
+                    ],
+                    "example": "AGENDADA"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Partes"
+        ],
+        "summary": "Listar partes da tarefa",
+        "description": "",
+        "parameters": [
+          {
+            "name": "idTarefa",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/tarefas/{idTarefa}/partes/{id}": {
+      "get": {
+        "tags": [
+          "Partes"
+        ],
+        "summary": "Obter parte da tarefa",
+        "description": "",
+        "parameters": [
+          {
+            "name": "idTarefa",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Partes"
+        ],
+        "summary": "Atualizar parte da tarefa",
+        "description": "",
+        "parameters": [
+          {
+            "name": "idTarefa",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "valor": {
+                    "type": "string",
+                    "example": "60.00"
+                  },
+                  "descricao": {
+                    "type": "string",
+                    "example": "Valor ajustado"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "AGENDADA",
+                      "EM_ANDAMENTO",
+                      "FINALIZADA",
+                      "ATRASADA",
+                      "CANCELADA"
+                    ],
+                    "example": "FINALIZADA"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Partes"
+        ],
+        "summary": "Excluir parte da tarefa",
+        "description": "",
+        "parameters": [
+          {
+            "name": "idTarefa",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/partes/": {
+      "post": {
+        "tags": [
+          "Partes"
+        ],
+        "summary": "Criar parte de tarefa",
+        "description": "",
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "idTarefa",
+                  "valor"
+                ],
+                "properties": {
+                  "idTarefa": {
+                    "type": "string",
+                    "example": "tarefa_123"
+                  },
+                  "idUser": {
+                    "type": "string",
+                    "example": "user_123"
+                  },
+                  "valor": {
+                    "type": "string",
+                    "example": "50.00"
+                  },
+                  "descricao": {
+                    "type": "string",
+                    "example": "Parte individual"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "AGENDADA",
+                      "EM_ANDAMENTO",
+                      "FINALIZADA",
+                      "ATRASADA",
+                      "CANCELADA"
+                    ],
+                    "example": "AGENDADA"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Partes"
+        ],
+        "summary": "Listar partes",
+        "description": "",
+        "parameters": [
+          {
+            "name": "idTarefa",
+            "in": "query",
+            "description": "Filtrar por ID da tarefa",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/partes/{id}": {
+      "get": {
+        "tags": [
+          "Partes"
+        ],
+        "summary": "Obter parte por ID",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Partes"
+        ],
+        "summary": "Atualizar parte",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "valor": {
+                    "type": "string",
+                    "example": "60.00"
+                  },
+                  "descricao": {
+                    "type": "string",
+                    "example": "Valor ajustado"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "AGENDADA",
+                      "EM_ANDAMENTO",
+                      "FINALIZADA",
+                      "ATRASADA",
+                      "CANCELADA"
+                    ],
+                    "example": "FINALIZADA"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Partes"
+        ],
+        "summary": "Excluir parte",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/tarefas/": {
+      "post": {
+        "tags": [
+          "Tarefas"
+        ],
+        "summary": "Criar nova tarefa",
+        "description": "",
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "idGrupo",
+                  "nome",
+                  "dataInicio",
+                  "dataFinal",
+                  "tipoTarefa"
+                ],
+                "properties": {
+                  "idGrupo": {
+                    "type": "string",
+                    "example": "grupo_123"
+                  },
+                  "nome": {
+                    "type": "string",
+                    "example": "Carne e Bebidas"
+                  },
+                  "descricao": {
+                    "type": "string",
+                    "example": "Compras no mercado"
+                  },
+                  "valorTotal": {
+                    "type": "number",
+                    "example": 150
+                  },
+                  "dataInicio": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-11-10T12:00:00.000Z"
+                  },
+                  "dataFinal": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-11-12T18:00:00.000Z"
+                  },
+                  "tipoTarefa": {
+                    "type": "string",
+                    "enum": [
+                      "comum",
+                      "contribuinte",
+                      "meta",
+                      "recorrente"
+                    ],
+                    "example": "comum"
+                  },
+                  "statusAndamento": {
+                    "type": "string",
+                    "enum": [
+                      "AGENDADA",
+                      "EM_ANDAMENTO",
+                      "FINALIZADA",
+                      "ATRASADA",
+                      "CANCELADA"
+                    ],
+                    "example": "AGENDADA"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Tarefas"
+        ],
+        "summary": "Listar tarefas",
+        "description": "",
+        "parameters": [
+          {
+            "name": "idGrupo",
+            "in": "query",
+            "description": "Filtrar por ID do grupo",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tipoTarefa",
+            "in": "query",
+            "description": "comum | contribuinte | meta | recorrente",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "statusAndamento",
+            "in": "query",
+            "description": "AGENDADA | EM_ANDAMENTO | FINALIZADA | ATRASADA | CANCELADA",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/tarefas/{id}": {
+      "get": {
+        "tags": [
+          "Tarefas"
+        ],
+        "summary": "Obter detalhes da tarefa",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Tarefas"
+        ],
+        "summary": "Atualizar tarefa",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nome": {
+                    "type": "string",
+                    "example": "Carne e Bebidas atualizado"
+                  },
+                  "descricao": {
+                    "type": "string",
+                    "example": "Nova descrição"
+                  },
+                  "valorTotal": {
+                    "type": "number",
+                    "example": 180
+                  },
+                  "dataInicio": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-11-10T12:00:00.000Z"
+                  },
+                  "dataFinal": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-11-12T18:00:00.000Z"
+                  },
+                  "tipoTarefa": {
+                    "type": "string",
+                    "enum": [
+                      "comum",
+                      "contribuinte",
+                      "meta",
+                      "recorrente"
+                    ],
+                    "example": "comum"
+                  },
+                  "statusAndamento": {
+                    "type": "string",
+                    "enum": [
+                      "AGENDADA",
+                      "EM_ANDAMENTO",
+                      "FINALIZADA",
+                      "ATRASADA",
+                      "CANCELADA"
+                    ],
+                    "example": "EM_ANDAMENTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Tarefas"
+        ],
+        "summary": "Excluir tarefa",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/chaves-pix/": {
+      "post": {
+        "tags": [
+          "Chaves Pix"
+        ],
+        "summary": "Cadastrar chave Pix",
+        "description": "",
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "tipoChave",
+                  "chave"
+                ],
+                "properties": {
+                  "tipoChave": {
+                    "type": "string",
+                    "enum": [
+                      "telefone",
+                      "cpf",
+                      "email",
+                      "aleatoria"
+                    ],
+                    "example": "email"
+                  },
+                  "chave": {
+                    "type": "string",
+                    "example": "usuario@exemplo.com"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Chaves Pix"
+        ],
+        "summary": "Listar chaves Pix",
+        "description": "",
+        "parameters": [
+          {
+            "name": "idUser",
+            "in": "query",
+            "description": "Filtrar por ID do usuário",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tipoChave",
+            "in": "query",
+            "description": "telefone | cpf | email | aleatoria",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/chaves-pix/{id}": {
+      "get": {
+        "tags": [
+          "Chaves Pix"
+        ],
+        "summary": "Obter chave Pix por ID",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Chaves Pix"
+        ],
+        "summary": "Atualizar chave Pix",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tipoChave": {
+                    "type": "string",
+                    "enum": [
+                      "telefone",
+                      "cpf",
+                      "email",
+                      "aleatoria"
+                    ],
+                    "example": "telefone"
+                  },
+                  "chave": {
+                    "type": "string",
+                    "example": "11999999999"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Chaves Pix"
+        ],
+        "summary": "Excluir chave Pix",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "tags": [
+          "Usuários"
+        ],
+        "summary": "Obter perfil do usuário autenticado",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": [
+          "Usuários"
+        ],
+        "summary": "Obter usuário por ID",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { ApiError, apiRequest } from "../lib/api";
+import { ApiError } from "../lib/api";
+import { authClient } from "../lib/auth-client";
 import {
   AuthContext,
-  type AuthSessionResponse,
   type AuthUser,
 } from "./auth-context";
 
-function extrairUsuario(sessao: AuthSessionResponse): AuthUser | null {
-  return sessao?.user ?? null;
+function lancarErroAuth(error: { message?: string; status?: number } | null | undefined, padrao: string): never {
+  throw new ApiError(error?.message || padrao, error?.status ?? 400);
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -17,41 +17,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshSession = useCallback(async () => {
     setSessionError(null);
-    try {
-      const sessao = await apiRequest<AuthSessionResponse>(
-        "/api/auth/get-session",
-      );
-      const usuario = extrairUsuario(sessao);
-      setUser(usuario);
-      return usuario;
-    } catch (error) {
-      setSessionError(
-        error instanceof ApiError
-          ? error.message
-          : "Não foi possível verificar sua sessão.",
-      );
-      throw error;
+    const { data, error } = await authClient.getSession();
+    if (error) {
+      const msg = error.message || "Não foi possível verificar sua sessão.";
+      setSessionError(msg);
+      throw new ApiError(msg, error.status ?? 401);
     }
+    const usuario = (data?.user as AuthUser | undefined) ?? null;
+    setUser(usuario);
+    return usuario;
   }, []);
 
   useEffect(() => {
     let ativo = true;
 
-    apiRequest<AuthSessionResponse>("/api/auth/get-session")
-      .then((sessao) => {
-        if (ativo) {
-          setUser(extrairUsuario(sessao));
-          setSessionError(null);
+    authClient
+      .getSession()
+      .then(({ data, error }) => {
+        if (!ativo) return;
+        if (error) {
+          setUser(null);
+          setSessionError(error.message || "Não foi possível verificar sua sessão.");
+          return;
         }
+        setUser((data?.user as AuthUser | undefined) ?? null);
+        setSessionError(null);
       })
-      .catch((error: unknown) => {
+      .catch(() => {
         if (!ativo) return;
         setUser(null);
-        setSessionError(
-          error instanceof ApiError
-            ? error.message
-            : "Não foi possível verificar sua sessão.",
-        );
+        setSessionError("Não foi possível verificar sua sessão.");
       })
       .finally(() => {
         if (ativo) setIsLoading(false);
@@ -64,10 +59,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(
     async (email: string, password: string, rememberMe: boolean) => {
-      await apiRequest("/api/auth/sign-in/email", {
-        method: "POST",
-        body: { email, password, rememberMe },
-      });
+      const { error } = await authClient.signIn.email({ email, password, rememberMe });
+      if (error) lancarErroAuth(error, "Falha ao realizar login.");
       const usuario = await refreshSession();
       if (!usuario) {
         throw new ApiError(
@@ -81,10 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback(
     async (name: string, email: string, password: string) => {
-      await apiRequest("/api/auth/sign-up/email", {
-        method: "POST",
-        body: { name, email, password },
-      });
+      const { error } = await authClient.signUp.email({ name, email, password });
+      if (error) lancarErroAuth(error, "Falha ao criar conta.");
       const usuario = await refreshSession();
       if (!usuario) {
         throw new ApiError(
@@ -97,8 +88,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
-    await apiRequest("/api/auth/sign-out", { method: "POST" });
+    const { error } = await authClient.signOut();
+    if (error) lancarErroAuth(error, "Não foi possível encerrar a sessão.");
     setUser(null);
+  }, []);
+
+  const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
+    const { error } = await authClient.changePassword({
+      currentPassword,
+      newPassword,
+      revokeOtherSessions: true,
+    });
+    if (error) lancarErroAuth(error, "Não foi possível alterar a senha.");
+  }, []);
+
+  const requestPasswordReset = useCallback(async (email: string) => {
+    const { error } = await authClient.requestPasswordReset({
+      email,
+      redirectTo: `${window.location.origin}/redefinir-senha`,
+    });
+    if (error) lancarErroAuth(error, "Não foi possível solicitar a recuperação de senha.");
+  }, []);
+
+  const resetPassword = useCallback(async (newPassword: string, token: string) => {
+    const { error } = await authClient.resetPassword({ newPassword, token });
+    if (error) lancarErroAuth(error, "Não foi possível redefinir a senha.");
   }, []);
 
   const value = useMemo(
@@ -110,8 +124,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn,
       signUp,
       signOut,
+      changePassword,
+      requestPasswordReset,
+      resetPassword,
     }),
-    [user, isLoading, sessionError, refreshSession, signIn, signUp, signOut],
+    [
+      user,
+      isLoading,
+      sessionError,
+      refreshSession,
+      signIn,
+      signUp,
+      signOut,
+      changePassword,
+      requestPasswordReset,
+      resetPassword,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { sendPasswordResetEmail } from "./email.js";
+import { openAPI } from "better-auth/plugins"
 import { prisma } from "./prisma.js";
 
 export const auth = betterAuth({
@@ -11,6 +12,10 @@ export const auth = betterAuth({
     .map((origin) => origin.trim())
     .filter(Boolean),
 
+  plugins: [
+          openAPI(), 
+  ],
+  
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
@@ -21,4 +26,5 @@ export const auth = betterAuth({
       await sendPasswordResetEmail({ to: user.email, url });
     },
   },
+  
 });
