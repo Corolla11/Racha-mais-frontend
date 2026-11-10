@@ -1,10 +1,12 @@
 import { ForbiddenError } from "../../errors/AppError.js";
 import {
   Funcao,
+  TipoNotificacao,
   type StatusAndamento,
   type TipoTarefa,
 } from "../../generated/prisma/enums.js";
 import { prisma } from "../../lib/prisma.js";
+import { notificacaoRepository } from "../../modules/notificacoes/notificacao.repository.js";
 
 export type CriarTarefaDados = {
   idGrupo: string;
@@ -47,7 +49,43 @@ async function exigirPermissaoEdicao(idUser: string, idTarefa: string) {
 export const tarefaService = {
   async criar(idUser: string, dados: CriarTarefaDados) {
     await exigirMembro(idUser, dados.idGrupo);
-    return prisma.tarefa.create({ data: { ...dados, idUser } });
+    return prisma.$transaction(async (tx) => {
+      const tarefa = await tx.tarefa.create({ data: { ...dados, idUser } });
+      const [grupo, membros] = await Promise.all([
+        tx.grupo.findUniqueOrThrow({
+          where: { id: dados.idGrupo },
+          select: { nome: true },
+        }),
+        tx.membro.findMany({
+          where: { idGrupo: dados.idGrupo, idUser: { not: idUser } },
+          select: { idUser: true },
+        }),
+      ]);
+      const valorTotal = Number(tarefa.valorTotal);
+      const detalhes = [
+        `A tarefa "${tarefa.nome}" foi criada no grupo "${grupo.nome}".`,
+        tarefa.descricao ? tarefa.descricao : undefined,
+        valorTotal > 0
+          ? `Valor total: ${valorTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}.`
+          : undefined,
+      ]
+        .filter(Boolean)
+        .join(" ");
+
+      await notificacaoRepository.criarNaTransacao(
+        tx,
+        membros.map(({ idUser: idDestinatario }) => ({
+          idUser: idDestinatario,
+          tipo: TipoNotificacao.TAREFA_CRIADA,
+          titulo: "Nova tarefa no grupo",
+          mensagem: detalhes,
+          idGrupo: dados.idGrupo,
+          idTarefa: tarefa.id,
+          chaveEvento: `tarefa-criada:${tarefa.id}:${idDestinatario}`,
+        })),
+      );
+      return tarefa;
+    });
   },
 
   async listar(

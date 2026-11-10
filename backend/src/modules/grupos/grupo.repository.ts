@@ -34,6 +34,17 @@ export const grupoRepository = {
     return (await prisma.grupo.count({ where: { id } })) > 0;
   },
 
+  async temAssinaturaProAtivaOuPendente(idGrupo: string) {
+    return (
+      (await prisma.assinaturaPro.count({
+        where: {
+          idGrupo,
+          status: { in: ["ATIVA", "PENDENTE"] },
+        },
+      })) > 0
+    );
+  },
+
   buscarMembro(idUser: string, idGrupo: string) {
     return prisma.membro.findUnique({
       where: { idUser_idGrupo: { idUser, idGrupo } },

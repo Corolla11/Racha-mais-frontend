@@ -1,4 +1,4 @@
-﻿import { useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   ArrowRight,
@@ -12,9 +12,8 @@ import {
   LockKeyhole,
   RotateCcw,
 } from "lucide-react";
-import { useAuth } from "../auth/auth-context";
-import { ApiError } from "../lib/api";
 import RecuperacaoLayout, { BannerErro } from "../components/recuperacao-layout";
+import { ApiError, apiRequest } from "../lib/api";
 import { CR } from "../lib/recuperacao-tokens";
 
 const REQUISITOS = [
@@ -32,15 +31,16 @@ function nivelForca(senha: string) {
 }
 
 export default function RedefinirSenha() {
-  const { resetPassword } = useAuth();
   const [params] = useSearchParams();
-  const token = params.get("token") ?? "";
+  const token = params.get("token");
+  const tokenError = params.get("error");
 
   const [senha, setSenha] = useState("");
   const [confirmacao, setConfirmacao] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false);
   const [erro, setErro] = useState("");
+  const [salvando, setSalvando] = useState(false);
   const [concluido, setConcluido] = useState(false);
 
   const forca = nivelForca(senha);
@@ -48,21 +48,34 @@ export default function RedefinirSenha() {
   async function salvar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (senha !== confirmacao) {
-      setErro("A confirmação de senha deve ser idêntica à nova senha digitada.");
+      setErro("As senhas precisam ser iguais.");
       return;
     }
-    setErro("");
-    if (token) {
-      try {
-        await resetPassword(senha, token);
-      } catch (err) {
-        setErro(err instanceof ApiError ? err.message : "Não foi possível redefinir a senha.");
-        return;
-      }
+    if (!token) {
+      setErro("O link de recuperação está inválido ou expirou. Solicite outro e-mail.");
+      return;
     }
-    setConcluido(true);
+
+    setErro("");
+    setSalvando(true);
+    try {
+      await apiRequest("/api/auth/reset-password", {
+        method: "POST",
+        body: { newPassword: senha, token },
+      });
+      setConcluido(true);
+    } catch (err) {
+      setErro(
+        err instanceof ApiError
+          ? err.message
+          : "Não foi possível atualizar a senha agora.",
+      );
+    } finally {
+      setSalvando(false);
+    }
   }
 
+  // Estado de sucesso
   if (concluido) {
     return (
       <RecuperacaoLayout etapa={3}>
@@ -72,8 +85,7 @@ export default function RedefinirSenha() {
           </div>
           <h2 className="text-2xl font-bold">Senha atualizada!</h2>
           <p className="text-sm" style={{ color: CR.onSurfaceVariant }}>
-            Tudo pronto! Agora você já pode entrar e continuar organizando
-            seus rachas.
+            Tudo pronto! Agora você já pode entrar e continuar organizando seus rachas.
           </p>
           <Link
             to="/login"
@@ -82,6 +94,36 @@ export default function RedefinirSenha() {
             Ir para o Login
             <ArrowRight className="h-[18px] w-[18px]" />
           </Link>
+        </div>
+      </RecuperacaoLayout>
+    );
+  }
+
+  // Link inválido ou expirado
+  if (tokenError || !token) {
+    return (
+      <RecuperacaoLayout etapa={3}>
+        <div className="flex flex-col gap-6">
+          <BannerErro
+            titulo="Link inválido ou expirado"
+            descricao="O link de recuperação acessado não é válido ou já expirou. Solicite um novo link para continuar."
+          />
+          <Link
+            to="/esqueceu-senha"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#ff8c42] px-6 py-3.5 text-base font-semibold text-white shadow-md transition-all duration-200 hover:bg-[#9b4500] hover:shadow-lg active:scale-[0.98]"
+          >
+            Solicitar novo link
+            <ArrowRight className="h-[18px] w-[18px]" />
+          </Link>
+          <div className="flex items-center justify-center pt-2">
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors hover:text-[#121c2a]"
+              style={{ color: CR.onSurfaceVariant }}
+            >
+              Voltar para o Login
+            </Link>
+          </div>
         </div>
       </RecuperacaoLayout>
     );
@@ -188,9 +230,10 @@ export default function RedefinirSenha() {
 
           <button
             type="submit"
-            className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#ff8c42] px-6 py-3.5 text-base font-semibold text-white shadow-md transition-all duration-200 hover:bg-[#9b4500] hover:shadow-lg active:scale-[0.98]"
+            disabled={salvando}
+            className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#ff8c42] px-6 py-3.5 text-base font-semibold text-white shadow-md transition-all duration-200 hover:bg-[#9b4500] hover:shadow-lg active:scale-[0.98] disabled:cursor-wait disabled:opacity-80"
           >
-            Salvar nova senha
+            {salvando ? "Salvando..." : "Salvar nova senha"}
             <CircleCheckBig className="h-[18px] w-[18px]" />
           </button>
         </form>

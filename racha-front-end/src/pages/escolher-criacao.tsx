@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   ArrowRight,
   CheckCircle2,
@@ -11,7 +11,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "../components/app-link";
-import { futureModules, type IaSugestaoGrupo } from "../lib/endpoints";
+import { ApiError, apiRequest } from "../lib/api";
 import { useAppNavigate as useNavigate } from "../lib/navigation";
 
 /* =====================================================
@@ -57,13 +57,20 @@ const EXEMPLOS = [
   },
 ];
 
+type RascunhoGrupo = {
+  nome: string;
+  descricao: string;
+  categoria?: string;
+};
+
 export default function EscolherCriacao() {
   const navigate = useNavigate();
   const [assistente, setAssistente] = useState(false);
-  const [descricao, setDescricao] = useState("");
-  const [sugestaoPronta, setSugestaoPronta] = useState(false);
-  const [carregandoIa, setCarregandoIa] = useState(false);
-  const [sugestaoIa, setSugestaoIa] = useState<IaSugestaoGrupo | null>(null);
+  const [prompt, setPrompt] = useState("");
+  const [rascunho, setRascunho] = useState<RascunhoGrupo | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState("");
   const blocoAssistente = useRef<HTMLDivElement>(null);
 
   // Leva o usuário até o assistente quando ele é aberto
@@ -75,23 +82,56 @@ export default function EscolherCriacao() {
 
   function abrirAssistente(texto?: string) {
     if (texto) {
-      setDescricao(texto);
-      setSugestaoPronta(false);
+      setPrompt(texto);
+      setRascunho(null);
+      setError("");
     }
     setAssistente(true);
   }
 
-  async function gerarSugestao(event: FormEvent<HTMLFormElement>) {
+  async function gerarRascunho(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setCarregandoIa(true);
+    setError("");
+    setLoading(true);
     try {
-      const resultado = await futureModules.ia.sugerirGrupo(descricao.trim());
-      setSugestaoIa(resultado);
-    } catch {
-      setSugestaoIa(null);
+      const resultado = await apiRequest<RascunhoGrupo>("/ia/grupos/rascunho", {
+        method: "POST",
+        body: { prompt: prompt.trim() },
+      });
+      setRascunho(resultado);
+    } catch (requestError) {
+      setError(
+        requestError instanceof ApiError
+          ? requestError.message
+          : "Não foi possível gerar uma sugestão agora.",
+      );
     } finally {
-      setCarregandoIa(false);
-      setSugestaoPronta(true);
+      setLoading(false);
+    }
+  }
+
+  async function criarGrupo(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!rascunho) return;
+    setError("");
+    setCreating(true);
+    try {
+      await apiRequest("/grupos", {
+        method: "POST",
+        body: {
+          nome: rascunho.nome,
+          descricao: rascunho.descricao,
+        },
+      });
+      navigate("/meus-grupos");
+    } catch (requestError) {
+      setError(
+        requestError instanceof ApiError
+          ? requestError.message
+          : "Não foi possível criar o grupo.",
+      );
+    } finally {
+      setCreating(false);
     }
   }
 
@@ -307,7 +347,7 @@ export default function EscolherCriacao() {
           </div>
 
           {/* =====================================================
-              ASSISTENTE (PRÉVIA / MÓDULO IA)
+              ASSISTENTE (INTEGRAÇÃO BACKEND IA)
           ====================================================== */}
 
           {assistente && (
@@ -320,7 +360,7 @@ export default function EscolherCriacao() {
                 <div>
                   <h2 className="text-xl font-semibold">Conte um pouco sobre o seu plano</h2>
                   <p className="mt-1 text-sm" style={{ color: C.onSurfaceVariant }}>
-                    Descreva o evento para gerar uma sugestão inicial de grupo e tarefas.
+                    A IA sugere um nome e uma descrição. Nada será salvo até você revisar e confirmar.
                   </p>
                 </div>
                 <button
@@ -328,7 +368,8 @@ export default function EscolherCriacao() {
                   aria-label="Fechar assistente"
                   onClick={() => {
                     setAssistente(false);
-                    setSugestaoPronta(false);
+                    setRascunho(null);
+                    setError("");
                   }}
                   className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-[#eff4ff]"
                   style={{ color: C.onSurfaceVariant }}
@@ -337,60 +378,109 @@ export default function EscolherCriacao() {
                 </button>
               </div>
 
-              <form onSubmit={gerarSugestao} className="flex flex-col gap-3">
+              <form onSubmit={gerarRascunho} className="flex flex-col gap-3">
                 <label htmlFor="descricao-plano" className="text-sm font-semibold">
-                  O que vocês vão fazer?
+                  O que vocês vão organizar?
                 </label>
                 <textarea
                   id="descricao-plano"
                   required
+                  minLength={10}
+                  maxLength={2000}
                   rows={3}
-                  value={descricao}
-                  onChange={(event) => {
-                    setDescricao(event.target.value);
-                    setSugestaoPronta(false);
-                  }}
-                  placeholder="Uma viagem com 6 amigos por uma semana…"
+                  value={prompt}
+                  onChange={(event) => setPrompt(event.target.value)}
+                  placeholder="Uma viagem com amigos para dividir hospedagem, transporte e alimentação..."
                   className="w-full resize-none rounded-lg p-4 text-base outline-none transition-all placeholder:text-[#897266] focus:bg-white focus:shadow-md focus:ring-2 focus:ring-[#ff8c42]"
                   style={{ backgroundColor: C.surfaceLow }}
                 />
                 <button
                   type="submit"
-                  disabled={carregandoIa}
+                  disabled={loading}
                   className="flex h-11 cursor-pointer items-center justify-center gap-1 self-start rounded-lg bg-[#ff8c42] px-6 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#9b4500] disabled:opacity-60"
                 >
                   <Sparkles className="h-4 w-4" />
-                  {carregandoIa ? "Consultando IA..." : "Visualizar sugestão"}
+                  {loading ? "Gerando rascunho..." : "Gerar sugestão"}
                 </button>
               </form>
 
-              {sugestaoPronta && (
-                <div className="mt-5 rounded-lg p-4" style={{ backgroundColor: C.surfaceLow }}>
-                  <h3 className="font-semibold">
-                    {sugestaoIa?.nome ? `Sugestão: ${sugestaoIa.nome}` : "Sugestão inicial"}
-                  </h3>
-                  <p className="mt-1 text-sm" style={{ color: C.onSurfaceVariant }}>
-                    {sugestaoIa?.descricao ||
-                      "Organize tarefas para hospedagem, transporte e alimentação. Selecione os participantes e o valor de cada tarefa na revisão."}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      navigate("/criar-grupo/manual", {
-                        state: {
-                          nome: sugestaoIa?.nome || descricao.slice(0, 40),
-                          categoria: sugestaoIa?.categoria || "viagem",
-                          descricao: sugestaoIa?.descricao || descricao,
-                        },
-                      })
-                    }
-                    className="mt-3 inline-flex cursor-pointer items-center gap-1 text-sm font-bold transition-colors hover:text-[#ff8c42]"
-                    style={{ color: C.primary }}
-                  >
-                    Revisar e personalizar
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                </div>
+              {rascunho && (
+                <form
+                  onSubmit={criarGrupo}
+                  className="mt-6 flex flex-col gap-4 rounded-lg p-5"
+                  style={{ backgroundColor: C.surfaceLow }}
+                >
+                  <h3 className="text-base font-semibold">Revise e personalize</h3>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="rascunho-nome" className="text-sm font-semibold">
+                      Nome do grupo
+                    </label>
+                    <input
+                      id="rascunho-nome"
+                      required
+                      maxLength={100}
+                      value={rascunho.nome}
+                      onChange={(event) =>
+                        setRascunho({ ...rascunho, nome: event.target.value })
+                      }
+                      className="w-full rounded-lg bg-white px-4 py-2.5 text-base outline-none transition-all focus:shadow-md focus:ring-2 focus:ring-[#ff8c42]"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="rascunho-descricao" className="text-sm font-semibold">
+                      Descrição
+                    </label>
+                    <textarea
+                      id="rascunho-descricao"
+                      maxLength={1000}
+                      rows={4}
+                      value={rascunho.descricao}
+                      onChange={(event) =>
+                        setRascunho({ ...rascunho, descricao: event.target.value })
+                      }
+                      className="w-full resize-none rounded-lg bg-white p-4 text-base outline-none transition-all focus:shadow-md focus:ring-2 focus:ring-[#ff8c42]"
+                    />
+                  </div>
+
+                  <div className="mt-2 flex flex-wrap items-center gap-4">
+                    <button
+                      type="submit"
+                      disabled={creating}
+                      className="flex h-11 cursor-pointer items-center justify-center gap-1 rounded-lg bg-[#ff8c42] px-6 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#9b4500] disabled:opacity-60"
+                    >
+                      {creating ? "Criando grupo..." : "Aprovar e criar grupo"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        navigate("/criar-grupo/manual", {
+                          state: {
+                            nome: rascunho.nome || prompt.slice(0, 40),
+                            categoria: rascunho.categoria || "viagem",
+                            descricao: rascunho.descricao || prompt,
+                          },
+                        })
+                      }
+                      className="inline-flex cursor-pointer items-center gap-1 text-sm font-bold transition-colors hover:text-[#ff8c42]"
+                      style={{ color: C.primary }}
+                    >
+                      Personalizar no fluxo manual
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {error && (
+                <p
+                  className="mt-4 rounded-lg bg-red-50 p-3 text-sm font-medium text-red-700"
+                  role="alert"
+                >
+                  {error}
+                </p>
               )}
             </div>
           )}

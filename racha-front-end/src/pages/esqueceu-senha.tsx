@@ -1,27 +1,65 @@
-﻿import { useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, CheckCircle2, Info, KeyRound, Mail, MailCheck, RefreshCw } from "lucide-react";
-import { useAuth } from "../auth/auth-context";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  Info,
+  KeyRound,
+  Mail,
+  MailCheck,
+  RefreshCw,
+} from "lucide-react";
 import RecuperacaoLayout from "../components/recuperacao-layout";
+import { ApiError, apiRequest } from "../lib/api";
 import { CR } from "../lib/recuperacao-tokens";
 
 export default function EsqueceuSenha() {
-  const { requestPasswordReset } = useAuth();
   const [email, setEmail] = useState("");
   const [enviado, setEnviado] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [reenviado, setReenviado] = useState(false);
+  const [error, setError] = useState("");
+
+  async function solicitarRedefinicao(emailAlvo: string) {
+    await apiRequest("/api/auth/request-password-reset", {
+      method: "POST",
+      body: {
+        email: emailAlvo,
+        redirectTo: `${window.location.origin}/redefinir-senha`,
+      },
+    });
+  }
 
   async function enviar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setError("");
     setEnviando(true);
     try {
-      await requestPasswordReset(email.trim());
-    } catch {
-      // Caso o backend ainda não tenha SMTP/sendResetPassword ativo, mantém o fluxo visual
+      await solicitarRedefinicao(email.trim());
+      setEnviado(true);
+    } catch (requestError) {
+      setError(
+        requestError instanceof ApiError
+          ? requestError.message
+          : "Não foi possível solicitar a recuperação agora.",
+      );
     } finally {
       setEnviando(false);
-      setEnviado(true);
+    }
+  }
+
+  async function reenviar() {
+    setError("");
+    try {
+      await solicitarRedefinicao(email.trim());
+      setReenviado(true);
+    } catch (requestError) {
+      setError(
+        requestError instanceof ApiError
+          ? requestError.message
+          : "Não foi possível reenviar o link agora.",
+      );
     }
   }
 
@@ -67,6 +105,12 @@ export default function EsqueceuSenha() {
             </div>
           </div>
 
+          {error && (
+            <p className="rounded-lg bg-red-50 p-3 text-xs font-medium text-red-700" role="alert">
+              {error}
+            </p>
+          )}
+
           <div className="space-y-3">
             <Link
               to="/redefinir-senha"
@@ -78,10 +122,7 @@ export default function EsqueceuSenha() {
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
               <button
                 type="button"
-                onClick={() => {
-                  void requestPasswordReset(email.trim()).catch(() => {});
-                  setReenviado(true);
-                }}
+                onClick={() => void reenviar()}
                 disabled={reenviado}
                 className="inline-flex cursor-pointer items-center gap-1 text-xs font-semibold hover:underline disabled:cursor-default disabled:no-underline"
                 style={{ color: CR.primary }}
@@ -94,6 +135,7 @@ export default function EsqueceuSenha() {
                 onClick={() => {
                   setEnviado(false);
                   setReenviado(false);
+                  setError("");
                 }}
                 className="cursor-pointer text-xs underline hover:text-[#121c2a]"
                 style={{ color: CR.onSurfaceVariant }}
@@ -145,6 +187,13 @@ export default function EsqueceuSenha() {
                 Use o mesmo e-mail com que você entra no Racha+.
               </p>
             </div>
+
+            {error && (
+              <p className="rounded-lg bg-red-50 p-3 text-xs font-medium text-red-700" role="alert">
+                {error}
+              </p>
+            )}
+
             <button
               type="submit"
               disabled={enviando}

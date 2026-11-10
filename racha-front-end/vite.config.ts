@@ -33,7 +33,40 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
     ],
     server: {
-      proxy,
+      proxy: {
+        '/api/auth': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
+        '/grupos': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
+        '/tarefas': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
+        '/partes': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
+        '/notificacoes': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
+        '/planos': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
+        '/assinaturas': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
+        '/ia': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
+      },
     },
   }
 })
