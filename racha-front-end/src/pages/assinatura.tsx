@@ -1,7 +1,6 @@
 import { ArrowLeft,ArrowRight,BadgeCheck,Check,ChevronDown,Copy,CreditCard,Diamond,Clock3,Headphones,LockKeyhole,QrCode,ShieldCheck,WalletCards,Zap } from "lucide-react";
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import Link from "../components/app-link";
+import { Link } from "react-router-dom";
 import AppShell from "../components/app-shell";
 import Overlay from "../components/overlay";
 import PixPreview from "../components/pix-preview";
@@ -23,9 +22,8 @@ const questions = [
 ];
 
 export default function Assinatura({ manage = false }: { manage?: boolean }) {
-  const [params] = useSearchParams();
-  const [annual, setAnnual] = useState(params.get("periodo") === "anual");
-  const [selected, setSelected] = useState<Plan | null>(params.get("checkout") === "pro" ? plans[1] : params.get("checkout") === "proplus" ? plans[2] : null);
+  const [annual, setAnnual] = useState(false);
+  const [selected, setSelected] = useState<Plan | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(() => {
     try { return JSON.parse(sessionStorage.getItem("racha-demo-subscription") ?? "null"); } catch { return null; }
   });

@@ -1,6 +1,6 @@
 import EditarTarefa, { type DadosTarefa } from "./editar-tarefa";
 import { useMemo, useState } from "react";
-import { useAppNavigate as useNavigate } from "../lib/navigation";
+import { useNavigate } from "react-router-dom";
 
 import {
   ArrowRight,

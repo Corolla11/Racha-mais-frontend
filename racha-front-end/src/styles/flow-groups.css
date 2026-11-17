@@ -1,8 +1,5 @@
 .racha-flows:has(.racha-audit-page) ~ section { display:none; }
 .racha-group-host:has(.racha-audit-page) .racha-group-intro { display:none; }
-.racha-group-host:has(.racha-audit-page) .racha-role-preview { display:none; }
-.racha-role-preview { display:flex; justify-content:flex-end; font-size:var(--ui-font-caption); color:#9b8c7e; margin:0 0 13px; }
-.racha-role-preview select { color:#667993; background:transparent; font-size:var(--ui-font-caption); }
 .racha-audit-title { display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin:3px 0 24px; }
 .racha-audit-title h1 { font-size:var(--ui-font-page-title); font-weight:650; letter-spacing:-.7px; }
 .racha-audit-grid { display:grid; grid-template-columns:320px minmax(0,1fr); gap:20px; align-items:start; }

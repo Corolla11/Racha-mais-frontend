@@ -1,5 +1,5 @@
 .racha-flows:has(.racha-payments-page) ~ section { display:none; }
-.racha-group-host:has(.racha-payments-page) .racha-group-intro,.racha-group-host:has(.racha-payments-page) .racha-role-preview { display:none; }
+.racha-group-host:has(.racha-payments-page) .racha-group-intro { display:none; }
 .racha-payments-heading { display:flex; align-items:center; justify-content:space-between; gap:15px; margin:0 0 24px; }
 .racha-payments-heading h1 { font-size:var(--ui-font-page-title); font-weight:650; letter-spacing:-.7px; }
 .racha-payments-heading .racha-primary,.racha-payments-heading .racha-secondary {    white-space:nowrap; }

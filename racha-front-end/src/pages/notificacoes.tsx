@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { useAppNavigate as useNavigate } from "../lib/navigation";
+import { useNavigate } from "react-router-dom";
 
 import {
   ArrowRight,

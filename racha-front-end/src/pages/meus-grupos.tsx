@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { useAppNavigate as useNavigate } from "../lib/navigation";
+import { useNavigate } from "react-router-dom";
 
 import {
   AlarmClock,
@@ -237,10 +236,9 @@ const iconesSaldo = {
 
 function MeusGrupos() {
   const navigate = useNavigate();
-  const preview = useLocation().pathname.startsWith("/previa");
 
   const [gruposApi, setGruposApi] = useState<GrupoApi[]>([]);
-  const [carregandoGruposApi, setCarregandoGruposApi] = useState(!preview);
+  const [carregandoGruposApi, setCarregandoGruposApi] = useState(true);
   const [erroGruposApi, setErroGruposApi] = useState("");
   const [tentativaGruposApi, setTentativaGruposApi] = useState(0);
   const [abaAberta, setAbaAberta] = useState(false);
@@ -249,7 +247,6 @@ function MeusGrupos() {
   const [ordenacao, setOrdenacao] = useState<Ordenacao>("recentes");
 
   useEffect(() => {
-    if (preview) return;
     let ativo = true;
 
     apiRequest<GrupoApi[]>("/grupos")
@@ -271,7 +268,7 @@ function MeusGrupos() {
     return () => {
       ativo = false;
     };
-  }, [tentativaGruposApi, preview]);
+  }, [tentativaGruposApi]);
 
   const gruposVisiveis = useMemo(() => {
     const termo = busca.trim().toLowerCase();
@@ -448,7 +445,7 @@ function MeusGrupos() {
         </div>
 
         <section
-          hidden={preview} aria-labelledby="grupos-reais-heading"
+          aria-labelledby="grupos-reais-heading"
           className="rounded-xl border border-secondary/15 bg-white p-5 shadow-sm sm:p-6"
         >
           <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">

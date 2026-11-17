@@ -1,6 +1,6 @@
 ﻿import { useState } from "react";
 import { ListChecks, Sparkles } from "lucide-react";
-import Link from "../components/app-link";
+import { Link } from "react-router-dom";
 import AppShell from "../components/app-shell";
 import { Button, Card, Field, PageHeading, Textarea } from "../components/ui";
 

@@ -1,9 +1,7 @@
 ﻿import { useEffect, useRef, useState } from "react";
-import { Award, BadgeCheck, Bell, CircleHelp, KeyRound, LogOut, Shield, UserRound, WalletCards } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { Award, Bell, CircleHelp, KeyRound, LogOut, Shield, UserRound, WalletCards } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/auth-context";
-import { useAppNavigate } from "../lib/navigation";
-import Link from "./app-link";
 import "./profile-menu.css";
 
 interface ProfileMenuProps {
@@ -12,26 +10,24 @@ interface ProfileMenuProps {
 }
 
 export default function Aba({ onClose, placement = "below" }: ProfileMenuProps) {
-  const navigate = useAppNavigate();
+  const navigate = useNavigate();
   const { pathname, search } = useLocation();
   const { user, signOut } = useAuth();
   const [erroLogout, setErroLogout] = useState("");
   const [saindo, setSaindo] = useState(false);
   const panel = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
-  const preview = pathname.startsWith("/previa") || pathname.startsWith("/revisao");
-  const demo = preview && !user;
-  const name = user?.name || (demo ? "Rodrigo Mendes" : "Usuário");
-  const handle = user?.email || (demo ? "@rodrigo.m" : "Minha conta");
+  const name = user?.name || "Usuário";
+  const handle = user?.email || "Minha conta";
   const initials = name.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join("").toUpperCase();
   const activeTab = new URLSearchParams(search).get("aba");
   const inProfile = pathname.endsWith("/perfil");
   const items = [
     { label: "Meu Perfil", to: "/perfil", icon: UserRound, active: inProfile && !activeTab },
     { label: "Chaves Pix & Recebimentos", to: "/perfil?aba=pix", icon: WalletCards, active: inProfile && activeTab === "pix" },
-    { label: "Notificações & Alertas", to: "/notificacoes", icon: Bell, active: pathname.endsWith("/notificacoes"), badge: demo ? "3 novas" : undefined, badgeClass: "notifications" },
+    { label: "Notificações & Alertas", to: "/notificacoes", icon: Bell, active: pathname.endsWith("/notificacoes") },
     { label: "Segurança & Privacidade", to: "/perfil?aba=security", icon: Shield, active: inProfile && activeTab === "security" },
-    { label: "Planos & Vantagens", to: "/assinatura", icon: Award, active: pathname.endsWith("/assinatura") || pathname.endsWith("/gerenciar-assinatura"), badge: demo ? "Plano Pro" : undefined, badgeClass: "plan" },
+    { label: "Planos & Vantagens", to: "/assinatura", icon: Award, active: pathname.endsWith("/assinatura") || pathname.endsWith("/gerenciar-assinatura") },
     { label: "Ajuda & Suporte", to: "/faq", icon: CircleHelp, active: pathname.endsWith("/faq") },
   ];
 
@@ -56,7 +52,7 @@ export default function Aba({ onClose, placement = "below" }: ProfileMenuProps) 
     setErroLogout("");
     setSaindo(true);
     try {
-      if (!demo) await signOut();
+      await signOut();
       onClose?.();
       navigate("/login", { replace: true });
     } catch {
@@ -74,23 +70,23 @@ export default function Aba({ onClose, placement = "below" }: ProfileMenuProps) 
           <i aria-hidden="true"/>
         </Link>
         <div className="profile-menu__identity"><strong className="profile-menu__name">{name}</strong><span className="profile-menu__handle">{handle}</span></div>
-        <span className="profile-menu__session">{user ? "AUTENTICADO" : demo ? "PRÉVIA" : "VISITANTE"}</span>
+        <span className="profile-menu__session">{user ? "AUTENTICADO" : "VISITANTE"}</span>
       </div>
 
       <Link to="/perfil?aba=pix" className="profile-menu__pix" onClick={onClose}>
-        <div><span className="profile-menu__pix-label"><KeyRound size={10}/>CHAVE PIX PRINCIPAL</span><span className="profile-menu__verified">{demo ? "Verificada" : "Gerenciar"}</span></div>
-        <span className="profile-menu__pix-value">{demo ? "rodrigo.alencar@pix.me" : "Consultar chave de recebimento"}</span>
+        <div><span className="profile-menu__pix-label"><KeyRound size={10}/>CHAVE PIX PRINCIPAL</span><span className="profile-menu__verified">Gerenciar</span></div>
+        <span className="profile-menu__pix-value">Consultar chave de recebimento</span>
       </Link>
 
       <div className="profile-menu__metrics">
-        <Link to="/meus-grupos" onClick={onClose}><span className="profile-menu__metric-label">Grupos Ativos</span><strong className="profile-menu__metric-value">{demo ? "7" : "—"}</strong></Link>
-        <div><span className="profile-menu__metric-label">Pontualidade</span><strong className="profile-menu__metric-value profile-menu__metric-value--green">{demo ? "99.4%" : "—"}{demo && <BadgeCheck size={12}/>}</strong></div>
+        <Link to="/meus-grupos" onClick={onClose}><span className="profile-menu__metric-label">Grupos Ativos</span><strong className="profile-menu__metric-value">—</strong></Link>
+        <div><span className="profile-menu__metric-label">Pontualidade</span><strong className="profile-menu__metric-value profile-menu__metric-value--green">—</strong></div>
       </div>
 
       <div className="profile-menu__links">
-        {items.map(({ label, to, icon: Icon, active, badge, badgeClass }) => (
+        {items.map(({ label, to, icon: Icon, active }) => (
           <Link key={label} to={to} onClick={onClose} className={`profile-menu__item ${active ? "profile-menu__item--active" : ""}`} aria-current={active ? "page" : undefined}>
-            <Icon size={13}/><span>{label}</span>{badge && <span className={`profile-menu__badge profile-menu__badge--${badgeClass}`}>{badge}</span>}{active && <i aria-hidden="true"/>}
+            <Icon size={13}/><span>{label}</span>{active && <i aria-hidden="true"/>}
           </Link>
         ))}
       </div>

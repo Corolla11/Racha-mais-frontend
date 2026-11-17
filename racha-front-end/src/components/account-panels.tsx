@@ -1,6 +1,6 @@
 import { Banknote,Check,Copy,CreditCard,Download,FileText,LockKeyhole,Plus,QrCode,ShieldCheck,Smartphone } from "lucide-react";
 import { useState } from "react";
-import Link from "./app-link";
+import { Link } from "react-router-dom";
 import Overlay from "./overlay";
 import PixPreview from "./pix-preview";
 

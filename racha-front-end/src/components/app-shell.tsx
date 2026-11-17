@@ -1,8 +1,6 @@
 ﻿import { useState, type ReactNode } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { Bell, ChevronRight, CircleHelp, EllipsisVertical, Menu, Plus, Search, Settings, Users, X } from "lucide-react";
-import Link from "./app-link";
-import { previewPath } from "../lib/navigation";
 import Aba from "./aba-perfil";
 
 const navigation = [
@@ -12,8 +10,6 @@ const navigation = [
 ];
 
 export default function AppShell({ title, children }: { title: string; children: ReactNode }) {
-  const { pathname } = useLocation();
-  const preview = pathname.startsWith("/previa") || pathname.startsWith("/revisao");
   const [menu, setMenu] = useState(false);
   const [profile, setProfile] = useState(false);
   return (
@@ -26,7 +22,7 @@ export default function AppShell({ title, children }: { title: string; children:
         <button className="racha-mobile-close racha-icon" aria-label="Fechar menu" onClick={() => setMenu(false)}><X size={18}/></button>
         <nav aria-label="Navegação principal">
           {navigation.map(({ path, label, icon: Icon }) => (
-            <NavLink key={path} to={previewPath(path, preview)} onClick={() => setMenu(false)}><Icon size={16}/><span>{label}</span></NavLink>
+            <NavLink key={path} to={path} onClick={() => setMenu(false)}><Icon size={16}/><span>{label}</span></NavLink>
           ))}
         </nav>
         <div className="racha-sidebar-bottom">

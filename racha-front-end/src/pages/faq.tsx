@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { useAppNavigate as useNavigate } from "../lib/navigation";
+import { useNavigate } from "react-router-dom";
 
 import {
   ArrowRight,
@@ -113,17 +113,17 @@ const populares = [
 
 const grupos: GrupoFaq[] = [
   {
-    id: "fluxos-revisados",
+    id: "fluxos-do-aplicativo",
     titulo: "Tarefas, pagamentos e encerramento",
     icone: <CircleCheckBig size={19}/>,
     corIcone: "text-secondary",
     categorias: ["grupos", "pix"],
     itens: [
-      { id: "revisao-criar", pergunta: "Como criar um grupo e convidar participantes?", texto: "criar grupo manual IA convidar participantes membros", conteudo: <p>Em Meus grupos, escolha Novo Racha e a criação manual ou assistida. Revise os dados antes de criar. Dentro do grupo, use Membros para preparar convites e gerenciar permissões.</p> },
-      { id: "revisao-tarefa", pergunta: "Como criar tarefas e dividir os valores?", texto: "tarefas despesa rateio igual participantes valor individual", conteudo: <p>Use Nova tarefa para informar título, responsável, prazo, participantes e a despesa opcional em um único formulário. Toda despesa pertence a uma tarefa. O valor é dividido igualmente entre os participantes selecionados; diferenças de centavos são distribuídas para preservar o total.</p> },
-      { id: "revisao-pagar", pergunta: "Informar pagamento significa que minha cota está quitada?", texto: "pagamento informado confirmado pendente contestado comprovante", conteudo: <p>Não. Abra os pagamentos da tarefa, consulte o recebedor, anexe um comprovante se desejar e informe o pagamento. A cota fica aguardando confirmação. Somente o responsável confirma o recebimento; ele pode contestar o pagamento com um motivo.</p> },
-      { id: "revisao-encerrar", pergunta: "Quando posso encerrar um grupo?", texto: "encerrar grupo pendencias tarefas concluidas quitada historico", conteudo: <p>O administrador deve concluir as atividades e resolver todos os pagamentos pendentes, informados ou contestados. A auditoria bloqueia o encerramento enquanto houver pendências. Depois de confirmar o encerramento, o resumo e o histórico ficam em modo somente leitura.</p> },
-      { id: "revisao-conta", pergunta: "Como alterar minha conta e gerenciar o plano?", texto: "conta perfil seguranca pix assinatura cancelar pro planos", conteudo: <p>Em Configurações, acesse Perfil, Segurança e Conta, Pagamentos e Pix ou Minha assinatura. Os planos são Grátis, Pro (R$ 12 por mês ou R$ 80 por ano) e Pro+ (R$ 20 por mês ou R$ 200 por ano). Na prévia, as alterações e cobranças são simuladas.</p> },
+      { id: "faq-criar", pergunta: "Como criar um grupo e convidar participantes?", texto: "criar grupo manual IA convidar participantes membros", conteudo: <p>Em Meus grupos, escolha Novo Racha e a criação manual ou assistida. Revise os dados antes de criar. Dentro do grupo, use Membros para preparar convites e gerenciar permissões.</p> },
+      { id: "faq-tarefa", pergunta: "Como criar tarefas e dividir os valores?", texto: "tarefas despesa rateio igual participantes valor individual", conteudo: <p>Use Nova tarefa para informar título, responsável, prazo, participantes e a despesa opcional em um único formulário. Toda despesa pertence a uma tarefa. O valor é dividido igualmente entre os participantes selecionados; diferenças de centavos são distribuídas para preservar o total.</p> },
+      { id: "faq-pagar", pergunta: "Informar pagamento significa que minha cota está quitada?", texto: "pagamento informado confirmado pendente contestado comprovante", conteudo: <p>Não. Abra os pagamentos da tarefa, consulte o recebedor, anexe um comprovante se desejar e informe o pagamento. A cota fica aguardando confirmação. Somente o responsável confirma o recebimento; ele pode contestar o pagamento com um motivo.</p> },
+      { id: "faq-encerrar", pergunta: "Quando posso encerrar um grupo?", texto: "encerrar grupo pendencias tarefas concluidas quitada historico", conteudo: <p>O administrador deve concluir as atividades e resolver todos os pagamentos pendentes, informados ou contestados. A auditoria bloqueia o encerramento enquanto houver pendências. Depois de confirmar o encerramento, o resumo e o histórico ficam em modo somente leitura.</p> },
+      { id: "faq-conta", pergunta: "Como alterar minha conta e gerenciar o plano?", texto: "conta perfil seguranca pix assinatura cancelar pro planos", conteudo: <p>Em Configurações, acesse Perfil, Segurança e Conta, Pagamentos e Pix ou Minha assinatura. Os planos são Grátis, Pro (R$ 12 por mês ou R$ 80 por ano) e Pro+ (R$ 20 por mês ou R$ 200 por ano). Na prévia, as alterações e cobranças são simuladas.</p> },
     ],
   },
   {
