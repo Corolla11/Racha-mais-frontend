@@ -1,0 +1,75 @@
+.racha-settings-page { max-width:1040px; margin:0 auto; }
+.racha-settings-tabs { background:#eef2ff; border:1px solid #e5e9f7; border-radius:6px; display:flex; align-items:center; gap:9px; padding:5px; margin:18px 0; flex-wrap:wrap; }
+.racha-settings-tabs a,.racha-settings-tabs button,.racha-settings-tabs > span { display:inline-flex; gap:5px; align-items:center; padding:7px 11px; font-size:var(--ui-font-label); cursor:pointer; border-radius:4px; }
+.racha-settings-tabs .active { background:#ffdcc7; color:#a95f2a; }
+.racha-account-columns { display:grid; grid-template-columns:minmax(0,1.65fr) minmax(240px,1fr); gap:19px; align-items:start; }
+.racha-verified { display:inline-flex; align-items:center; gap:3px; border-radius:12px; padding:2px 5px; background:#effbf6; color:#45b9a0; font-size:var(--ui-font-meta); white-space:nowrap; }
+.racha-saved-key { display:flex; gap:10px; background:#eef2ff; border-radius:7px; padding:14px 10px; align-items:center; }
+.racha-saved-key > .racha-soft-icon { background:white; color:#ff8862; }
+.racha-saved-key > div:nth-child(2) { flex:1; }
+.racha-saved-key small { display:block; font-size:var(--ui-font-caption); color:#ad8a6c; }
+.racha-saved-key strong { font-size:var(--ui-font-body); font-weight:650; }
+.racha-saved-key button { display:flex; align-items:center; gap:4px; font-size:var(--ui-font-caption); cursor:pointer; color:#b57545; margin:4px 0; padding:1px 4px; }
+.racha-saved-key button:first-child { background:white; border-radius:3px; }
+.racha-account-tip { display:flex; border:0; font-size:var(--ui-font-caption); padding:13px; margin:14px 0 18px; }
+.racha-key-types { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; margin-top:6px; }
+.racha-key-types button { display:flex; flex-direction:column; align-items:center; gap:4px; background:#eef2ff; border-radius:5px; padding:9px; font-size:var(--ui-font-caption); cursor:pointer; color:#77829a; }
+.racha-saved-cards { display:grid; grid-template-columns:1fr 1fr; gap:13px; margin-top:16px; }
+.racha-bank-card { padding:13px; border-radius:8px; background:linear-gradient(135deg,#f6e0cf,#e3def1); min-height:132px; }
+.racha-bank-card:last-child { background:#eef2ff; }
+.racha-bank-card > span { display:flex; align-items:center; gap:5px; font-size:var(--ui-font-body); }
+.racha-bank-card b { background:#ffe0b9; color:#b77528; font-size:var(--ui-font-caption); padding:2px 3px; border-radius:4px; margin-left:auto; font-weight:400; }
+.racha-bank-card > strong { display:block; font-size:var(--ui-font-lead); letter-spacing:1px; margin:16px 0; font-weight:600; white-space:nowrap; }
+.racha-bank-card > small { font-size:var(--ui-font-caption); color:#9e8674; }
+.racha-bank-card > div { display:flex; justify-content:space-between; font-size:var(--ui-font-caption); }
+.racha-bank-card > div span { color:#a5907f; font-size:var(--ui-font-body); }
+.racha-mastercard { position:relative; display:block; width:22px; height:12px; background:#ed9940; border-radius:50%; }
+.racha-mastercard::after { content:""; position:absolute; right:0; width:13px; height:12px; background:#f5c251; border-radius:50%; }
+.racha-qr-card { text-align:center; padding:17px; }
+.racha-qr-card .racha-card-heading h3 { font-size:var(--ui-font-section-title); }
+.racha-qr-card .racha-qr-preview { margin:22px auto 9px; }
+.racha-qr-card > strong { display:block; font-size:var(--ui-font-caption); font-weight:500; }
+.racha-qr-card > p { font-size:var(--ui-font-body); line-height:1.65; color:#a18b7a; margin:18px 8px 10px; }
+.racha-qr-card .racha-actions { justify-content:center; gap:5px; }
+.racha-qr-card .racha-secondary {    }
+.racha-qr-card .racha-demo-caption { font-size:var(--ui-font-caption); }
+.racha-liquidity .racha-card-heading { font-size:var(--ui-font-caption); margin-bottom:5px; }
+.racha-liquidity > strong { font-size:var(--ui-font-amount); font-weight:500; }
+.racha-liquidity > p { font-size:var(--ui-font-caption); color:#a18b7a; }
+.racha-volume-bar { display:flex; gap:3px; height:6px; margin:18px 0 7px; }
+.racha-volume-bar i { width:35%; background:#ff9e52; }
+.racha-volume-bar i:nth-child(2) { background:#e3ab51; width:38%; }
+.racha-volume-bar i:nth-child(3) { background:#ffce66; width:27%; }
+.racha-liquidity > small { font-size:var(--ui-font-caption); color:#b28e68; }
+.racha-table-scroll { overflow-x:auto; }
+.racha-transactions table { width:100%; border-collapse:collapse; text-align:left; font-size:var(--ui-font-caption); }
+.racha-transactions th { font-size:var(--ui-font-caption); font-weight:500; background:#f1f4ff; padding:9px; color:#a18b7a; white-space:nowrap; }
+.racha-transactions td { border-bottom:1px solid #eef0f7; padding:13px 9px; white-space:nowrap; }
+.racha-transactions td:first-child { color:#9a8879; font-size:var(--ui-font-caption); }
+.racha-transaction-title { display:flex; gap:8px; align-items:center; }
+.racha-transaction-title > span { display:flex; padding:6px; border-radius:50%; }
+.racha-transaction-title .income { background:#dcf9ee; color:#38b392; }
+.racha-transaction-title .outcome { background:#ffe0de; color:#f08179; }
+.racha-transaction-title strong { font-weight:500; font-size:var(--ui-font-body); }
+.racha-transaction-title small { display:block; color:#a18b7a; font-size:var(--ui-font-caption); }
+.racha-income { color:#2ca987; }
+.racha-financial-footer { display:flex; align-items:center; gap:12px; background:#eef2ff; padding:19px; border-radius:7px; color:#b17d3a; }
+.racha-financial-footer strong { font-size:var(--ui-font-caption); font-weight:600; }
+.racha-financial-footer p { color:#9d8875; font-size:var(--ui-font-caption); }
+.racha-financial-footer a { margin-left:auto; font-size:var(--ui-font-caption); white-space:nowrap; }
+.racha-benefits > svg { color:#df9153; margin-bottom:14px; }
+.racha-benefits p { color:#988371; font-size:var(--ui-font-caption); line-height:1.8; margin:12px 0; }
+.racha-benefits a { font-size:var(--ui-font-caption); color:#c1753f; }
+.racha-invoice-row { display:flex; align-items:center; gap:12px; border-bottom:1px solid #edf0f7; padding:18px 0; }
+.racha-invoice-row > div { flex:1; }
+.racha-invoice-row strong { font-size:var(--ui-font-body); font-weight:500; }
+.racha-invoice-row small { display:block; font-size:var(--ui-font-caption); color:#9d8875; }
+@media(max-width:1150px) { .racha-account-columns { grid-template-columns:minmax(0,1.5fr) minmax(220px,1fr); gap:14px; } }
+@media(max-width:900px) { .racha-account-columns { grid-template-columns:1fr; } .racha-account-columns > div:last-child { display:grid; grid-template-columns:1fr 1fr; gap:14px; } }
+@media(max-width:760px) {
+  .racha-account-columns > div:last-child { display:block; } .racha-qr-card .racha-qr-preview { width:180px; }
+  .racha-account-columns,.racha-saved-cards { gap:12px; } .racha-bank-card { padding:11px; }
+  .racha-bank-card > strong { font-size:var(--ui-font-body); letter-spacing:0; } .racha-bank-card > span { font-size:var(--ui-font-body); }
+  .racha-financial-footer { flex-wrap:wrap; } .racha-financial-footer a { margin-left:29px; }
+}
+@media(max-width:420px) { .racha-saved-cards { grid-template-columns:1fr; } .racha-bank-card > strong { font-size:var(--ui-font-card-title); } }
