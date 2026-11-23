@@ -13,19 +13,21 @@ datasource db {
 }
 
 model User {
-  id             String     @id
+  id             String          @id
   name           String
   email          String
-  emailVerified  Boolean    @default(false)
+  emailVerified  Boolean         @default(false)
   image          String?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   sessions       Session[]
   accounts       Account[]
   membros        Membro[]
-  tarefasCriadas Tarefa[]   @relation("TarefaCriador")
+  tarefasCriadas Tarefa[]        @relation("TarefaCriador")
   partes         Parte[]
   chavesPix      ChavePix[]
+  assinaturasPro AssinaturaPro[]
+  notificacoes   Notificacao[]
 
   @@unique([email])
   @@map("user")
@@ -85,13 +87,14 @@ enum Funcao {
 }
 
 model Grupo {
-  id        String   @id @default(cuid())
-  nome      String
-  descricao String   @default("")
-  membros   Membro[]
-  tarefas   Tarefa[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String         @id @default(cuid())
+  nome          String
+  descricao     String         @default("")
+  membros       Membro[]
+  tarefas       Tarefa[]
+  assinaturaPro AssinaturaPro?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@map("grupo")
 }
@@ -190,4 +193,71 @@ model ChavePix {
 
   @@index([idUser])
   @@map("chave_pix")
+}
+
+enum CicloPlano {
+  mensal
+  anual
+}
+
+enum StatusAssinaturaPro {
+  PENDENTE
+  ATIVA
+  CANCELADA
+  FALHOU
+}
+
+model AssinaturaPro {
+  id                     String              @id @default(cuid())
+  idGrupo                String              @unique
+  idUser                 String?
+  ciclo                  CicloPlano
+  status                 StatusAssinaturaPro @default(PENDENTE)
+  valorCentavos          Int
+  providerCheckoutId     String?             @unique
+  providerSubscriptionId String?             @unique
+  checkoutUrl            String?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+
+  grupo Grupo @relation(fields: [idGrupo], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [idUser], references: [id], onDelete: SetNull)
+
+  @@map("assinatura_pro")
+}
+
+model EventoAbacatePay {
+  id        String   @id
+  evento    String
+  createdAt DateTime @default(now())
+
+  @@map("evento_abacate_pay")
+}
+
+enum TipoNotificacao {
+  MEMBRO_ADICIONADO
+  TAREFA_CRIADA
+  COBRANCA_CRIADA
+  PRAZO_PROXIMO
+  PRAZO_VENCIDO
+}
+
+model Notificacao {
+  id          String          @id @default(cuid())
+  idUser      String
+  tipo        TipoNotificacao
+  titulo      String
+  mensagem    String
+  idGrupo     String?
+  idTarefa    String?
+  idParte     String?
+  chaveEvento String          @unique
+  lidaEm      DateTime?
+  createdAt   DateTime        @default(now())
+
+  user User @relation(fields: [idUser], references: [id], onDelete: Cascade)
+
+  @@index([idUser, createdAt])
+  @@index([idUser, lidaEm, createdAt])
+  @@map("notificacao")
 }

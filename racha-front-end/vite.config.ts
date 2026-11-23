@@ -2,6 +2,21 @@ import { defineConfig, loadEnv, type ProxyOptions } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
+const BACKEND_ROUTES = [
+  '/api/auth',
+  '/grupos',
+  '/tarefas',
+  '/partes',
+  '/chaves-pix',
+  '/users',
+  '/health',
+  '/notificacoes',
+  '/pagamentos',
+  '/planos',
+  '/assinaturas',
+  '/ia',
+]
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const backendTarget =
@@ -16,18 +31,17 @@ export default defineConfig(({ mode }) => {
       req.headers.accept?.includes('text/html') ? '/index.html' : undefined,
   })
 
+  const proxy = Object.fromEntries(
+    BACKEND_ROUTES.map((route) => [route, api()]),
+  )
+
   return {
     plugins: [
       react(),
       tailwindcss(),
     ],
     server: {
-      proxy: {
-        '/api/auth': api(),
-        '/grupos': api(),
-        '/tarefas': api(),
-        '/partes': api(),
-      },
+      proxy,
     },
   }
 })

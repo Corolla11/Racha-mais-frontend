@@ -1,4 +1,7 @@
-import { Fragment, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useAuth } from "../auth/auth-context";
+import { ApiError, apiRequest } from "../lib/api";
+import { ENDPOINTS, type ChavePixApi, type TipoChavePix } from "../lib/endpoints";
 import Link from "./app-link";
 import Icon from "./icon";
 import Overlay from "./overlay";
@@ -103,11 +106,11 @@ export function ToggleRow({ icon, title, description, checked, onChange }: { ico
 /* Painéis "Pagamentos & Pix" e "Segurança & Conta"                    */
 /* ------------------------------------------------------------------ */
 
-const keyTypes: Record<string, { label: string; icon: string }> = {
-  phone: { label: "Celular", icon: "smartphone" },
+const keyTypes: Record<TipoChavePix, { label: string; icon: string }> = {
+  telefone: { label: "Celular", icon: "smartphone" },
   email: { label: "E-mail", icon: "mail" },
   cpf: { label: "CPF", icon: "badge" },
-  random: { label: "Aleatória", icon: "key" },
+  aleatoria: { label: "Aleatória", icon: "key" },
 };
 
 const smallButton = "inline-flex items-center gap-1 px-space-md py-space-xs rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface font-label-sm text-label-sm transition-colors";
@@ -149,25 +152,125 @@ function PasswordInput({ id, name, label, placeholder, show, onToggle, onChange 
 }
 
 export default function AccountPanels({ panel }: { panel: "pix" | "security" }) {
+  const { user, changePassword } = useAuth();
   const [message, setMessage] = useState("");
+  const [chaves, setChaves] = useState<ChavePixApi[]>([]);
   const [key, setKey] = useState("(11) 98765-4321");
-  const [keyType, setKeyType] = useState("phone");
+  const [keyType, setKeyType] = useState<TipoChavePix>("telefone");
   const [editing, setEditing] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [remove, setRemove] = useState(false);
   const [removed, setRemoved] = useState(false);
   const [confirmation, setConfirmation] = useState("");
-  const [saved, setSaved] = useState("(11) 98765-4321");
-  const [savedType, setSavedType] = useState("phone");
   const [suggestPix, setSuggestPix] = useState(true);
   const [whatsappReminders, setWhatsappReminders] = useState(true);
   const [savedPrefs, setSavedPrefs] = useState({ suggestPix: true, whatsappReminders: true });
   const [newPassword, setNewPassword] = useState("");
   const [visible, setVisible] = useState({ old: false, new: false, confirm: false });
   const ids = useId();
+
+  const principal = chaves[0];
+  const saved = principal?.chave ?? "(11) 98765-4321";
+  const titular = user?.name || "Rodrigo M.";
+
+  useEffect(() => {
+    if (panel !== "pix" || !user) return;
+    let ativo = true;
+    apiRequest<ChavePixApi[]>(`${ENDPOINTS.chavesPix.base}?idUser=${encodeURIComponent(user.id)}`)
+      .then((lista) => {
+        if (!ativo) return;
+        setChaves(lista);
+        if (lista[0]) {
+          setKey(lista[0].chave);
+          setKeyType(lista[0].tipoChave);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      ativo = false;
+    };
+  }, [panel, user]);
+
+  async function salvarChave(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMessage("");
+    if (!user) {
+      setEditing(false);
+      setMessage("Chave atualizada na demonstração.");
+      return;
+    }
+    try {
+      const alvoId = editingId ?? principal?.id;
+      if (alvoId) {
+        const atualizada = await apiRequest<ChavePixApi>(ENDPOINTS.chavesPix.byId(alvoId), {
+          method: "PATCH",
+          body: { tipoChave: keyType, chave: key.trim() },
+        });
+        setChaves((ant) => ant.map((c) => (c.id === atualizada.id ? atualizada : c)));
+      } else {
+        const criada = await apiRequest<ChavePixApi>(ENDPOINTS.chavesPix.base, {
+          method: "POST",
+          body: { tipoChave: keyType, chave: key.trim() },
+        });
+        setChaves((ant) => [criada, ...ant]);
+      }
+      setEditing(false);
+      setEditingId(null);
+      setMessage("Chave Pix salva com sucesso.");
+    } catch (err) {
+      setMessage(err instanceof ApiError ? err.message : "Não foi possível salvar a chave Pix.");
+    }
+  }
+
+  async function excluirChave(id: string) {
+    setMessage("");
+    try {
+      await apiRequest<void>(ENDPOINTS.chavesPix.byId(id), { method: "DELETE" });
+      setChaves((ant) => ant.filter((c) => c.id !== id));
+      setMessage("Chave Pix removida.");
+    } catch (err) {
+      setMessage(err instanceof ApiError ? err.message : "Não foi possível remover a chave Pix.");
+    }
+  }
+
+  async function salvarSenha(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const oldPass = String(data.get("old") ?? "");
+    const newPass = String(data.get("new") ?? "");
+    const confirmPass = String(data.get("confirm") ?? "");
+    if (newPass !== confirmPass) {
+      setMessage("As novas senhas devem ser iguais.");
+      return;
+    }
+    if (!user) {
+      setMessage("Alteração de senha simulada. Nenhuma credencial real foi modificada.");
+      form.reset();
+      setNewPassword("");
+      return;
+    }
+    try {
+      await changePassword(oldPass, newPass);
+      setMessage("Senha atualizada com sucesso.");
+      form.reset();
+      setNewPassword("");
+    } catch (err) {
+      setMessage(err instanceof ApiError ? err.message : "Não foi possível alterar a senha.");
+    }
+  }
+
+  function abrirEdicao(alvo?: ChavePixApi) {
+    setEditingId(alvo?.id ?? null);
+    setKey(alvo?.chave ?? "");
+    setKeyType(alvo?.tipoChave ?? "telefone");
+    setEditing(true);
+  }
+
   async function copy() {
     try { await navigator.clipboard.writeText(saved); setMessage("Chave copiada."); } catch { setMessage("Selecione a chave exibida para copiar."); }
   }
-  const savedKey = keyTypes[savedType] ?? keyTypes.phone;
+  const savedKey = keyTypes[principal?.tipoChave ?? "telefone"];
   const meter = strength(newPassword);
   const toast = <StatusToast message={message} onDone={() => setMessage("")}/>;
 
@@ -177,7 +280,7 @@ export default function AccountPanels({ panel }: { panel: "pix" | "security" }) 
       {/* Chaves Pix */}
       <section className="space-y-space-md">
         <SectionTitle icon="account_balance_wallet" title="Chaves Pix para Receber Rachas" description="Defina para qual conta bancária os valores arrecadados em seus grupos serão transferidos." action={
-          <button type="button" className="inline-flex items-center gap-space-xs px-space-md py-space-sm rounded-lg bg-primary-container text-on-primary font-label-md text-label-md shadow-sm hover:bg-primary-container/90 active:scale-[0.98] transition-all whitespace-nowrap self-start sm:self-auto" aria-expanded={editing} onClick={() => setEditing(!editing)}>
+          <button type="button" className="inline-flex items-center gap-space-xs px-space-md py-space-sm rounded-lg bg-primary-container text-on-primary font-label-md text-label-md shadow-sm hover:bg-primary-container/90 active:scale-[0.98] transition-all whitespace-nowrap self-start sm:self-auto" aria-expanded={editing} onClick={() => { if (editing) { setEditing(false); setEditingId(null); } else abrirEdicao(); }}>
             <Icon name={editing ? "close" : "add_circle"} size={18}/><span>{editing ? "Fechar edição" : "Adicionar Nova Chave"}</span>
           </button>
         }/>
@@ -187,34 +290,35 @@ export default function AccountPanels({ panel }: { panel: "pix" | "security" }) 
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-space-xs mb-1">
                 <span className="font-label-lg text-label-lg text-on-surface truncate">{savedKey.label}</span>
-                <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-label-sm text-label-sm font-semibold flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-primary"/>Padrão Ativa</span>
+                <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-label-sm text-label-sm font-semibold flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-primary"/>{principal ? "Padrão Ativa" : "Exemplo"}</span>
                 <span className="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface font-label-sm text-label-sm flex items-center gap-1"><Icon name="verified" size={14} className="text-primary"/>Chave Principal</span>
               </div>
               <div className="font-numeric-stat text-[18px] leading-6 font-bold text-on-surface tracking-normal truncate select-all">{saved}</div>
               <div className="font-body-sm text-body-sm text-on-surface-variant flex flex-wrap items-center gap-x-2 mt-0.5">
-                <span className="font-semibold text-on-surface">Nu Pagamentos S.A.</span><span>•</span><span>Conta Corrente</span><span>•</span><span>Titular: Rodrigo M.</span>
+                <span className="font-semibold text-on-surface">Nu Pagamentos S.A.</span><span>•</span><span>Conta Corrente</span><span>•</span><span>Titular: {titular}</span>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-space-xs shrink-0 self-end md:self-center">
             <button type="button" className={smallButton} title="Copiar Chave Pix" onClick={copy}><Icon name="content_copy" size={16}/><span>Copiar</span></button>
-            <button type="button" className={smallButton} title="Editar chave Pix" aria-expanded={editing} onClick={() => setEditing(!editing)}><Icon name="edit" size={16}/><span>Editar</span></button>
+            <button type="button" className={smallButton} title={principal ? "Editar chave Pix" : "Cadastrar chave Pix"} aria-expanded={editing} onClick={() => { if (editing) { setEditing(false); setEditingId(null); } else abrirEdicao(principal); }}><Icon name="edit" size={16}/><span>{principal ? "Editar" : "Cadastrar"}</span></button>
+            {principal && <button type="button" className={smallButton} title="Remover chave Pix" onClick={() => void excluirChave(principal.id)}><Icon name="delete" size={16}/><span>Remover</span></button>}
           </div>
         </div>
         {editing && (
-          <form className="bg-surface-container-lowest rounded-xl p-space-md md:p-space-lg shadow-sm grid grid-cols-1 md:grid-cols-[200px_1fr] gap-space-md" onSubmit={event => { event.preventDefault(); setSaved(key); setSavedType(keyType); setEditing(false); setMessage("Chave atualizada na demonstração."); }}>
+          <form className="bg-surface-container-lowest rounded-xl p-space-md md:p-space-lg shadow-sm grid grid-cols-1 md:grid-cols-[200px_1fr] gap-space-md" onSubmit={salvarChave}>
             <div className="flex flex-col gap-1.5">
               <label htmlFor={`${ids}-type`} className="font-label-md text-label-md text-on-surface">Tipo de chave</label>
-              <select id={`${ids}-type`} value={keyType} onChange={event => setKeyType(event.target.value)} className={`${inputClass} cursor-pointer`}>
-                <option value="phone">Celular</option><option value="email">E-mail</option><option value="cpf">CPF</option><option value="random">Aleatória</option>
+              <select id={`${ids}-type`} value={keyType} onChange={event => setKeyType(event.target.value as TipoChavePix)} className={`${inputClass} cursor-pointer`}>
+                <option value="telefone">Celular</option><option value="email">E-mail</option><option value="cpf">CPF</option><option value="aleatoria">Aleatória</option>
               </select>
             </div>
             <div className="flex flex-col gap-1.5">
               <label htmlFor={`${ids}-key`} className="font-label-md text-label-md text-on-surface">Chave para recebimento</label>
-              <input id={`${ids}-key`} type={keyType === "email" ? "email" : "text"} required minLength={5} value={key} onChange={event => setKey(event.target.value)} className={inputClass}/>
+              <input id={`${ids}-key`} type={keyType === "email" ? "email" : "text"} required minLength={3} value={key} onChange={event => setKey(event.target.value)} className={inputClass}/>
             </div>
             <div className="md:col-span-2 flex flex-wrap items-center justify-end gap-space-sm">
-              <button type="button" className={secondaryButton} onClick={() => setEditing(false)}>Cancelar</button>
+              <button type="button" className={secondaryButton} onClick={() => { setEditing(false); setEditingId(null); }}>Cancelar</button>
               <button type="submit" className={primaryButton}><Icon name="check" size={18}/>Salvar chave</button>
             </div>
           </form>
@@ -230,7 +334,7 @@ export default function AccountPanels({ panel }: { panel: "pix" | "security" }) 
             <div className="bg-surface-container-lowest p-3 rounded-xl shadow-sm shrink-0"><PixPreview size={132}/></div>
             <div className="flex-1 space-y-space-xs text-center sm:text-left">
               <span className="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold">Prévia do QR Code de Cobrança</span>
-              <p className="font-label-lg text-label-lg text-on-surface">Racha Fácil · Rodrigo M.</p>
+              <p className="font-label-lg text-label-lg text-on-surface">Racha Fácil · {titular}</p>
               <p className="font-body-sm text-body-sm text-on-surface-variant">Este código é anexado a qualquer cobrança que você disparar via WhatsApp ou link direto.</p>
               <div className="flex flex-wrap justify-center sm:justify-start gap-space-xs pt-space-xs">
                 <button type="button" className={`${smallButton} bg-surface-container-lowest`} onClick={() => setMessage("QR Code ilustrativo. Não há um código de pagamento real para baixar.")}><Icon name="download" size={16}/><span>Baixar Placa QR</span></button>
@@ -308,16 +412,9 @@ export default function AccountPanels({ panel }: { panel: "pix" | "security" }) 
               <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Recomendamos senhas exclusivas com ao menos 10 caracteres, combinando números e símbolos.</p>
             </div>
           </div>
-          <span className="self-start inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm whitespace-nowrap"><span className="w-2 h-2 rounded-full bg-primary-container"/>Formulário de demonstração</span>
+          {!user && <span className="self-start inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm whitespace-nowrap"><span className="w-2 h-2 rounded-full bg-primary-container"/>Formulário de demonstração</span>}
         </div>
-        <form className="space-y-space-md max-w-2xl" onSubmit={event => {
-          event.preventDefault();
-          const data = new FormData(event.currentTarget);
-          if (data.get("new") !== data.get("confirm")) { setMessage("As novas senhas devem ser iguais."); return; }
-          setMessage("Alteração de senha simulada. Nenhuma credencial real foi modificada.");
-          event.currentTarget.reset();
-          setNewPassword("");
-        }}>
+        <form className="space-y-space-md max-w-2xl" onSubmit={salvarSenha}>
           <PasswordInput id={`${ids}-old`} name="old" label="Senha atual" placeholder="Digite sua senha atual" show={visible.old} onToggle={() => setVisible(value => ({ ...value, old: !value.old }))}/>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md pt-space-xs">
             <div>
@@ -339,7 +436,7 @@ export default function AccountPanels({ panel }: { panel: "pix" | "security" }) 
           </div>
           <div className="pt-space-sm flex flex-wrap items-center gap-space-md">
             <button type="submit" className={primaryButton}><Icon name="check" size={20}/><span>Atualizar Senha</span></button>
-            <span className="font-label-sm text-label-sm text-outline">Não utilize senhas reais nesta demonstração.</span>
+            {!user && <span className="font-label-sm text-label-sm text-outline">Não utilize senhas reais nesta demonstração.</span>}
           </div>
         </form>
       </section>

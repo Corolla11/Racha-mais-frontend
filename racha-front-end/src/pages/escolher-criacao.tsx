@@ -2,6 +2,8 @@
 import AppShell from "../components/app-shell";
 import Link from "../components/app-link";
 import Icon from "../components/icon";
+import { ApiError, apiRequest } from "../lib/api";
+import { useAppNavigate as useNavigate } from "../lib/navigation";
 
 type Preset = {
   id: string;
@@ -17,7 +19,7 @@ type Preset = {
   total: string;
 };
 
-// Exemplos prontos de descrição (a análise abaixo é só uma prévia local)
+// Exemplos prontos de descrição para preencher o assistente
 const PRESETS: Preset[] = [
   {
     id: "viagem",
@@ -106,10 +108,20 @@ const RECURSOS_MANUAL = [
   "Personalização detalhada",
 ];
 
+type RascunhoGrupo = {
+  nome: string;
+  descricao: string;
+  categoria?: string;
+};
+
 export default function EscolherCriacao() {
+  const navigate = useNavigate();
   const [assistente, setAssistente] = useState(false);
   const [descricao, setDescricao] = useState("");
-  const [sugestaoPronta, setSugestaoPronta] = useState(false);
+  const [rascunho, setRascunho] = useState<RascunhoGrupo | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState("");
   const blocoAssistente = useRef<HTMLDivElement>(null);
 
   // Leva o usuário até o assistente quando ele é aberto
@@ -124,19 +136,62 @@ export default function EscolherCriacao() {
   function abrirAssistente(texto?: string) {
     if (texto) {
       setDescricao(texto);
-      setSugestaoPronta(false);
+      setRascunho(null);
+      setError("");
     }
     setAssistente(true);
   }
 
   function fecharAssistente() {
     setAssistente(false);
-    setSugestaoPronta(false);
+    setRascunho(null);
+    setError("");
   }
 
-  function gerarSugestao(event: FormEvent<HTMLFormElement>) {
+  async function gerarSugestao(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSugestaoPronta(true);
+    setError("");
+    setLoading(true);
+    try {
+      const resultado = await apiRequest<RascunhoGrupo>("/ia/grupos/rascunho", {
+        method: "POST",
+        body: { prompt: descricao.trim() },
+      });
+      setRascunho(resultado);
+    } catch (requestError) {
+      setError(
+        requestError instanceof ApiError
+          ? requestError.message
+          : "Não foi possível gerar uma sugestão agora.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function criarGrupo(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!rascunho) return;
+    setError("");
+    setCreating(true);
+    try {
+      await apiRequest("/grupos", {
+        method: "POST",
+        body: {
+          nome: rascunho.nome,
+          descricao: rascunho.descricao,
+        },
+      });
+      navigate("/meus-grupos");
+    } catch (requestError) {
+      setError(
+        requestError instanceof ApiError
+          ? requestError.message
+          : "Não foi possível criar o grupo.",
+      );
+    } finally {
+      setCreating(false);
+    }
   }
 
   if (assistente) {
@@ -232,11 +287,13 @@ export default function EscolherCriacao() {
                 <textarea
                   id="descricao-plano"
                   required
+                  minLength={10}
+                  maxLength={2000}
                   rows={6}
                   value={descricao}
                   onChange={(event) => {
                     setDescricao(event.target.value);
-                    setSugestaoPronta(false);
+                    setRascunho(null);
                   }}
                   placeholder="Descreva os custos, pessoas e objetivos do grupo..."
                   className="min-h-[140px] w-full resize-y rounded-lg bg-surface-container-low p-space-md pb-10 font-body-md text-body-md text-on-surface transition-all placeholder:text-outline focus:bg-surface-container-lowest focus:shadow-md focus:outline-none focus:ring-2 focus:ring-primary-container"
@@ -270,17 +327,29 @@ export default function EscolherCriacao() {
               </button>
               <button
                 type="submit"
-                className="flex w-full cursor-pointer items-center justify-center gap-space-xs rounded-lg bg-primary-container px-space-xl py-3 font-label-lg text-label-lg text-on-primary shadow-[0_8px_20px_-4px_rgba(255,140,66,0.35)] transition-all hover:bg-primary-container/90 active:scale-[0.98] sm:w-auto"
+                disabled={loading}
+                className="flex w-full cursor-pointer items-center justify-center gap-space-xs rounded-lg bg-primary-container px-space-xl py-3 font-label-lg text-label-lg text-on-primary shadow-[0_8px_20px_-4px_rgba(255,140,66,0.35)] transition-all hover:bg-primary-container/90 active:scale-[0.98] disabled:cursor-wait disabled:opacity-70 sm:w-auto"
               >
                 <Icon name="auto_awesome" size={20} filled />
-                <span>Processar e Gerar Grupo com IA</span>
+                <span>{loading ? "Gerando sugestão..." : "Processar e Gerar Grupo com IA"}</span>
               </button>
             </div>
           </form>
 
-          {/* Prévia da sugestão */}
-          {sugestaoPronta && (
-            <section
+          {error && (
+            <div
+              role="alert"
+              className="flex items-start gap-space-sm rounded-xl bg-error-container/60 p-space-md font-body-sm text-body-sm text-on-error-container"
+            >
+              <Icon name="error" size={20} className="shrink-0 text-error" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Sugestão gerada pela IA (revisão antes de salvar) */}
+          {rascunho && (
+            <form
+              onSubmit={criarGrupo}
               aria-live="polite"
               className="flex flex-col gap-space-md rounded-xl bg-surface-container-low p-space-md shadow-sm sm:p-space-lg"
             >
@@ -288,112 +357,76 @@ export default function EscolherCriacao() {
                 <div className="flex items-center gap-space-xs">
                   <Icon name="smart_toy" size={20} className="text-primary" />
                   <h2 className="font-headline-sm text-headline-sm text-on-surface">
-                    {preset ? "Reconhecimento em Tempo Real" : "Sugestão inicial"}
+                    Revise e personalize
                   </h2>
                 </div>
                 <span className="rounded-full bg-surface-container-high px-space-sm py-0.5 font-label-sm text-label-sm text-on-surface-variant">
-                  Pré-visualização dinâmica
+                  Sugestão da IA
                 </span>
               </div>
 
-              {preset ? (
-                <div className="grid grid-cols-1 gap-space-md md:grid-cols-3">
-                  <div className="flex flex-col justify-between rounded-lg bg-surface-container-lowest p-space-md shadow-[0_1px_3px_0_rgba(31,41,55,0.04)]">
-                    <div className="flex flex-col gap-space-xs">
-                      <span className="font-label-sm text-label-sm font-semibold uppercase tracking-wider text-outline">
-                        Nome Sugerido
-                      </span>
-                      <span className="font-headline-sm text-headline-sm font-bold leading-snug text-on-surface">
-                        {preset.titulo}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 pt-space-md font-label-sm text-label-sm text-primary">
-                      <Icon name={preset.categoriaIcone} size={16} />
-                      <span>Categoria: {preset.categoria}</span>
-                    </div>
-                  </div>
+              <div className="flex flex-col gap-space-xs">
+                <label
+                  htmlFor="rascunho-nome"
+                  className="font-label-sm text-label-sm font-semibold uppercase tracking-wider text-outline"
+                >
+                  Nome do grupo
+                </label>
+                <input
+                  id="rascunho-nome"
+                  required
+                  maxLength={100}
+                  value={rascunho.nome}
+                  onChange={(event) => setRascunho({ ...rascunho, nome: event.target.value })}
+                  className="w-full rounded-lg bg-surface-container-lowest px-space-md py-2.5 font-body-md text-body-md text-on-surface transition-all focus:shadow-md focus:outline-none focus:ring-2 focus:ring-primary-container"
+                />
+              </div>
 
-                  <div className="flex flex-col justify-between rounded-lg bg-surface-container-lowest p-space-md shadow-[0_1px_3px_0_rgba(31,41,55,0.04)]">
-                    <div className="flex flex-col gap-space-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="font-label-sm text-label-sm font-semibold uppercase tracking-wider text-outline">
-                          Participantes
-                        </span>
-                        <span className="rounded bg-surface-container-high px-1.5 py-0.5 font-label-sm text-label-sm font-bold text-on-surface">
-                          {preset.membros.length} pessoas
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {preset.membros.map((membro) => (
-                          <span
-                            key={membro}
-                            className="rounded bg-surface-container px-2 py-0.5 font-label-sm text-label-sm text-on-surface"
-                          >
-                            {membro}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <span className="flex items-center gap-1 pt-space-sm font-label-sm text-label-sm text-on-surface-variant">
-                      <Icon name="group" size={16} className="text-tertiary" />
-                      <span>Rateio automático em {preset.membros.length} partes</span>
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col justify-between rounded-lg bg-surface-container-lowest p-space-md shadow-[0_1px_3px_0_rgba(31,41,55,0.04)]">
-                    <div className="flex flex-col gap-space-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="font-label-sm text-label-sm font-semibold uppercase tracking-wider text-outline">
-                          Despesas Mapeadas
-                        </span>
-                        <span className="rounded bg-surface-container-high px-1.5 py-0.5 font-label-sm text-label-sm font-bold text-on-surface">
-                          {preset.itens.length} itens
-                        </span>
-                      </div>
-                      <div className="flex flex-col gap-1.5 pt-1 font-body-sm text-body-sm text-on-surface">
-                        {preset.itens.map((item) => (
-                          <div key={item.nome} className="flex items-center justify-between gap-space-sm">
-                            <span className="truncate">{item.nome}</span>
-                            <span className="shrink-0 font-semibold">{item.valor}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between pt-space-sm font-label-md text-label-md text-on-surface">
-                      <span>Total Inicial:</span>
-                      <span className="font-numeric-stat text-numeric-stat leading-none text-primary-container">
-                        {preset.total}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <p className="rounded-lg bg-surface-container-lowest p-space-md font-body-sm text-body-sm text-on-surface-variant shadow-[0_1px_3px_0_rgba(31,41,55,0.04)]">
-                  Organize tarefas para hospedagem, transporte e alimentação.
-                  Selecione os participantes e o valor de cada tarefa na
-                  revisão.
-                </p>
-              )}
+              <div className="flex flex-col gap-space-xs">
+                <label
+                  htmlFor="rascunho-descricao"
+                  className="font-label-sm text-label-sm font-semibold uppercase tracking-wider text-outline"
+                >
+                  Descrição
+                </label>
+                <textarea
+                  id="rascunho-descricao"
+                  maxLength={1000}
+                  rows={4}
+                  value={rascunho.descricao}
+                  onChange={(event) => setRascunho({ ...rascunho, descricao: event.target.value })}
+                  className="w-full resize-y rounded-lg bg-surface-container-lowest p-space-md font-body-md text-body-md text-on-surface transition-all focus:shadow-md focus:outline-none focus:ring-2 focus:ring-primary-container"
+                />
+              </div>
 
               <div className="flex flex-col items-start justify-between gap-space-md sm:flex-row sm:items-center">
                 <div className="flex items-start gap-space-xs font-label-sm text-label-sm text-on-surface-variant">
                   <Icon name="verified_user" size={16} className="mt-0.5 shrink-0 text-tertiary-container" />
-                  <span>
-                    Prévia do assistente com modelo local. A integração com IA
-                    ainda não está conectada — nenhum lançamento ou cobrança Pix
-                    é executado sem confirmação.
-                  </span>
+                  <span>Nada é salvo até você revisar e confirmar.</span>
                 </div>
-                <Link
-                  to="/criar-grupo/manual"
-                  state={preset ? { nome: preset.titulo, categoria: preset.categoriaId } : undefined}
-                  className="flex shrink-0 items-center gap-space-xs rounded-lg bg-primary-container px-space-md py-2 font-label-md text-label-md text-on-primary shadow-sm transition-all hover:bg-primary-container/90 active:scale-[0.98]"
-                >
-                  Revisar e personalizar
-                  <Icon name="arrow_forward" size={18} />
-                </Link>
+                <div className="flex w-full flex-col-reverse gap-space-sm sm:w-auto sm:flex-row">
+                  <Link
+                    to="/criar-grupo/manual"
+                    state={{
+                      nome: rascunho.nome || descricao.slice(0, 40),
+                      categoria: rascunho.categoria || "viagem",
+                      descricao: rascunho.descricao || descricao,
+                    }}
+                    className="flex shrink-0 items-center justify-center gap-space-xs rounded-lg bg-surface-container-high px-space-md py-2 font-label-md text-label-md text-on-surface transition-colors hover:bg-surface-variant"
+                  >
+                    Personalizar no fluxo manual
+                  </Link>
+                  <button
+                    type="submit"
+                    disabled={creating}
+                    className="flex shrink-0 cursor-pointer items-center justify-center gap-space-xs rounded-lg bg-primary-container px-space-md py-2 font-label-md text-label-md text-on-primary shadow-sm transition-all hover:bg-primary-container/90 active:scale-[0.98] disabled:cursor-wait disabled:opacity-70"
+                  >
+                    {creating ? "Criando grupo..." : "Aprovar e criar grupo"}
+                    <Icon name="arrow_forward" size={18} />
+                  </button>
+                </div>
               </div>
-            </section>
+            </form>
           )}
         </div>
       </AppShell>

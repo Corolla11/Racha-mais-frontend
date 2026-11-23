@@ -1,7 +1,8 @@
 ﻿import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import RecuperacaoLayout from "../components/recuperacao-layout";
+import RecuperacaoLayout, { BannerErro } from "../components/recuperacao-layout";
 import Icon from "../components/icon";
+import { ApiError, apiRequest } from "../lib/api";
 import { CR } from "../lib/recuperacao-tokens";
 
 export default function EsqueceuSenha() {
@@ -9,16 +10,57 @@ export default function EsqueceuSenha() {
   const [enviado, setEnviado] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [reenviado, setReenviado] = useState(false);
+  const [error, setError] = useState("");
 
-  // Prévia: o backend ainda não envia e-mails de recuperação
-  function enviar(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setEnviando(true);
-    window.setTimeout(() => {
-      setEnviando(false);
-      setEnviado(true);
-    }, 500);
+  async function solicitarRedefinicao(emailAlvo: string) {
+    await apiRequest("/api/auth/request-password-reset", {
+      method: "POST",
+      body: {
+        email: emailAlvo,
+        redirectTo: `${window.location.origin}/redefinir-senha`,
+      },
+    });
   }
+
+  async function enviar(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setEnviando(true);
+    try {
+      await solicitarRedefinicao(email.trim());
+      setEnviado(true);
+    } catch (requestError) {
+      setError(
+        requestError instanceof ApiError
+          ? requestError.message
+          : "Não foi possível solicitar a recuperação agora.",
+      );
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  async function reenviar() {
+    setError("");
+    try {
+      await solicitarRedefinicao(email.trim());
+      setReenviado(true);
+    } catch (requestError) {
+      setError(
+        requestError instanceof ApiError
+          ? requestError.message
+          : "Não foi possível reenviar o link agora.",
+      );
+    }
+  }
+
+  const bannerErro = error ? (
+    <BannerErro
+      titulo="Não foi possível enviar o link"
+      descricao={error}
+      onFechar={() => setError("")}
+    />
+  ) : null;
 
   return (
     <RecuperacaoLayout etapa={enviado ? 2 : 1}>
@@ -57,10 +99,7 @@ export default function EsqueceuSenha() {
             </div>
           </div>
 
-          <p className={CR.aviso}>
-            <Icon name="science" size={16} className="shrink-0" />
-            Prévia: o envio de e-mails de recuperação ainda não está ativo.
-          </p>
+          {bannerErro}
 
           <div className="space-y-3">
             <Link to="/redefinir-senha" className={CR.botaoPrimario}>
@@ -70,7 +109,7 @@ export default function EsqueceuSenha() {
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
               <button
                 type="button"
-                onClick={() => setReenviado(true)}
+                onClick={() => void reenviar()}
                 disabled={reenviado}
                 className="inline-flex items-center gap-1 font-label-sm text-xs font-semibold text-primary hover:underline cursor-pointer disabled:cursor-default disabled:no-underline"
               >
@@ -82,6 +121,7 @@ export default function EsqueceuSenha() {
                 onClick={() => {
                   setEnviado(false);
                   setReenviado(false);
+                  setError("");
                 }}
                 className="font-label-sm text-xs text-on-surface-variant hover:text-on-surface underline cursor-pointer"
               >
@@ -127,6 +167,7 @@ export default function EsqueceuSenha() {
                 Certifique-se de usar o mesmo e-mail associado às suas faturas e rachas.
               </p>
             </div>
+            {bannerErro}
             <button type="submit" disabled={enviando} className={CR.botaoPrimario}>
               <span>{enviando ? "Enviando..." : "Enviar link de recuperação"}</span>
               <Icon name="arrow_forward" size={18} />

@@ -166,7 +166,7 @@ export function BannerErro({
 }: {
   titulo: string;
   descricao: string;
-  onFechar: () => void;
+  onFechar?: () => void;
 }) {
   return (
     <div role="alert" className="p-4 rounded-xl bg-error-container/60 text-on-error-container flex items-start gap-3">
@@ -175,14 +175,16 @@ export function BannerErro({
         <p className="font-label-md text-xs font-bold text-on-error-container">{titulo}</p>
         <p className="font-body-sm text-xs text-on-error-container/90 mt-0.5">{descricao}</p>
       </div>
-      <button
-        type="button"
-        aria-label="Fechar aviso"
-        onClick={onFechar}
-        className="text-on-error-container/70 hover:text-on-error-container cursor-pointer flex"
-      >
-        <Icon name="close" size={16} />
-      </button>
+      {onFechar && (
+        <button
+          type="button"
+          aria-label="Fechar aviso"
+          onClick={onFechar}
+          className="text-on-error-container/70 hover:text-on-error-container cursor-pointer flex"
+        >
+          <Icon name="close" size={16} />
+        </button>
+      )}
     </div>
   );
 }

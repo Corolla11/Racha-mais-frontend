@@ -1,7 +1,8 @@
 ﻿import { useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import RecuperacaoLayout, { BannerErro } from "../components/recuperacao-layout";
 import Icon from "../components/icon";
+import { ApiError, apiRequest } from "../lib/api";
 import { CR } from "../lib/recuperacao-tokens";
 
 const REQUISITOS = [
@@ -19,24 +20,48 @@ function nivelForca(senha: string) {
 }
 
 export default function RedefinirSenha() {
+  const [params] = useSearchParams();
+  const token = params.get("token");
+  const tokenError = params.get("error");
+
   const [senha, setSenha] = useState("");
   const [confirmacao, setConfirmacao] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false);
-  const [erro, setErro] = useState(false);
+  const [erro, setErro] = useState("");
+  const [salvando, setSalvando] = useState(false);
   const [concluido, setConcluido] = useState(false);
 
   const forca = nivelForca(senha);
 
-  // Prévia: a troca de senha ainda não é enviada ao backend
-  function salvar(event: FormEvent<HTMLFormElement>) {
+  async function salvar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (senha !== confirmacao) {
-      setErro(true);
+      setErro("As senhas precisam ser iguais.");
       return;
     }
-    setErro(false);
-    setConcluido(true);
+    if (!token) {
+      setErro("O link de recuperação está inválido ou expirou. Solicite outro e-mail.");
+      return;
+    }
+
+    setErro("");
+    setSalvando(true);
+    try {
+      await apiRequest("/api/auth/reset-password", {
+        method: "POST",
+        body: { newPassword: senha, token },
+      });
+      setConcluido(true);
+    } catch (err) {
+      setErro(
+        err instanceof ApiError
+          ? err.message
+          : "Não foi possível atualizar a senha agora.",
+      );
+    } finally {
+      setSalvando(false);
+    }
   }
 
   if (concluido) {
@@ -55,14 +80,37 @@ export default function RedefinirSenha() {
               </p>
             </div>
           </div>
-          <p className={CR.aviso}>
-            <Icon name="science" size={16} className="shrink-0" />
-            Prévia: nenhuma credencial real foi alterada.
-          </p>
           <Link to="/login" className={CR.botaoPrimario}>
             <span>Ir para o Login</span>
             <Icon name="arrow_forward" size={18} />
           </Link>
+        </div>
+      </RecuperacaoLayout>
+    );
+  }
+
+  // Link inválido ou expirado
+  if (tokenError || !token) {
+    return (
+      <RecuperacaoLayout etapa={3}>
+        <div className="flex flex-col space-y-6">
+          <BannerErro
+            titulo="Link inválido ou expirado"
+            descricao="O link de recuperação acessado não é válido ou já expirou. Solicite um novo link para continuar."
+          />
+          <Link to="/esqueceu-senha" className={CR.botaoPrimario}>
+            <span>Solicitar novo link</span>
+            <Icon name="arrow_forward" size={18} />
+          </Link>
+          <div className="pt-2 flex items-center justify-center">
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-1.5 font-label-md text-xs font-semibold text-primary hover:text-on-primary-fixed-variant transition-colors group"
+            >
+              <Icon name="arrow_back" size={14} className="transition-transform group-hover:-translate-x-1" />
+              Voltar para o Login
+            </Link>
+          </div>
         </div>
       </RecuperacaoLayout>
     );
@@ -73,9 +121,9 @@ export default function RedefinirSenha() {
       <div className="flex flex-col space-y-6">
         {erro && (
           <BannerErro
-            titulo="As senhas não coincidem"
-            descricao="A confirmação de senha deve ser idêntica à nova senha digitada."
-            onFechar={() => setErro(false)}
+            titulo="Não foi possível atualizar a senha"
+            descricao={erro}
+            onFechar={() => setErro("")}
           />
         )}
 
@@ -156,17 +204,17 @@ export default function RedefinirSenha() {
               valor={confirmacao}
               onChange={(valor) => {
                 setConfirmacao(valor);
-                if (erro) setErro(false);
+                if (erro) setErro("");
               }}
               visivel={mostrarConfirmacao}
               onAlternar={() => setMostrarConfirmacao((v) => !v)}
               placeholder="Repita sua nova senha"
-              invalido={erro}
+              invalido={!!erro}
             />
           </div>
 
-          <button type="submit" className={`${CR.botaoPrimario} mt-2`}>
-            <span>Salvar nova senha</span>
+          <button type="submit" disabled={salvando} className={`${CR.botaoPrimario} mt-2`}>
+            <span>{salvando ? "Salvando..." : "Salvar nova senha"}</span>
             <Icon name="task_alt" size={18} />
           </button>
         </form>

@@ -1,5 +1,7 @@
 import { initialGroupSettings, type GroupSettings } from "../lib/group-design";
-import { useImperativeHandle,useState,type Dispatch,type Ref,type SetStateAction } from "react";
+import { useEffect,useImperativeHandle,useState,type Dispatch,type Ref,type SetStateAction } from "react";
+import { ApiError, apiRequest } from "../lib/api";
+import { ENDPOINTS, futureModules, type ChavePixApi } from "../lib/endpoints";
 import { canCloseGroup,money,paymentLabels,share,type Payment,type PaymentStatus } from "../lib/finance";
 import type { DadosTarefa } from "../pages/editar-tarefa";
 import Link from "./app-link";
@@ -9,21 +11,21 @@ import { useSearchParams } from "react-router-dom";
 import Overlay from "./overlay";
 import PixPreview from "./pix-preview";
 
-type Member = { id: string; nome: string; admin: boolean; active: boolean };
+type Member = { id: string; nome: string; admin: boolean; active: boolean; email?: string };
 export type Activity = { text: string; date: string };
 export interface GroupFlowControl { openPayments: (taskId?: string) => void }
-interface Props { taskEvents: Activity[]; tasks: DadosTarefa[]; name: string; onName: (name: string) => void; closed: boolean; onCloseGroup: () => void; memberMode: boolean; payments: Record<string, Payment>; setPayments: Dispatch<SetStateAction<Record<string, Payment>>>; ref?: Ref<GroupFlowControl> }
+interface Props { idGrupo?: string; currentUserId?: string; parteIds?: Record<string, string>; taskEvents: Activity[]; tasks: DadosTarefa[]; name: string; onName: (name: string) => void; closed: boolean; onCloseGroup: () => void; memberMode: boolean; payments: Record<string, Payment>; setPayments: Dispatch<SetStateAction<Record<string, Payment>>>; ref?: Ref<GroupFlowControl> }
 
-export default function GroupFlows({ taskEvents, tasks, name, onName, closed, onCloseGroup, memberMode, payments, setPayments, ref }: Props) {
+export default function GroupFlows({ idGrupo, currentUserId = "1", parteIds = {}, taskEvents, tasks, name, onName, closed, onCloseGroup, memberMode, payments, setPayments, ref }: Props) {
   const [params] = useSearchParams();
   const initialPanel = params.get("painel");
   const [view, setView] = useState<"payments" | "members" | "edit" | "close" | "leave" | null>(initialPanel === "pix" || initialPanel === "payments" ? "payments" : initialPanel === "members" || initialPanel === "edit" || initialPanel === "close" ? initialPanel : null);
   const [tab, setTab] = useState("tasks");
   const [memberTab, setMemberTab] = useState("members");
-  const [members, setMembers] = useState<Member[]>(() => (tasks[0]?.participantes ?? []).map(p => ({ id: p.id, nome: p.nome, admin: p.id === "1", active: true })));
+  const [members, setMembers] = useState<Member[]>(() => (tasks[0]?.participantes ?? []).map(p => ({ id: p.id, nome: p.nome, admin: p.id === currentUserId, active: true })));
   const [events, setEvents] = useState<Activity[]>([{ text: "Grupo criado · Rodrigo Martins", date: "2025-11-14T12:00:00.000Z" }]);
-  const [selected, setSelected] = useState(initialPanel === "pix" ? "tarefa-02:1" : "");
-  useImperativeHandle(ref, () => ({ openPayments(taskId) { setView("payments"); setSelected(taskId ? `${taskId}:1` : ""); } }), []);
+  const [selected, setSelected] = useState(initialPanel === "pix" ? `tarefa-02:${currentUserId}` : "");
+  useImperativeHandle(ref, () => ({ openPayments(taskId) { setView("payments"); setSelected(taskId ? `${taskId}:${currentUserId}` : ""); } }), [currentUserId]);
   const [receipt, setReceipt] = useState<{ data: string; name: string } | null>(null);
   const [message, setMessage] = useState("");
   const [settings, setSettings] = useState<GroupSettings>(initialGroupSettings);
@@ -33,6 +35,32 @@ export default function GroupFlows({ taskEvents, tasks, name, onName, closed, on
   const [invite, setInvite] = useState("");
   const [invites, setInvites] = useState<string[]>([]);
   const [receiptView, setReceiptView] = useState<Payment | null>(null);
+  // Chave Pix do recebedor, guardada junto do id para não exibir a de outra tarefa
+  const [recipientPixState, setRecipientPixState] = useState<{ idUser: string; chave: string | null } | null>(null);
+
+  useEffect(() => {
+    if (!idGrupo) return;
+    let ativo = true;
+    apiRequest<{ idUser: string; funcao: "dono" | "membro"; user: { id: string; name: string } }[]>(
+      ENDPOINTS.grupos.membros(idGrupo),
+    )
+      .then((lista) => {
+        if (!ativo || lista.length === 0) return;
+        setMembers(
+          lista.map((m) => ({
+            id: m.idUser,
+            nome: m.user.name,
+            admin: m.funcao === "dono",
+            active: true,
+          })),
+        );
+      })
+      .catch(() => {});
+    return () => {
+      ativo = false;
+    };
+  }, [idGrupo]);
+
   const entries = tasks.flatMap(task => {
     const participants = task.participantes.filter(p => p.selecionado);
     return task.possuiDespesa ? participants.map((person, index) => {
@@ -45,9 +73,29 @@ export default function GroupFlows({ taskEvents, tasks, name, onName, closed, on
   const paid = entries.filter(e => e.payment.status === "confirmado").reduce((sum, e) => sum + Math.round(e.amount * 100), 0) / 100;
   const pending = Math.round((total - paid) * 100) / 100;
   const active = entries.find(e => e.key === selected);
-  const visibleEntries = memberMode ? entries.filter(e => e.person.id === "1") : entries;
+
+  const payerId = active?.task.pagadorId;
+  useEffect(() => {
+    if (!idGrupo || !payerId) return;
+    let ativo = true;
+    apiRequest<ChavePixApi[]>(
+      `${ENDPOINTS.chavesPix.base}?idUser=${encodeURIComponent(payerId)}`,
+    )
+      .then((chaves) => {
+        if (ativo) setRecipientPixState({ idUser: payerId, chave: chaves[0]?.chave ?? null });
+      })
+      .catch(() => {
+        if (ativo) setRecipientPixState({ idUser: payerId, chave: null });
+      });
+    return () => {
+      ativo = false;
+    };
+  }, [idGrupo, payerId]);
+  const recipientPix = idGrupo && payerId && recipientPixState?.idUser === payerId ? recipientPixState.chave : null;
+
+  const visibleEntries = memberMode ? entries.filter(e => e.person.id === currentUserId) : entries;
   const canClose = canCloseGroup(tasks.map(t => t.concluida), entries);
-  const myPending = entries.filter(e => e.person.id === "1" && e.payment.status !== "confirmado").reduce((sum, e) => sum + e.amount, 0);
+  const myPending = entries.filter(e => e.person.id === currentUserId && e.payment.status !== "confirmado").reduce((sum, e) => sum + e.amount, 0);
   const onlyAdmin = !memberMode && members.filter(m => m.active && m.admin).length === 1;
   const activeMembers = members.filter(member => member.active);
   function log(text: string) { setEvents(old => [{ text, date: new Date().toISOString() }, ...old]); }
@@ -58,6 +106,18 @@ export default function GroupFlows({ taskEvents, tasks, name, onName, closed, on
     if (status === "confirmado" && (memberMode || entry.payment.status !== "informado")) return;
     if (status === "contestado" && (memberMode || !reason.trim())) { setMessage("Informe o motivo da contestação."); return; }
     setPayments(old => ({ ...old, [key]: { ...entry.payment, status, ...(status === "informado" ? { receipt: receipt?.data, receiptName: receipt?.name } : {}), ...(status === "contestado" ? { reason } : {}) } }));
+    const idParte = parteIds[key];
+    if (idGrupo && idParte) {
+      const apiStatus = status === "confirmado" ? "FINALIZADA" : status === "informado" ? "EM_ANDAMENTO" : "AGENDADA";
+      void apiRequest(ENDPOINTS.partes.byId(idParte), { method: "PATCH", body: { status: apiStatus } }).catch(() => {});
+    }
+    if (status === "informado") {
+      void futureModules.pagamentos.informar({ idParte, idTarefa: entry.task.id, idUser: entry.person.id, comprovante: receipt?.data }).catch(() => {});
+    } else if (status === "confirmado") {
+      void futureModules.pagamentos.confirmar(idParte ?? key).catch(() => {});
+    } else if (status === "contestado") {
+      void futureModules.pagamentos.contestar(idParte ?? key, reason).catch(() => {});
+    }
     log(`${paymentLabels[status]} · ${entry.person.nome} · ${entry.task.titulo}`);
     setMessage(paymentLabels[status]); setReceipt(null); setReason("");
   }
@@ -73,7 +133,9 @@ export default function GroupFlows({ taskEvents, tasks, name, onName, closed, on
     reader.onerror = () => setMessage("Não foi possível ler o comprovante.");
     reader.readAsDataURL(file);
   }
-  const canInform = active && !closed && (active.person.id === "1" || !memberMode) && ["pendente", "contestado"].includes(active.payment.status);
+  const canInform = active && !closed && (active.person.id === currentUserId || !memberMode) && ["pendente", "contestado"].includes(active.payment.status);
+  const pixDisplay = recipientPix || "(11) 98765-4321";
+  const pixCopyValue = recipientPix || "CHAVE-ILUSTRATIVA-SEM-VALOR-FINANCEIRO";
   const payer = active?.task.participantes.find(p => p.id === active.task.pagadorId);
   const activeShares = active ? active.task.participantes.filter(p => p.selecionado).length : 0;
   const expenses = tasks.filter(task => task.possuiDespesa).sort((a, b) => b.valorTotal - a.valorTotal);
@@ -154,10 +216,10 @@ export default function GroupFlows({ taskEvents, tasks, name, onName, closed, on
           </div>
           <div className="flex flex-col gap-space-md md:col-span-7">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="pix-key" className="flex items-center justify-between font-label-sm text-label-sm font-semibold text-on-surface"><span>Chave Pix (Telefone Celular)</span><span className="text-[11px] font-bold uppercase text-tertiary">Demonstração</span></label>
+              <label htmlFor="pix-key" className="flex items-center justify-between font-label-sm text-label-sm font-semibold text-on-surface"><span>Chave Pix (Telefone Celular)</span><span className="text-[11px] font-bold uppercase text-tertiary">{recipientPix ? "Cadastrada" : "Demonstração"}</span></label>
               <div className="flex items-center gap-space-xs rounded-lg bg-surface-container p-1">
-                <div className="flex min-w-0 grow items-center gap-space-xs px-space-sm py-1.5"><Icon name="smartphone" size={20} className="shrink-0 text-on-surface-variant"/><input id="pix-key" readOnly value="(11) 98765-4321" className="w-full bg-transparent font-label-md text-label-md font-semibold text-on-surface focus:outline-none"/></div>
-                <button type="button" onClick={() => copy("CHAVE-ILUSTRATIVA-SEM-VALOR-FINANCEIRO")} className="flex shrink-0 items-center gap-1 rounded-md bg-surface-container-lowest px-space-md py-1.5 font-label-sm text-label-sm font-semibold text-on-surface shadow-sm transition-all hover:bg-surface-container-high active:scale-95"><Icon name="content_copy" size={16}/>Copiar Chave</button>
+                <div className="flex min-w-0 grow items-center gap-space-xs px-space-sm py-1.5"><Icon name="smartphone" size={20} className="shrink-0 text-on-surface-variant"/><input id="pix-key" readOnly value={pixDisplay} className="w-full bg-transparent font-label-md text-label-md font-semibold text-on-surface focus:outline-none"/></div>
+                <button type="button" onClick={() => copy(pixCopyValue)} className="flex shrink-0 items-center gap-1 rounded-md bg-surface-container-lowest px-space-md py-1.5 font-label-sm text-label-sm font-semibold text-on-surface shadow-sm transition-all hover:bg-surface-container-high active:scale-95"><Icon name="content_copy" size={16}/>Copiar Chave</button>
               </div>
             </div>
             <div className="flex flex-col gap-1.5">
@@ -191,7 +253,7 @@ export default function GroupFlows({ taskEvents, tasks, name, onName, closed, on
         <details className="group rounded-xl bg-surface-container-low p-space-md"><summary className="flex cursor-pointer list-none items-center justify-between font-label-md text-label-md text-on-surface"><span className="flex items-center gap-space-xs"><Icon name="history" size={18} className="text-primary"/>Histórico de pagamentos desta tarefa</span><Icon name="expand_more" size={20} className="text-on-surface-variant transition-transform group-open:rotate-180"/></summary><div className="mt-space-sm flex flex-col gap-space-xs">{events.some(event => event.text.includes(active.task.titulo)) ? events.filter(event => event.text.includes(active.task.titulo)).map((event, index) => <p key={index} className="flex flex-col font-body-sm text-body-sm text-on-surface">{event.text}<small className="font-label-sm text-label-sm text-on-surface-variant">{new Date(event.date).toLocaleString("pt-BR")}</small></p>) : <p className="font-body-sm text-body-sm text-on-surface-variant">Nenhum pagamento anterior registrado nesta tarefa.</p>}</div></details>
         <div className="flex flex-wrap items-center justify-between gap-space-sm"><small className="flex items-center gap-1 font-label-sm text-label-sm text-outline"><Icon name="lock" size={15} className="text-tertiary"/>Pix ilustrativo · não realize uma transferência.</small><button type="button" className="inline-flex items-center gap-1 font-label-sm text-label-sm font-semibold text-primary hover:underline" onClick={() => setSelected("")}><Icon name="arrow_back" size={14}/>Voltar aos pagamentos</button></div>
       </>}
-      {view === "edit" && <GroupEditForm name={name} settings={settings} onSave={(updatedName, updatedSettings) => { onName(updatedName); setSettings(updatedSettings); log("Informações do grupo atualizadas"); dismiss(); }}/>}
+      {view === "edit" && <GroupEditForm name={name} settings={settings} onSave={(updatedName, updatedSettings) => { onName(updatedName); setSettings(updatedSettings); if (idGrupo) { void apiRequest(ENDPOINTS.grupos.byId(idGrupo), { method: "PATCH", body: { nome: updatedName, descricao: updatedSettings.description } }).catch(() => {}); } log("Informações do grupo atualizadas"); dismiss(); }}/>}
       {view === "members" && <>
         <div className="flex w-fit items-center gap-1 rounded-xl bg-surface-container-low p-1" role="group" aria-label="Seções de membros">
           <button type="button" aria-pressed={memberTab === "members"} onClick={() => setMemberTab("members")} className={`inline-flex items-center gap-1.5 rounded-lg px-space-md py-1.5 font-label-md text-label-md transition-all ${memberTab === "members" ? "bg-surface-container-lowest text-on-surface shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}><Icon name="group" size={18}/>Membros Atuais<span className="rounded-full bg-surface-container px-2 py-0.5 font-label-sm text-label-sm">{activeMembers.length}</span></button>
@@ -202,15 +264,15 @@ export default function GroupFlows({ taskEvents, tasks, name, onName, closed, on
           <div className="flex min-w-0 items-center gap-space-md">
             <div className="relative shrink-0"><span className={`flex h-12 w-12 items-center justify-center rounded-full font-label-lg text-label-lg font-bold shadow-sm ${member.admin ? "bg-primary-fixed text-on-primary-fixed-variant ring-2 ring-primary-container" : "bg-secondary-container text-on-secondary"}`}>{member.nome.split(" ").map(part => part[0]).slice(0, 2).join("")}</span>{member.admin && <span className="absolute -bottom-1 -right-1 rounded-full bg-primary p-0.5 text-on-primary" title="Administrador"><Icon name="shield_person" size={14} className="block"/></span>}</div>
             <div className="flex min-w-0 flex-col">
-              <div className="flex flex-wrap items-center gap-2"><span className="font-label-lg text-label-lg font-bold text-on-surface">{member.nome}</span>{member.id === "1" && <span className="rounded-full bg-surface-container-high px-2 py-0.5 font-label-sm text-label-sm font-semibold text-on-surface-variant">Você</span>}{!member.active && <span className="rounded-full bg-error-container px-2 py-0.5 font-label-sm text-label-sm font-semibold text-on-error-container">Saiu do grupo</span>}</div>
-              <span className="truncate font-body-sm text-body-sm text-on-surface-variant">{member.nome.toLowerCase().split(" ")[0]}@exemplo.com</span>
+              <div className="flex flex-wrap items-center gap-2"><span className="font-label-lg text-label-lg font-bold text-on-surface">{member.nome}</span>{member.id === currentUserId && <span className="rounded-full bg-surface-container-high px-2 py-0.5 font-label-sm text-label-sm font-semibold text-on-surface-variant">Você</span>}{!member.active && <span className="rounded-full bg-error-container px-2 py-0.5 font-label-sm text-label-sm font-semibold text-on-error-container">Saiu do grupo</span>}</div>
+              <span className="truncate font-body-sm text-body-sm text-on-surface-variant">{member.email || `${member.nome.toLowerCase().split(" ")[0]}@exemplo.com`}</span>
             </div>
           </div>
-          <div className="flex items-center gap-space-sm self-end sm:self-auto">{member.id === "1" ? <><span className="rounded-full bg-primary-fixed px-2.5 py-0.5 font-label-sm text-label-sm font-semibold text-on-primary-fixed-variant">Admin · Criador</span><Icon name="lock" size={18} className="text-outline" title="Permissão fixa"/></> : !closed && !memberMode && member.active ? <>
-            <div className="relative flex items-center"><select aria-label={`Permissão de ${member.nome}`} value={member.admin ? "admin" : "member"} onChange={event => { setMembers(old => old.map(item => item.id === member.id ? { ...item, admin: event.target.value === "admin" } : item)); log(`Permissão atualizada · ${member.nome}`); }} className="appearance-none rounded-lg bg-surface-container-low py-2 pl-3 pr-9 font-label-sm text-label-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"><option value="member">Membro</option><option value="admin">Administrador</option></select><Icon name="expand_more" size={18} className="pointer-events-none absolute right-2 text-on-surface-variant"/></div>
+          <div className="flex items-center gap-space-sm self-end sm:self-auto">{member.id === currentUserId ? <><span className="rounded-full bg-primary-fixed px-2.5 py-0.5 font-label-sm text-label-sm font-semibold text-on-primary-fixed-variant">Admin · Criador</span><Icon name="lock" size={18} className="text-outline" title="Permissão fixa"/></> : !closed && !memberMode && member.active ? <>
+            <div className="relative flex items-center"><select aria-label={`Permissão de ${member.nome}`} value={member.admin ? "admin" : "member"} onChange={event => { const isAdmin = event.target.value === "admin"; setMembers(old => old.map(item => item.id === member.id ? { ...item, admin: isAdmin } : item)); if (idGrupo) { void apiRequest(ENDPOINTS.grupos.membroById(idGrupo, member.id), { method: "PATCH", body: { funcao: isAdmin ? "dono" : "membro" } }).catch(() => {}); } log(`Permissão atualizada · ${member.nome}`); }} className="appearance-none rounded-lg bg-surface-container-low py-2 pl-3 pr-9 font-label-sm text-label-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"><option value="member">Membro</option><option value="admin">Administrador</option></select><Icon name="expand_more" size={18} className="pointer-events-none absolute right-2 text-on-surface-variant"/></div>
             <button type="button" aria-label={`Remover ${member.nome}`} onClick={() => setRemove(member)} className="flex h-9 w-9 items-center justify-center rounded-lg text-error transition-colors hover:bg-error-container/30"><Icon name="person_remove" size={20}/></button>
           </> : <span className="rounded-full bg-surface-container px-2.5 py-0.5 font-label-sm text-label-sm font-semibold text-on-surface-variant">{member.admin ? "Administrador" : "Membro"}</span>}</div>
-        </div>)}</div> : <form className="flex flex-col items-center gap-space-md rounded-xl bg-surface-container-low p-space-lg text-center" onSubmit={event => { event.preventDefault(); if (invites.includes(invite)) { setMessage("Já existe um convite para este e-mail."); return; } setInvites(old => [...old, invite]); log(`Convite preparado · ${invite}`); setInvite(""); setMessage("Convite preparado na demonstração. Nenhum e-mail foi enviado."); }}>
+        </div>)}</div> : <form className="flex flex-col items-center gap-space-md rounded-xl bg-surface-container-low p-space-lg text-center" onSubmit={async event => { event.preventDefault(); if (invites.includes(invite)) { setMessage("Já existe um convite para este e-mail."); return; } if (idGrupo) { try { const novo = await apiRequest<{ idUser: string; funcao: "dono" | "membro"; user?: { name?: string } }>(ENDPOINTS.grupos.membros(idGrupo), { method: "POST", body: { email: invite } }); setMembers(old => [...old, { id: novo.idUser, nome: novo.user?.name || invite.split("@")[0], admin: novo.funcao === "dono", active: true, email: invite }]); log(`Membro adicionado · ${invite}`); setInvite(""); setMessage("Participante adicionado ao grupo."); return; } catch (err) { if (err instanceof ApiError && err.status !== 404) { setMessage(err.message); return; } } } setInvites(old => [...old, invite]); log(`Convite preparado · ${invite}`); setInvite(""); setMessage("Convite preparado na demonstração. Nenhum e-mail foi enviado."); }}>
           <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-fixed text-primary"><Icon name="mail" size={24}/></span>
           <div><h3 className="font-headline-sm text-headline-sm text-on-surface">Chame seus amigos para o racha</h3><p className="font-body-sm text-body-sm text-on-surface-variant">Compartilhe as tarefas e acompanhe cada acerto em um só lugar.</p></div>
           <div className="flex w-full flex-col gap-1.5 text-left"><label htmlFor="invite-email" className="font-label-md text-label-md text-on-surface">E-mail do participante</label><div className="relative flex items-center"><Icon name="alternate_email" size={18} className="pointer-events-none absolute left-3 text-outline"/><input id="invite-email" type="email" required placeholder="amigo@exemplo.com" value={invite} onChange={event => setInvite(event.target.value)} className="w-full rounded-lg bg-surface-container-lowest py-2.5 pl-10 pr-4 font-body-md text-body-md text-on-surface shadow-sm outline-none transition-all placeholder:text-outline focus:ring-2 focus:ring-primary/20"/></div></div>
@@ -221,14 +283,14 @@ export default function GroupFlows({ taskEvents, tasks, name, onName, closed, on
           <div className="flex items-center gap-space-xs text-error"><Icon name="warning" size={20}/><h3 className="font-label-lg text-label-lg font-bold">Remover {remove.nome}?</h3></div>
           <p className="font-body-sm text-body-sm text-on-surface-variant">O acesso será revogado; as obrigações e o histórico financeiro serão preservados.</p>
           <p className="font-label-md text-label-md text-on-error-container">Pendências: {money(entries.filter(entry => entry.person.id === remove.id && entry.payment.status !== "confirmado").reduce((sum, entry) => sum + entry.amount, 0))}</p>
-          <div className="flex flex-wrap items-center gap-space-sm pt-1"><button type="button" className="rounded-lg bg-surface-container-lowest px-3.5 py-2 font-label-sm text-label-sm text-on-surface shadow-sm transition-colors hover:bg-surface-container" onClick={() => setRemove(null)}>Cancelar</button><button type="button" className="flex items-center gap-1.5 rounded-lg bg-error px-3.5 py-2 font-label-sm text-label-sm text-on-error shadow-sm transition-colors hover:bg-error/90" onClick={() => { setMembers(old => old.map(member => member.id === remove.id ? { ...member, active: false } : member)); log(`Participante removido · ${remove.nome}`); setRemove(null); }}><Icon name="delete_forever" size={16}/>Confirmar remoção</button></div>
+          <div className="flex flex-wrap items-center gap-space-sm pt-1"><button type="button" className="rounded-lg bg-surface-container-lowest px-3.5 py-2 font-label-sm text-label-sm text-on-surface shadow-sm transition-colors hover:bg-surface-container" onClick={() => setRemove(null)}>Cancelar</button><button type="button" className="flex items-center gap-1.5 rounded-lg bg-error px-3.5 py-2 font-label-sm text-label-sm text-on-error shadow-sm transition-colors hover:bg-error/90" onClick={() => { if (idGrupo) { void apiRequest(ENDPOINTS.grupos.membroById(idGrupo, remove.id), { method: "DELETE" }).catch(() => {}); } setMembers(old => old.map(member => member.id === remove.id ? { ...member, active: false } : member)); log(`Participante removido · ${remove.nome}`); setRemove(null); }}><Icon name="delete_forever" size={16}/>Confirmar remoção</button></div>
         </div>}
       </>}
       {view === "leave" && <>
         <div className="flex items-start gap-space-md rounded-xl bg-surface-container-low p-space-md"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-secondary-fixed text-secondary"><Icon name="logout" size={24}/></span><div className="flex flex-col"><h3 className="font-label-lg text-label-lg font-bold text-on-surface">{name}</h3><p className="font-body-sm text-body-sm text-on-surface-variant">Você perderá acesso às ações do grupo. Seu histórico financeiro será preservado.</p></div></div>
         <p className="flex items-center gap-2 rounded-xl bg-tertiary-fixed/40 p-space-md font-label-md text-label-md text-on-tertiary-fixed"><Icon name="account_balance_wallet" size={20} className="text-tertiary"/>Suas pendências: {money(myPending)}.</p>
         {onlyAdmin && <p className="flex items-start gap-2 rounded-xl bg-error-container/50 p-space-md font-body-sm text-body-sm text-on-error-container" role="alert"><Icon name="warning" size={20} className="shrink-0 text-error"/>Você é o único administrador. Promova outro participante em Membros antes de sair.</p>}
-        <div className="flex flex-col-reverse gap-space-sm sm:flex-row sm:justify-end"><button type="button" className={btnSecondary} onClick={dismiss}>Cancelar</button>{!onlyAdmin && <Link className={btnDanger} to="/meus-grupos" onClick={() => log("Rodrigo Martins saiu do grupo")}><Icon name="logout" size={18}/>Confirmar saída</Link>}</div>
+        <div className="flex flex-col-reverse gap-space-sm sm:flex-row sm:justify-end"><button type="button" className={btnSecondary} onClick={dismiss}>Cancelar</button>{!onlyAdmin && <Link className={btnDanger} to="/meus-grupos" onClick={() => { if (idGrupo) { void apiRequest(ENDPOINTS.grupos.membroById(idGrupo, currentUserId), { method: "DELETE" }).catch(() => {}); } log("Saiu do grupo"); }}><Icon name="logout" size={18}/>Confirmar saída</Link>}</div>
       </>}
       </div>
     </Overlay>}

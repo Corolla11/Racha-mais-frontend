@@ -1,12 +1,21 @@
-import { useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { useAuth, type AuthUser } from "../auth/auth-context";
 import AccountPanels, { SettingsBreadcrumb, SettingsTabs, StatusToast, ToggleRow } from "../components/account-panels";
 import AppShell from "../components/app-shell";
 import Icon from "../components/icon";
 import { PageHeading } from "../components/ui";
+import { apiRequest } from "../lib/api";
+import { ENDPOINTS, futureModules, type ChavePixApi, type TipoChavePix, type UserProfileApi } from "../lib/endpoints";
 
 type Panel = "profile" | "notifications" | "security" | "pix";
+
+const LABELS_PIX: Record<TipoChavePix, string> = {
+  telefone: "Celular",
+  email: "E-mail",
+  cpf: "CPF",
+  aleatoria: "Aleatória",
+};
 
 const panelInfo: Record<Panel, { crumb: string; width: string; eyebrow?: string; description: string }> = {
   profile: { crumb: "Meu Perfil", width: "max-w-6xl", description: "Gerencie seus dados pessoais, chave Pix para rateios e preferências de conta com transparência e controle total." },
@@ -32,7 +41,36 @@ function Perfil() {
   const [lembreteWhatsApp, setLembreteWhatsApp] = useState(true);
   const [notificarDespesas, setNotificarDespesas] = useState(true);
   const [resumoSemanal, setResumoSemanal] = useState(false);
+  const [perfil, setPerfil] = useState<UserProfileApi | null>(null);
+  const [aviso, setAviso] = useState("");
   const info = panelInfo[panel];
+
+  useEffect(() => {
+    if (!user) return;
+    let ativo = true;
+    apiRequest<UserProfileApi>(ENDPOINTS.users.me)
+      .then((dados) => {
+        if (ativo) setPerfil(dados);
+      })
+      .catch(() => {});
+    return () => {
+      ativo = false;
+    };
+  }, [user]);
+
+  async function salvarPreferencias() {
+    setAviso("");
+    try {
+      await futureModules.notificacoes.salvarPreferencias({
+        whatsapp: lembreteWhatsApp,
+        despesas: notificarDespesas,
+        resumoSemanal,
+      });
+      setAviso("Preferências salvas com sucesso.");
+    } catch {
+      setAviso("Preferências atualizadas localmente.");
+    }
+  }
 
   let aside: ReactNode = null;
   if (demo && panel === "profile") aside = (
@@ -80,11 +118,12 @@ function Perfil() {
           {(panel === "security" || panel === "pix") && <AccountPanels key={panel} panel={panel}/>}
 
           <div hidden={panel !== "profile"}>
-            <ProfilePanel key={user?.id ?? "demo"} user={user} demo={demo} onManageKeys={() => setPanel("pix")}/>
+            <ProfilePanel key={user?.id ?? "demo"} user={user} demo={demo} chavePix={perfil?.chavesPix?.[0]} onManageKeys={() => setPanel("pix")}/>
           </div>
 
           {panel === "notifications" && (
             <section className="space-y-space-md">
+              <StatusToast message={aviso} onDone={() => setAviso("")}/>
               <div>
                 <h2 className="font-headline-sm text-headline-sm text-on-surface flex items-center gap-space-xs"><Icon name="notifications_active" size={22} className="text-primary"/><span>Notificações e Avisos</span></h2>
                 <p className="font-body-sm text-body-sm text-on-surface-variant">Defina quais lembretes e resumos você quer receber.</p>
@@ -96,7 +135,11 @@ function Perfil() {
                 <div className="w-full h-px bg-surface-container-low"/>
                 <ToggleRow icon="mail" title="Resumo semanal" description="Resumo das atividades financeiras dos grupos." checked={resumoSemanal} onChange={setResumoSemanal}/>
               </div>
-              <p className="font-label-sm text-label-sm text-outline">Preferências ilustrativas nesta prévia.</p>
+              <div className="flex justify-end">
+                <button type="button" className="px-space-xl py-2.5 rounded-lg bg-primary-container hover:bg-primary-container/90 text-on-primary font-label-md text-label-md shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-space-xs" onClick={() => void salvarPreferencias()}>
+                  <Icon name="check" size={18}/><span>Salvar Preferências</span>
+                </button>
+              </div>
             </section>
           )}
         </div>
@@ -125,12 +168,13 @@ const demoProfile: ProfileForm = { name: "Rodrigo Mendes de Alencar", handle: "r
 const fieldClass = "w-full py-3 rounded-lg bg-surface-container-low text-on-surface placeholder:text-outline font-body-md text-body-md focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary-container transition-all";
 const labelClass = "font-label-md text-label-md text-on-surface font-medium flex items-center justify-between gap-space-sm";
 
-function ProfilePanel({ user, demo, onManageKeys }: { user: AuthUser | null; demo: boolean; onManageKeys: () => void }) {
+function ProfilePanel({ user, demo, chavePix, onManageKeys }: { user: AuthUser | null; demo: boolean; chavePix?: ChavePixApi; onManageKeys: () => void }) {
   const ids = useId();
   const [saved, setSaved] = useState<ProfileForm>(() => user ? { name: user.name, handle: user.email.split("@")[0], bio: "", city: "", email: user.email, phone: "" } : demoProfile);
   const [form, setForm] = useState<ProfileForm>(saved);
   const [message, setMessage] = useState("");
-  const pixKey = "(11) 98765-4321";
+  const pixKey = chavePix?.chave ?? (user ? "" : "(11) 98765-4321");
+  const pixType = chavePix ? LABELS_PIX[chavePix.tipoChave] ?? chavePix.tipoChave : "Celular";
   const dirty = (Object.keys(form) as (keyof ProfileForm)[]).some(field => form[field] !== saved[field]);
   function update(field: keyof ProfileForm, value: string) { setForm(previous => ({ ...previous, [field]: value })); }
   async function copyKey() {
@@ -250,11 +294,13 @@ function ProfilePanel({ user, demo, onManageKeys }: { user: AuthUser | null; dem
             <div className="p-space-md rounded-lg bg-surface-container-low space-y-space-xs">
               <div className="flex items-center justify-between">
                 <span className="font-label-sm text-label-sm text-on-surface-variant">Tipo da Chave</span>
-                <span className="font-label-sm text-label-sm font-semibold text-on-surface">Celular</span>
+                <span className="font-label-sm text-label-sm font-semibold text-on-surface">{pixKey ? pixType : "Não cadastrada"}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="font-label-md text-label-md font-bold text-on-surface select-all">{pixKey}</span>
-                <button type="button" className="text-primary hover:text-on-primary-container transition-colors" title="Copiar Chave" aria-label="Copiar chave Pix" onClick={copyKey}><Icon name="content_copy" size={20}/></button>
+                {pixKey ? <>
+                  <span className="font-label-md text-label-md font-bold text-on-surface select-all">{pixKey}</span>
+                  <button type="button" className="text-primary hover:text-on-primary-container transition-colors" title="Copiar Chave" aria-label="Copiar chave Pix" onClick={copyKey}><Icon name="content_copy" size={20}/></button>
+                </> : <span className="font-body-sm text-body-sm text-on-surface-variant">Cadastre uma chave para receber os rateios.</span>}
               </div>
             </div>
             <button type="button" className="w-full flex items-center justify-center gap-space-xs py-2.5 px-space-md rounded-lg bg-surface-container-high hover:bg-surface-container text-on-surface font-label-md text-label-md transition-colors" onClick={onManageKeys}>

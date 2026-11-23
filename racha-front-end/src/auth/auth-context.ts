@@ -20,6 +20,9 @@ export type AuthContextValue = {
   signIn: (email: string, password: string, rememberMe: boolean) => Promise<void>;
   signUp: (name: string, email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<void>;
+  resetPassword: (newPassword: string, token: string) => Promise<void>;
 };
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

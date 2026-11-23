@@ -45,6 +45,7 @@ function App() {
             <Route path="/home" element={<Home />} />
             <Route path="/perfil" element={<Perfil />} />
             <Route path="/grupo" element={<Grupo />} />
+            <Route path="/grupo/:idGrupo" element={<Grupo />} />
             <Route path="/criar-grupo" element={<EscolherCriacao />} />
             <Route path="/criar-grupo/manual" element={<CriarGrupo />} />
             <Route path="/criar-grupo/confirmar" element={<ConfirmarGrupo />} />
