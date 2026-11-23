@@ -1,18 +1,7 @@
 ﻿import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import {
-  ArrowRight,
-  BadgeCheck,
-  CheckCircle2,
-  Circle,
-  CircleCheckBig,
-  Eye,
-  EyeOff,
-  Lock,
-  LockKeyhole,
-  RotateCcw,
-} from "lucide-react";
 import RecuperacaoLayout, { BannerErro } from "../components/recuperacao-layout";
+import Icon from "../components/icon";
 import { CR } from "../lib/recuperacao-tokens";
 
 const REQUISITOS = [
@@ -24,9 +13,9 @@ const REQUISITOS = [
 
 function nivelForca(senha: string) {
   const pontos = REQUISITOS.filter((r) => r.teste(senha)).length;
-  if (pontos <= 1) return { texto: "Fraca", cor: CR.secondary, barras: 1 };
-  if (pontos <= 3) return { texto: "Média", cor: CR.tertiaryContainer, barras: 2 };
-  return { texto: "Excelente", cor: "#10b981", barras: 3 };
+  if (pontos <= 1) return { texto: "Fraca", corTexto: "text-secondary", barra: "bg-secondary", barras: 1 };
+  if (pontos <= 3) return { texto: "Média", corTexto: "text-tertiary-container", barra: "bg-tertiary-container", barras: 2 };
+  return { texto: "Excelente", corTexto: "text-emerald-600", barra: "bg-emerald-500", barras: 3 };
 }
 
 export default function RedefinirSenha() {
@@ -53,27 +42,26 @@ export default function RedefinirSenha() {
   if (concluido) {
     return (
       <RecuperacaoLayout etapa={3}>
-        <div className="flex flex-col items-center gap-4 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shadow-sm">
-            <CircleCheckBig className="h-8 w-8" />
+        <div className="flex flex-col space-y-6">
+          <div className="p-6 rounded-2xl bg-surface-container-low flex flex-col items-center text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm">
+              <Icon name="task_alt" size={30} />
+            </div>
+            <div className="space-y-1.5">
+              <h2 className={CR.titulo}>Senha atualizada!</h2>
+              <p className={CR.descricao}>
+                Tudo pronto! Agora você já pode entrar e continuar organizando
+                seus rachas.
+              </p>
+            </div>
           </div>
-          <h2 className="text-2xl font-bold">Senha atualizada!</h2>
-          <p className="text-sm" style={{ color: CR.onSurfaceVariant }}>
-            Tudo pronto! Agora você já pode entrar e continuar organizando
-            seus rachas.
-          </p>
-          <p
-            className="w-full rounded-lg px-3 py-2 text-xs"
-            style={{ backgroundColor: CR.primaryFixed, color: CR.onPrimaryFixed }}
-          >
+          <p className={CR.aviso}>
+            <Icon name="science" size={16} className="shrink-0" />
             Prévia: nenhuma credencial real foi alterada.
           </p>
-          <Link
-            to="/login"
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#ff8c42] px-6 py-3.5 text-base font-semibold text-white shadow-md transition-all duration-200 hover:bg-[#9b4500] hover:shadow-lg"
-          >
-            Ir para o Login
-            <ArrowRight className="h-[18px] w-[18px]" />
+          <Link to="/login" className={CR.botaoPrimario}>
+            <span>Ir para o Login</span>
+            <Icon name="arrow_forward" size={18} />
           </Link>
         </div>
       </RecuperacaoLayout>
@@ -82,7 +70,7 @@ export default function RedefinirSenha() {
 
   return (
     <RecuperacaoLayout etapa={3}>
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col space-y-6">
         {erro && (
           <BannerErro
             titulo="As senhas não coincidem"
@@ -92,12 +80,12 @@ export default function RedefinirSenha() {
         )}
 
         <div className="space-y-2">
-          <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
-            <BadgeCheck className="h-3.5 w-3.5" />
-            Link validado
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-label-sm text-xs font-bold w-fit">
+            <Icon name="verified" size={14} />
+            Token Validado com Sucesso
           </span>
-          <h2 className="text-2xl font-bold tracking-tight">Crie sua nova senha</h2>
-          <p className="text-sm" style={{ color: CR.onSurfaceVariant }}>
+          <h2 className={CR.titulo}>Crie sua nova senha</h2>
+          <p className={CR.descricao}>
             Escolha uma senha forte que você não use em outros serviços para
             garantir a integridade dos seus pagamentos.
           </p>
@@ -106,12 +94,12 @@ export default function RedefinirSenha() {
         <form className="space-y-4" onSubmit={salvar}>
           {/* Nova senha */}
           <div className="space-y-1.5">
-            <label htmlFor="nova-senha" className="block text-xs font-bold">
+            <label htmlFor="nova-senha" className={CR.rotulo}>
               Nova senha
             </label>
             <CampoSenha
               id="nova-senha"
-              icone={Lock}
+              icone="lock"
               valor={senha}
               onChange={setSenha}
               visivel={mostrarSenha}
@@ -119,21 +107,20 @@ export default function RedefinirSenha() {
               placeholder="Digite sua nova senha"
             />
 
-            <div className="mt-2 space-y-2.5 rounded-xl p-3" style={{ backgroundColor: CR.surfaceLow }}>
+            <div className="p-3 bg-surface-container-low rounded-xl space-y-2.5 mt-2" aria-live="polite">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold">Força da senha:</span>
-                <span className="text-[11px] font-bold" style={{ color: senha ? forca.cor : CR.onSurfaceVariant }}>
+                <span className="font-label-sm text-[11px] font-semibold text-on-surface">Força da senha:</span>
+                <span className={`font-label-sm text-[11px] font-bold ${senha ? forca.corTexto : "text-on-surface-variant"}`}>
                   {senha ? forca.texto : "—"}
                 </span>
               </div>
-              <div className="flex h-1.5 w-full gap-1 overflow-hidden rounded-full">
+              <div className="w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden flex gap-1">
                 {[1, 2, 3].map((barra) => (
                   <div
                     key={barra}
-                    className="h-full w-1/3 transition-all duration-300"
-                    style={{
-                      backgroundColor: senha && barra <= forca.barras ? forca.cor : CR.surfaceHighest,
-                    }}
+                    className={`h-full w-1/3 transition-all duration-300 ${
+                      senha && barra <= forca.barras ? forca.barra : "bg-surface-container-highest"
+                    }`}
                   />
                 ))}
               </div>
@@ -143,14 +130,13 @@ export default function RedefinirSenha() {
                   return (
                     <li
                       key={requisito.texto}
-                      className={`flex items-center gap-1 text-[11px] ${ok ? "font-medium text-emerald-700" : ""}`}
-                      style={ok ? undefined : { color: CR.onSurfaceVariant }}
+                      className={`flex items-center gap-1 font-body-sm text-[11px] ${ok ? "text-emerald-700 font-medium" : "text-on-surface-variant"}`}
                     >
-                      {ok ? (
-                        <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                      ) : (
-                        <Circle className="h-3 w-3 opacity-40" />
-                      )}
+                      <Icon
+                        name={ok ? "check_circle" : "radio_button_unchecked"}
+                        size={12}
+                        className={ok ? "text-emerald-600" : "text-on-surface-variant/40"}
+                      />
                       {requisito.texto}
                     </li>
                   );
@@ -161,12 +147,12 @@ export default function RedefinirSenha() {
 
           {/* Confirmação */}
           <div className="space-y-1.5">
-            <label htmlFor="confirmar-senha" className="block text-xs font-bold">
+            <label htmlFor="confirmar-senha" className={CR.rotulo}>
               Confirmar nova senha
             </label>
             <CampoSenha
               id="confirmar-senha"
-              icone={LockKeyhole}
+              icone="lock_clock"
               valor={confirmacao}
               onChange={(valor) => {
                 setConfirmacao(valor);
@@ -179,22 +165,18 @@ export default function RedefinirSenha() {
             />
           </div>
 
-          <button
-            type="submit"
-            className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#ff8c42] px-6 py-3.5 text-base font-semibold text-white shadow-md transition-all duration-200 hover:bg-[#9b4500] hover:shadow-lg active:scale-[0.98]"
-          >
-            Salvar nova senha
-            <CircleCheckBig className="h-[18px] w-[18px]" />
+          <button type="submit" className={`${CR.botaoPrimario} mt-2`}>
+            <span>Salvar nova senha</span>
+            <Icon name="task_alt" size={18} />
           </button>
         </form>
 
-        <div className="flex items-center justify-center pt-2">
+        <div className="pt-2 flex items-center justify-center">
           <Link
             to="/esqueceu-senha"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors hover:text-[#121c2a]"
-            style={{ color: CR.onSurfaceVariant }}
+            className="inline-flex items-center gap-1.5 font-label-md text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-colors"
           >
-            <RotateCcw className="h-3.5 w-3.5" />
+            <Icon name="restart_alt" size={14} />
             Reiniciar processo de solicitação
           </Link>
         </div>
@@ -205,7 +187,7 @@ export default function RedefinirSenha() {
 
 function CampoSenha({
   id,
-  icone: Icone,
+  icone,
   valor,
   onChange,
   visivel,
@@ -214,7 +196,7 @@ function CampoSenha({
   invalido = false,
 }: {
   id: string;
-  icone: typeof Lock;
+  icone: string;
   valor: string;
   onChange: (valor: string) => void;
   visivel: boolean;
@@ -224,10 +206,7 @@ function CampoSenha({
 }) {
   return (
     <div className="relative flex items-center">
-      <Icone
-        className="pointer-events-none absolute left-3.5 h-5 w-5"
-        style={{ color: `${CR.onSurfaceVariant}99` }}
-      />
+      <Icon name={icone} size={20} className={CR.iconeCampo} />
       <input
         id={id}
         type={visivel ? "text" : "password"}
@@ -238,18 +217,17 @@ function CampoSenha({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         aria-invalid={invalido}
-        className={`w-full rounded-xl bg-[#eff4ff] py-3 pl-11 pr-11 text-sm outline-none transition-all duration-200 placeholder:text-[#56433866] focus:bg-white focus:shadow-md focus:ring-2 ${
-          invalido ? "ring-2 ring-[#ba1a1a] focus:ring-[#ba1a1a]" : "focus:ring-[#ff8c42]"
+        className={`${CR.campo} pl-11 pr-11 ${
+          invalido ? "ring-2 ring-error focus:ring-error" : "focus:ring-primary-container/60"
         }`}
       />
       <button
         type="button"
         aria-label={visivel ? "Ocultar senha" : "Mostrar senha"}
         onClick={onAlternar}
-        className="absolute right-3.5 cursor-pointer hover:text-[#121c2a]"
-        style={{ color: `${CR.onSurfaceVariant}99` }}
+        className="absolute right-3.5 flex text-on-surface-variant/60 hover:text-on-surface cursor-pointer"
       >
-        {visivel ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
+        <Icon name={visivel ? "visibility_off" : "visibility"} size={18} />
       </button>
     </div>
   );

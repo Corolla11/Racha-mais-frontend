@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type ProxyOptions } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
@@ -7,6 +7,15 @@ export default defineConfig(({ mode }) => {
   const backendTarget =
     env.VITE_BACKEND_PROXY_TARGET ?? 'http://localhost:3000'
 
+  // Rotas como /tarefas/:id/partes existem no front e na API. Navegação do
+  // navegador (Accept: text/html) fica com o SPA; fetch/XHR vai para o backend.
+  const api = (): ProxyOptions => ({
+    target: backendTarget,
+    changeOrigin: true,
+    bypass: (req) =>
+      req.headers.accept?.includes('text/html') ? '/index.html' : undefined,
+  })
+
   return {
     plugins: [
       react(),
@@ -14,22 +23,10 @@ export default defineConfig(({ mode }) => {
     ],
     server: {
       proxy: {
-        '/api/auth': {
-          target: backendTarget,
-          changeOrigin: true,
-        },
-        '/grupos': {
-          target: backendTarget,
-          changeOrigin: true,
-        },
-        '/tarefas': {
-          target: backendTarget,
-          changeOrigin: true,
-        },
-        '/partes': {
-          target: backendTarget,
-          changeOrigin: true,
-        },
+        '/api/auth': api(),
+        '/grupos': api(),
+        '/tarefas': api(),
+        '/partes': api(),
       },
     },
   }

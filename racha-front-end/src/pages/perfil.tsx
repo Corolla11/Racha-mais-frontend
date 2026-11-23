@@ -1,36 +1,27 @@
-import {
-Bell,
-Camera,
-CheckCircle2,
-ChevronDown,
-CreditCard,
-Eye,
-Info,
-LockKeyhole,
-Mail,
-MessageCircle,
-MessageSquare,
-Moon,
-Pencil,
-ShieldCheck,
-SlidersHorizontal,
-Sun,
-UserRound,
-WalletCards
-} from "lucide-react";
-import { useState } from "react";
-import AccountPanels from "../components/account-panels";
-import Link from "../components/app-link";
-
-
-import { useSearchParams } from "react-router-dom";
+import { useId, useState, type ReactNode } from "react";
+import { useLocation, useSearchParams } from "react-router-dom";
+import { useAuth, type AuthUser } from "../auth/auth-context";
+import AccountPanels, { SettingsBreadcrumb, SettingsTabs, StatusToast, ToggleRow } from "../components/account-panels";
 import AppShell from "../components/app-shell";
+import Icon from "../components/icon";
 import { PageHeading } from "../components/ui";
+
+type Panel = "profile" | "notifications" | "security" | "pix";
+
+const panelInfo: Record<Panel, { crumb: string; width: string; eyebrow?: string; description: string }> = {
+  profile: { crumb: "Meu Perfil", width: "max-w-6xl", description: "Gerencie seus dados pessoais, chave Pix para rateios e preferências de conta com transparência e controle total." },
+  security: { crumb: "Segurança & Conta", width: "max-w-5xl", description: "Controle de acesso, credenciais e segurança da conta." },
+  pix: { crumb: "Pagamentos & Pix", width: "max-w-4xl", eyebrow: "Preferências Financeiras", description: "Gerencie suas chaves Pix para recebimento e cartões cadastrados." },
+  notifications: { crumb: "Notificações", width: "max-w-4xl", eyebrow: "Canais de Aviso", description: "Escolha como e quando o Racha+ avisa você sobre rateios, despesas e acertos." },
+};
 
 function Perfil() {
   const [params, setParams] = useSearchParams();
+  const { pathname } = useLocation();
+  const { user } = useAuth();
+  const demo = (pathname.startsWith("/previa") || pathname.startsWith("/revisao")) && !user;
   const initial = params.get("aba");
-  const panel = initial === "pix" || initial === "security" || initial === "notifications" ? initial : "profile";
+  const panel: Panel = initial === "pix" || initial === "security" || initial === "notifications" ? initial : "profile";
   function setPanel(value: "profile" | "notifications" | "security" | "pix") {
     setParams(previous => {
       const next = new URLSearchParams(previous);
@@ -41,450 +32,292 @@ function Perfil() {
   const [lembreteWhatsApp, setLembreteWhatsApp] = useState(true);
   const [notificarDespesas, setNotificarDespesas] = useState(true);
   const [resumoSemanal, setResumoSemanal] = useState(false);
+  const info = panelInfo[panel];
 
-  return <AppShell title="Configurações da Conta"><div className="racha-settings-page">
-    <PageHeading eyebrow="PAINEL DO USUÁRIO" title="Configurações da Conta" description="Personalize preferências, canais de aviso e métodos de transação."/>
-    <div className="racha-settings-tabs"><button className={panel === "profile" ? "active" : ""} onClick={() => setPanel("profile")}><UserRound size={13}/>Perfil</button><button className={panel === "notifications" ? "active" : ""} onClick={() => setPanel("notifications")}><Bell size={13}/>Notificações</button><button className={panel === "security" ? "active" : ""} onClick={() => setPanel("security")}><ShieldCheck size={13}/>Segurança e Conta</button><button className={panel === "pix" ? "active" : ""} onClick={() => setPanel("pix")}><CreditCard size={13}/>Pagamentos & Pix</button><Link to="/gerenciar-assinatura">Assinatura</Link></div>
-    {(panel === "security" || panel === "pix") && <AccountPanels key={panel} panel={panel}/>}
-          <section hidden={panel !== "profile"} className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-            {/* CABEÇALHO DO PERFIL */}
-            <div className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h2 className="text-ui-section-title font-semibold">
-                    Meu Perfil
-                  </h2>
+  let aside: ReactNode = null;
+  if (demo && panel === "profile") aside = (
+    <div className="inline-flex items-center gap-space-xs self-start md:self-auto px-space-md py-1.5 rounded-full bg-surface-container-low text-on-surface-variant">
+      <Icon name="schedule" size={18} className="text-primary"/><span className="font-label-sm text-label-sm">Última alteração em 24 de Outubro</span>
+    </div>
+  );
+  if (demo && panel === "security") aside = (
+    <div className="flex items-center gap-space-md bg-surface-container-lowest p-space-sm pl-space-md rounded-xl shadow-sm self-start md:self-auto">
+      <ScoreRing value={92} size="w-10 h-10" stroke={3} label={<span className="absolute font-label-sm text-label-sm font-bold text-on-surface">92%</span>}/>
+      <div className="pr-space-xs">
+        <p className="font-label-sm text-label-sm font-bold text-on-surface">Proteção Alta</p>
+        <p className="font-body-sm text-xs text-outline">Senha forte ativa</p>
+      </div>
+    </div>
+  );
+  if (demo && panel === "pix") aside = (
+    <div className="flex items-center gap-space-sm px-space-md py-space-xs bg-surface-container-lowest rounded-full shadow-sm w-fit">
+      <span className="relative flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-container opacity-75"/><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"/></span>
+      <span className="font-label-sm text-label-sm text-on-surface-variant">Pix Instantâneo Conectado</span>
+    </div>
+  );
 
-                  <p className="mt-1 max-w-xl text-xs leading-5 text-gray-500">
-                    Gerencie suas informações pessoais, chave Pix cadastrada
-                    e dados de contato para a divisão automática de contas.
-                  </p>
-                </div>
-
-                <span className="rounded-lg bg-[#F5F8FE] px-3 py-1.5 text-ui-caption text-gray-600">
-                  <span className="mr-1 text-[#F97316]">
-                    ●
-                  </span>
-                  ID: #RC-90214
-                </span>
-              </div>
-
-              {/* CARD DO USUÁRIO */}
-              <div className="mt-5 flex items-center justify-between rounded-xl bg-[#EEF4FF] p-4">
-                <div className="flex items-center gap-3">
-                  {/* Avatar padrão circular */}
-                  <div className="relative">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-200">
-                      <UserRound
-                        size={28}
-                        strokeWidth={1.7}
-                        className="text-gray-400"
-                      />
-                    </div>
-
-                    {/* Ícone de câmera */}
-                    <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#EEF4FF] bg-[#F97316] text-white">
-                      <Camera size={10} />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold">
-                        Mariana Souza
-                      </h3>
-
-                      <CheckCircle2
-                        size={14}
-                        className="fill-[#F97316] text-[#F97316]"
-                      />
-                    </div>
-
-                    <div className="mt-1 flex items-center gap-2">
-                      <span className="rounded-full bg-orange-100 px-2 py-1 text-ui-caption font-semibold text-[#B45309]">
-                        Organizadora verificada
-                      </span>
-
-                      <span className="text-ui-caption text-gray-500">
-                        Membro desde Nov 2025
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <button className="ui-button ui-button--md rounded-lg border border-gray-200 bg-white px-4 py-2 text-ui-caption font-medium transition hover:bg-gray-50">
-                    Alterar foto
-                  </button>
-
-                  <button className="text-ui-caption font-medium text-red-500">
-                    Remover
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t border-gray-100" />
-
-            {/* DADOS PESSOAIS */}
-            <div className="p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <UserRound
-                    size={17}
-                    className="text-[#F97316]"
-                  />
-
-                  <h3 className="text-sm font-semibold">
-                    Dados Pessoais
-                  </h3>
-                </div>
-
-                <button className="ui-button ui-button--md flex items-center gap-2 rounded-lg border border-[#F97316] px-3 py-2 text-ui-caption font-medium text-[#F97316] transition hover:bg-orange-50">
-                  <Pencil size={12} />
-                  Editar
-                </button>
-              </div>
-
-              {/* CAMPOS */}
-              <div className="grid grid-cols-2 gap-4">
-                {/* Nome */}
-                <div>
-                  <label className="mb-1.5 block text-ui-label font-medium">
-                    Nome Completo
-                  </label>
-
-                  <div className="rounded-lg border border-gray-200 px-3 py-2.5 text-ui-caption">
-                    Mariana Souza
-                  </div>
-                </div>
-
-                {/* Email */}
-                <div>
-                  <div className="mb-1.5 flex justify-between">
-                    <label className="text-ui-label font-medium">
-                      E-mail Principal
-                    </label>
-
-                    <span className="text-ui-caption font-medium text-[#B7791F]">
-                      ✓ Verificado
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2.5">
-                    <span className="text-ui-caption">
-                      mariana@exemplo.com
-                    </span>
-
-                    <Mail size={13} />
-                  </div>
-                </div>
-
-                {/* Telefone */}
-                <div className="col-span-2">
-                  <label className="mb-1.5 block text-ui-label font-medium">
-                    Telefone / WhatsApp
-                  </label>
-
-                  <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2.5">
-                    <span className="text-ui-caption">
-                      (11) 98765-4321
-                    </span>
-
-                    <MessageCircle size={13} />
-                  </div>
-
-                  <p className="mt-1.5 text-ui-caption text-gray-500">
-                    Usado para avisos de recebimentos pendentes e lembretes
-                    automáticos entre os membros dos grupos.
-                  </p>
-                </div>
-              </div>
-
-              {/* CHAVE PIX */}
-              <div className="mt-6 rounded-xl bg-[#EEF4FF] p-4">
-                {/* Cabeçalho Pix */}
-                <div className="flex items-start justify-between">
-                  <div className="flex gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F97316]">
-                      <WalletCards
-                        size={15}
-                        className="text-white"
-                      />
-                    </div>
-
-                    <div>
-                      <h3 className="text-sm font-semibold">
-                        Chave Pix Padrão para Reembolsos
-                      </h3>
-
-                      <p className="mt-1 text-ui-caption text-gray-500">
-                        Os amigos do grupo enviarão o dinheiro diretamente
-                        para esta chave ao quitar saldos.
-                      </p>
-                    </div>
-                  </div>
-
-                  <span className="rounded-full bg-green-100 px-3 py-1 text-ui-caption font-medium text-green-600">
-                    ● Padrão Ativa
-                  </span>
-                </div>
-
-                {/* Dados Pix */}
-                <div className="mt-4 grid grid-cols-[170px_1fr_auto] gap-3">
-                  {/* Tipo de chave */}
-                  <div>
-                    <label className="mb-1.5 block text-ui-label font-medium">
-                      Tipo de Chave
-                    </label>
-
-                    <div className="flex items-center justify-between rounded-lg bg-white px-3 py-2.5 text-ui-caption">
-                      CPF
-
-                      <ChevronDown size={12} />
-                    </div>
-                  </div>
-
-                  {/* Chave */}
-                  <div>
-                    <label className="mb-1.5 block text-ui-label font-medium">
-                      Chave Pix Cadastrada
-                    </label>
-
-                    <div className="flex items-center justify-between rounded-lg bg-white px-3 py-2.5">
-                      <span className="text-ui-caption font-semibold">
-                        ***.456.789-**
-                      </span>
-
-                      <Eye size={13} />
-                    </div>
-                  </div>
-
-                  {/* Editar Pix */}
-                  <button className="ui-button ui-button--md mt-[20px] flex h-[36px] items-center gap-2 rounded-lg bg-white px-3 text-ui-caption font-medium transition hover:bg-gray-50">
-                    <Pencil size={12} />
-                    Editar
-                  </button>
-                </div>
-
-                {/* Instituição */}
-                <div className="mt-3 flex items-center justify-between rounded-lg bg-white px-3 py-2">
-                  <div>
-                    <p className="text-ui-caption font-semibold">
-                      Instituição validada
-                    </p>
-
-                    <p className="text-ui-caption text-gray-500">
-                      Nu Pagamentos S.A. - Nubank (260)
-                    </p>
-                  </div>
-
-                  <span className="text-ui-caption font-medium text-[#B7791F]">
-                    ⚡ Pronto para receber PIX
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t border-gray-100" />
-
-            {/* PREFERÊNCIAS */}
-            <div className="p-6">
-              <div className="mb-4 flex items-center gap-2">
-                <SlidersHorizontal
-                  size={16}
-                  className="text-[#F97316]"
-                />
-
-                <h3 className="text-sm font-semibold">
-                  Preferências de Cobrança e Notificações
-                </h3>
-              </div>
-
-              <div className="space-y-3">
-                <PreferenceItem
-                  icon={<MessageSquare size={16} />}
-                  title="Lembretes automáticos amigáveis via WhatsApp"
-                  description="Envia uma mensagem simpática 24 horas antes do vencimento do rateio para evitar cobranças manuais constrangedoras."
-                  active={lembreteWhatsApp}
-                  onClick={() =>
-                    setLembreteWhatsApp(!lembreteWhatsApp)
-                  }
-                />
-
-                <PreferenceItem
-                  icon={<Bell size={16} />}
-                  title="Notificar novas despesas no meu nome"
-                  description="Receba alerta push e notificação em tempo real quando algum amigo adicionar um gasto incluindo sua cota."
-                  active={notificarDespesas}
-                  onClick={() =>
-                    setNotificarDespesas(!notificarDespesas)
-                  }
-                />
-
-                <PreferenceItem
-                  icon={<Mail size={16} />}
-                  title="Resumo semanal financeiro por e-mail"
-                  description="Balanço consolidado toda segunda-feira com quem lhe deve e o que você ainda precisa reembolsar."
-                  active={resumoSemanal}
-                  onClick={() =>
-                    setResumoSemanal(!resumoSemanal)
-                  }
-                />
-              </div>
-
-              {/* TEMA */}
-              <div className="mt-5 flex items-center justify-between rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <Moon
-                    size={19}
-                    className="text-[#F97316]"
-                  />
-
-                  <div>
-                    <p className="text-xs font-semibold">
-                      Tema
-                    </p>
-
-                    <p className="mt-1 text-ui-caption text-gray-500">
-                      Altere a aparência do aplicativo entre modo claro e
-                      escuro.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Switch apenas visual */}
-                <div className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2">
-                  <Sun
-                    size={14}
-                    className="text-[#F5A623]"
-                  />
-
-                  <span className="text-ui-caption font-medium">
-                    Modo Claro
-                  </span>
-
-                  <div className="relative h-5 w-9 rounded-full bg-gray-300">
-                    <div className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm" />
-                  </div>
-
-                  <Moon
-                    size={14}
-                    className="text-gray-500"
-                  />
-                </div>
-              </div>
-
-              {/* SEGURANÇA */}
-              <div className="mt-5 flex items-center justify-between rounded-xl bg-[#EEF4FF] p-4">
-                <div className="flex items-center gap-3">
-                  <LockKeyhole
-                    size={17}
-                    className="text-[#F97316]"
-                  />
-
-                  <div>
-                    <p className="text-ui-caption font-semibold">
-                      Segurança de Acesso
-                    </p>
-
-                    <p className="mt-1 text-ui-caption text-gray-500">
-                      Última troca de senha realizada há 3 meses
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex flex-col items-end gap-2">
-                  <button className="ui-button ui-button--md rounded-md bg-white px-3 py-1.5 text-ui-caption font-medium transition hover:bg-gray-50">
-                    Alterar senha
-                  </button>
-
-                  <button className="text-ui-caption font-medium text-red-500">
-                    Encerrar sessões ativas
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* RODAPÉ */}
-            <div className="flex items-center justify-between border-t border-gray-100 bg-[#F7F9FD] px-6 py-4">
-              <div className="flex max-w-xs items-center gap-2">
-                <Info
-                  size={14}
-                  className="shrink-0 text-gray-500"
-                />
-
-                <p className="text-ui-caption leading-4 text-gray-500">
-                  Suas alterações são aplicadas a todos os seus grupos do
-                  Racha+.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <button className="ui-button ui-button--md rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-ui-caption font-medium transition hover:bg-gray-50">
-                  Descartar alterações
-                </button>
-
-                <button className="ui-button ui-button--md rounded-lg bg-[#F97316] px-4 py-2.5 text-ui-caption font-semibold text-white transition hover:bg-[#EA580C]">
-                  Salvar alterações
-                </button>
-              </div>
-            </div>
-          </section>
-    {panel === "notifications" && <section className="racha-card"><h2>Notificações e Avisos</h2><div className="space-y-3 mt-5"><PreferenceItem icon={<MessageCircle size={15}/>} title="Lembretes por WhatsApp" description="Lembretes sobre vencimentos e acertos." active={lembreteWhatsApp} onClick={() => setLembreteWhatsApp(!lembreteWhatsApp)}/><PreferenceItem icon={<Bell size={15}/>} title="Novas tarefas e despesas" description="Avisos quando você for incluído em uma tarefa." active={notificarDespesas} onClick={() => setNotificarDespesas(!notificarDespesas)}/><PreferenceItem icon={<Mail size={15}/>} title="Resumo semanal" description="Resumo das atividades financeiras dos grupos." active={resumoSemanal} onClick={() => setResumoSemanal(!resumoSemanal)}/></div><small className="racha-demo-caption">Preferências ilustrativas nesta prévia.</small></section>}
-  </div></AppShell>;
-}
-
-interface PreferenceItemProps {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  active: boolean;
-  onClick: () => void;
-}
-
-function PreferenceItem({
-  icon,
-  title,
-  description,
-  active,
-  onClick,
-}: PreferenceItemProps) {
   return (
-    <div className="flex items-center justify-between rounded-xl bg-[#EEF4FF] p-4">
-      <div className="flex items-center gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#F97316]">
-          {icon}
+    <AppShell title="Configurações da Conta" bare>
+      <div className="relative w-full overflow-hidden">
+        {panel === "pix" && <div aria-hidden="true" className="absolute -top-32 left-1/2 -translate-x-1/2 w-[720px] h-64 bg-gradient-to-b from-primary-container/10 via-primary/5 to-transparent rounded-full blur-3xl pointer-events-none"/>}
+        <div className={`${info.width} mx-auto px-gutter-mobile sm:px-gutter py-space-lg md:py-space-xl relative`}>
+          <SettingsBreadcrumb trail={[{ label: "Configurações", to: "/perfil" }, { label: info.crumb }]}/>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-space-md mb-space-xl">
+            <PageHeading
+              title="Configurações"
+              description={info.description}
+              eyebrow={info.eyebrow}
+              badge={panel === "security" ? (
+                <div className="inline-flex items-center gap-2 px-space-sm py-1 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm mb-space-xs">
+                  <Icon name="shield_with_heart" size={15} filled/><span>Central de Privacidade &amp; Integridade</span>
+                </div>
+              ) : undefined}
+            />
+            {aside}
+          </div>
+          <SettingsTabs active={panel} onSelect={setPanel}/>
+
+          {(panel === "security" || panel === "pix") && <AccountPanels key={panel} panel={panel}/>}
+
+          <div hidden={panel !== "profile"}>
+            <ProfilePanel key={user?.id ?? "demo"} user={user} demo={demo} onManageKeys={() => setPanel("pix")}/>
+          </div>
+
+          {panel === "notifications" && (
+            <section className="space-y-space-md">
+              <div>
+                <h2 className="font-headline-sm text-headline-sm text-on-surface flex items-center gap-space-xs"><Icon name="notifications_active" size={22} className="text-primary"/><span>Notificações e Avisos</span></h2>
+                <p className="font-body-sm text-body-sm text-on-surface-variant">Defina quais lembretes e resumos você quer receber.</p>
+              </div>
+              <div className="bg-surface-container-lowest rounded-xl p-space-md md:p-space-lg shadow-sm space-y-space-lg">
+                <ToggleRow icon="chat" title="Lembretes por WhatsApp" description="Lembretes sobre vencimentos e acertos." checked={lembreteWhatsApp} onChange={setLembreteWhatsApp}/>
+                <div className="w-full h-px bg-surface-container-low"/>
+                <ToggleRow icon="notifications" title="Novas tarefas e despesas" description="Avisos quando você for incluído em uma tarefa." checked={notificarDespesas} onChange={setNotificarDespesas}/>
+                <div className="w-full h-px bg-surface-container-low"/>
+                <ToggleRow icon="mail" title="Resumo semanal" description="Resumo das atividades financeiras dos grupos." checked={resumoSemanal} onChange={setResumoSemanal}/>
+              </div>
+              <p className="font-label-sm text-label-sm text-outline">Preferências ilustrativas nesta prévia.</p>
+            </section>
+          )}
+        </div>
+      </div>
+    </AppShell>
+  );
+}
+
+function ScoreRing({ value, size, stroke, label }: { value: number; size: string; stroke: number; label: ReactNode }) {
+  const path = "M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831";
+  return (
+    <div className={`relative ${size} shrink-0 flex items-center justify-center`}>
+      <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36" aria-hidden="true">
+        <path className="text-surface-container-high" d={path} fill="none" stroke="currentColor" strokeWidth={stroke}/>
+        <path className="text-primary-container" d={path} fill="none" stroke="currentColor" strokeDasharray={`${value}, 100`} strokeLinecap="round" strokeWidth={stroke}/>
+      </svg>
+      {label}
+    </div>
+  );
+}
+
+type ProfileForm = { name: string; handle: string; bio: string; city: string; email: string; phone: string };
+
+const demoProfile: ProfileForm = { name: "Rodrigo Mendes de Alencar", handle: "rodrigo.m", bio: "Organizador dos churrascos e viagens da galera 🏖️", city: "São Paulo, SP", email: "rodrigo@exemplo.com", phone: "(11) 98765-4321" };
+
+const fieldClass = "w-full py-3 rounded-lg bg-surface-container-low text-on-surface placeholder:text-outline font-body-md text-body-md focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary-container transition-all";
+const labelClass = "font-label-md text-label-md text-on-surface font-medium flex items-center justify-between gap-space-sm";
+
+function ProfilePanel({ user, demo, onManageKeys }: { user: AuthUser | null; demo: boolean; onManageKeys: () => void }) {
+  const ids = useId();
+  const [saved, setSaved] = useState<ProfileForm>(() => user ? { name: user.name, handle: user.email.split("@")[0], bio: "", city: "", email: user.email, phone: "" } : demoProfile);
+  const [form, setForm] = useState<ProfileForm>(saved);
+  const [message, setMessage] = useState("");
+  const pixKey = "(11) 98765-4321";
+  const dirty = (Object.keys(form) as (keyof ProfileForm)[]).some(field => form[field] !== saved[field]);
+  function update(field: keyof ProfileForm, value: string) { setForm(previous => ({ ...previous, [field]: value })); }
+  async function copyKey() {
+    try { await navigator.clipboard.writeText(pixKey); setMessage("Chave Pix copiada."); } catch { setMessage("Selecione a chave exibida para copiar."); }
+  }
+  const subtitle = [saved.handle && `@${saved.handle}`, saved.city].filter(Boolean).join(" • ");
+
+  return (
+    <>
+      <StatusToast message={message} onDone={() => setMessage("")}/>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-xl items-start">
+        <div className="lg:col-span-8 flex flex-col gap-space-xl">
+          {/* Identidade */}
+          <div className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col sm:flex-row items-center sm:items-start justify-between gap-space-lg">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-space-md text-center sm:text-left">
+              <div className="relative shrink-0">
+                <div className="w-24 h-24 rounded-full overflow-hidden shadow-md bg-primary-container flex items-center justify-center">
+                  {user?.image ? <img className="w-full h-full object-cover" src={user.image} alt={`Foto de ${saved.name}`}/> : <Icon name="person" size={48} className="text-on-primary"/>}
+                </div>
+                <span className="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-emerald-500 ring-4 ring-surface-container-lowest flex items-center justify-center" title="Online no Racha+"><span className="w-1.5 h-1.5 rounded-full bg-white"/></span>
+              </div>
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-space-xs">
+                  <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface">{saved.name || "Usuário"}</h2>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm"><Icon name="verified" size={14} filled/>Perfil Verificado</span>
+                </div>
+                {subtitle && <p className="font-body-sm text-body-sm text-on-surface-variant">{subtitle}</p>}
+                {demo && (
+                  <div className="pt-1 flex items-center justify-center sm:justify-start gap-space-xs text-on-surface-variant font-label-sm text-label-sm">
+                    <Icon name="calendar_today" size={16} className="text-tertiary"/><span>Membro desde Março 2023</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-row sm:flex-col items-center gap-space-xs shrink-0">
+              <button type="button" className="flex items-center gap-space-xs px-space-md py-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors" onClick={() => setMessage("O envio de fotos ainda não está disponível nesta versão.")}>
+                <Icon name="photo_camera" size={18}/><span>Alterar Foto</span>
+              </button>
+              <button type="button" className="px-space-md py-2 text-on-surface-variant hover:text-error font-label-sm text-label-sm transition-colors" onClick={() => setMessage("A remoção de fotos ainda não está disponível nesta versão.")}>Remover</button>
+            </div>
+          </div>
+
+          {/* Dados pessoais & exibição */}
+          <div className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm space-y-space-lg">
+            <BlockTitle icon="badge" tone="bg-primary-fixed text-primary" title="Dados Pessoais & Exibição" description="Como os participantes veem você nos grupos e rateios."/>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+              <div className="space-y-1.5">
+                <label htmlFor={`${ids}-name`} className={labelClass}><span>Nome de Exibição</span><span className="font-label-sm text-label-sm text-on-surface-variant font-normal">Visível a todos</span></label>
+                <input id={`${ids}-name`} type="text" autoComplete="name" value={form.name} onChange={event => update("name", event.target.value)} className={`${fieldClass} px-space-md`}/>
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor={`${ids}-handle`} className={labelClass}><span>Nome de Usuário (@handle)</span></label>
+                <div className="relative flex items-center">
+                  <span className="absolute left-space-md text-outline font-label-md" aria-hidden="true">@</span>
+                  <input id={`${ids}-handle`} type="text" value={form.handle} onChange={event => update("handle", event.target.value.replace(/^@+/, ""))} className={`${fieldClass} pl-8 pr-space-md`}/>
+                </div>
+              </div>
+              <div className="md:col-span-2 space-y-1.5">
+                <label htmlFor={`${ids}-bio`} className={labelClass}><span>Recado / Bio nos rachas</span><span className="font-label-sm text-label-sm text-on-surface-variant font-normal">{form.bio.length}/120 caracteres</span></label>
+                <input id={`${ids}-bio`} type="text" maxLength={120} placeholder="Ex.: Organizador dos churrascos da galera" value={form.bio} onChange={event => update("bio", event.target.value)} className={`${fieldClass} px-space-md`}/>
+                <p className="font-label-sm text-label-sm text-on-surface-variant">Uma frase descontraída para seus amigos te reconhecerem rapidamente.</p>
+              </div>
+              <div className="md:col-span-2 space-y-1.5">
+                <label htmlFor={`${ids}-city`} className={labelClass}><span>Cidade Base</span></label>
+                <div className="relative flex items-center">
+                  <Icon name="location_on" size={20} className="absolute left-space-md text-outline pointer-events-none"/>
+                  <input id={`${ids}-city`} type="text" autoComplete="address-level2" placeholder="Ex.: São Paulo, SP" value={form.city} onChange={event => update("city", event.target.value)} className={`${fieldClass} pl-11 pr-space-md`}/>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Contato & dados oficiais */}
+          <div className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm space-y-space-lg">
+            <BlockTitle icon="contact_mail" tone="bg-secondary-fixed text-secondary" title="Contato & Dados Oficiais" description="Informações confidenciais usadas para segurança e reconciliação bancária."/>
+            <div className="space-y-space-md">
+              <div className="space-y-1.5">
+                <label htmlFor={`${ids}-email`} className={labelClass}><span>E-mail Cadastrado</span></label>
+                <div className="relative flex items-center">
+                  <Icon name="mail" size={20} className="absolute left-space-md text-outline pointer-events-none"/>
+                  <input id={`${ids}-email`} type="email" autoComplete="email" value={form.email} onChange={event => update("email", event.target.value)} className={`${fieldClass} pl-11 pr-32`}/>
+                  <div className="absolute right-space-sm flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 font-label-sm text-label-sm font-semibold pointer-events-none"><Icon name="check_circle" size={16}/><span>Verificado</span></div>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor={`${ids}-phone`} className={labelClass}><span>WhatsApp / Celular</span></label>
+                <div className="relative flex items-center">
+                  <Icon name="phone_iphone" size={20} className="absolute left-space-md text-outline pointer-events-none"/>
+                  <input id={`${ids}-phone`} type="tel" autoComplete="tel" placeholder="(11) 98765-4321" value={form.phone} onChange={event => update("phone", event.target.value)} className={`${fieldClass} pl-11 pr-space-md`}/>
+                </div>
+                <p className="font-label-sm text-label-sm text-on-surface-variant">Usado para receber lembretes de rateios e comprovantes de Pix.</p>
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor={`${ids}-cpf`} className="font-label-md text-label-md text-on-surface font-medium flex items-center gap-1.5"><span>CPF</span><Icon name="lock" size={16} className="text-tertiary"/></label>
+                <div className="relative flex items-center">
+                  <Icon name="shield" size={20} className="absolute left-space-md text-outline pointer-events-none"/>
+                  <input id={`${ids}-cpf`} type="text" disabled value={demo ? "***.921.408-**" : ""} placeholder="Não informado" className="w-full pl-11 pr-24 py-3 rounded-lg bg-surface-container text-on-surface-variant placeholder:text-outline font-body-md text-body-md cursor-not-allowed"/>
+                  <span className="absolute right-space-md font-label-sm text-label-sm text-outline font-medium">Protegido</span>
+                </div>
+                <p className="font-label-sm text-label-sm text-on-surface-variant">Para alterar dados fiscais cadastrados, solicite ao suporte.</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div>
-          <p className="text-ui-caption font-semibold">
-            {title}
-          </p>
+        {/* Coluna lateral */}
+        <div className="lg:col-span-4 flex flex-col gap-space-lg">
+          <div className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm space-y-space-md">
+            <div className="flex items-center justify-between">
+              <span className="font-label-sm text-label-sm font-semibold tracking-wider uppercase text-primary">Recebimentos</span>
+              <div className="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-on-primary-fixed"><Icon name="currency_exchange" size={18}/></div>
+            </div>
+            <div>
+              <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Chave Pix Padrão</h3>
+              <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">Esta chave é exibida automaticamente quando amigos quitam despesas com você.</p>
+            </div>
+            <div className="p-space-md rounded-lg bg-surface-container-low space-y-space-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-label-sm text-label-sm text-on-surface-variant">Tipo da Chave</span>
+                <span className="font-label-sm text-label-sm font-semibold text-on-surface">Celular</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-label-md text-label-md font-bold text-on-surface select-all">{pixKey}</span>
+                <button type="button" className="text-primary hover:text-on-primary-container transition-colors" title="Copiar Chave" aria-label="Copiar chave Pix" onClick={copyKey}><Icon name="content_copy" size={20}/></button>
+              </div>
+            </div>
+            <button type="button" className="w-full flex items-center justify-center gap-space-xs py-2.5 px-space-md rounded-lg bg-surface-container-high hover:bg-surface-container text-on-surface font-label-md text-label-md transition-colors" onClick={onManageKeys}>
+              <Icon name="settings" size={18}/><span>Gerenciar Chaves</span>
+            </button>
+          </div>
 
-          <p className="mt-1 max-w-xl text-ui-caption leading-4 text-gray-500">
-            {description}
-          </p>
+          {demo && (
+            <div className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm space-y-space-md">
+              <div className="flex items-center justify-between">
+                <span className="font-label-sm text-label-sm font-semibold tracking-wider uppercase text-tertiary">Comportamento</span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-label-sm text-label-sm font-bold"><Icon name="star" size={14} filled/>Ouro</span>
+              </div>
+              <div>
+                <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Sua Reputação</h3>
+                <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">Calculada pelo histórico de quitações e pontualidade nos grupos.</p>
+              </div>
+              <div className="flex items-center gap-space-md p-space-md rounded-lg bg-surface-container-low">
+                <ScoreRing value={99.4} size="w-16 h-16" stroke={3.5} label={<span className="absolute font-label-md text-label-md font-bold text-on-surface">99%</span>}/>
+                <div>
+                  <span className="font-numeric-stat text-numeric-stat font-extrabold text-on-surface leading-none">99.4%</span>
+                  <p className="font-label-sm text-label-sm text-on-surface-variant">Pontualidade em Rateios</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-space-sm pt-1">
+                <div className="p-space-sm rounded-lg bg-surface-container-low text-center"><span className="font-headline-sm text-headline-sm font-bold text-on-surface">7</span><p className="font-label-sm text-label-sm text-on-surface-variant">Grupos Ativos</p></div>
+                <div className="p-space-sm rounded-lg bg-surface-container-low text-center"><span className="font-headline-sm text-headline-sm font-bold text-emerald-600">0</span><p className="font-label-sm text-label-sm text-on-surface-variant">Atrasos</p></div>
+              </div>
+            </div>
+          )}
+
+          <div className="rounded-xl p-space-md bg-surface-container-high/60 flex items-start gap-space-sm">
+            <Icon name="policy" size={20} className="text-on-surface-variant shrink-0 mt-0.5"/>
+            <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">Seus dados nunca são compartilhados externamente ou com agências financeiras sem autorização expressa.</p>
+          </div>
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={onClick}
-        className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
-          active
-            ? "bg-[#F97316]"
-            : "bg-gray-300"
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-all ${
-            active
-              ? "left-[18px]"
-              : "left-0.5"
-          }`}
-        />
-      </button>
+      {/* Barra de ações */}
+      <div className="mt-space-xl flex flex-col sm:flex-row items-center justify-between gap-space-md bg-surface-container-lowest rounded-xl p-space-md shadow-sm">
+        <div className="flex items-center gap-space-xs text-on-surface-variant">
+          <Icon name={dirty ? "edit_note" : "done_all"} size={18} className={dirty ? "text-primary" : "text-emerald-600"}/>
+          <span className="font-body-sm text-body-sm">{dirty ? "Alterações pendentes detectadas no perfil" : "Nenhuma alteração pendente. Suas alterações valem para todos os seus grupos."}</span>
+        </div>
+        <div className="flex items-center gap-space-sm w-full sm:w-auto justify-end">
+          <button type="button" disabled={!dirty} className="w-full sm:w-auto px-space-lg py-2.5 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed" onClick={() => setForm(saved)}>Descartar</button>
+          <button type="button" disabled={!dirty} className="w-full sm:w-auto px-space-xl py-2.5 rounded-lg bg-primary-container hover:bg-primary-container/90 text-on-primary font-label-md text-label-md shadow-[0_4px_14px_rgba(255,140,66,0.35)] active:scale-[0.98] transition-all flex items-center justify-center gap-space-xs disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100" onClick={() => { setSaved(form); setMessage("Alterações salvas nesta demonstração. Nenhum dado real foi modificado."); }}>
+            <Icon name="check" size={18}/><span>Salvar Alterações</span>
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function BlockTitle({ icon, tone, title, description }: { icon: string; tone: string; title: string; description: string }) {
+  return (
+    <div className="flex items-center gap-space-sm pb-space-sm">
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${tone}`}><Icon name={icon} size={20}/></div>
+      <div>
+        <h3 className="font-headline-sm text-headline-sm text-on-surface font-semibold">{title}</h3>
+        <p className="font-body-sm text-body-sm text-on-surface-variant">{description}</p>
+      </div>
     </div>
   );
 }

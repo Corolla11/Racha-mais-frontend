@@ -5,9 +5,9 @@
 .racha-brand strong > span { color:#ff873d; }
 .racha-brand-symbol { display:flex; align-items:center; justify-content:center; width:29px; height:29px; border-radius:9px; background:#fff0e4; color:#bf641c; font-weight:800; font-size:var(--ui-font-card-title); }
 .racha-brand-symbol span { font-size:var(--ui-font-body); }
-.racha-app nav { display:grid; gap:5px; }
-.racha-app nav a { display:flex; align-items:center; gap:12px; border-radius:5px; padding:10px 13px; color:#54463c; font-size:var(--ui-font-label); }
-.racha-app nav a.active { background:#ffdac5; color:#663c22; font-weight:600; }
+.racha-app > aside nav { display:grid; gap:5px; }
+.racha-app > aside nav a { display:flex; align-items:center; gap:12px; border-radius:5px; padding:10px 13px; color:#54463c; font-size:var(--ui-font-label); }
+.racha-app > aside nav a.active { background:#ffdac5; color:#663c22; font-weight:600; }
 .racha-sidebar-bottom { margin-top:auto; }
 .racha-help-link { display:flex; gap:9px; align-items:center; color:#8b7a6e; font-size:var(--ui-font-caption); margin:20px 12px; }
 .racha-sidebar-profile { position:relative; display:flex; gap:9px; align-items:center; background:#eef2ff; padding:11px 9px; border-radius:7px; }

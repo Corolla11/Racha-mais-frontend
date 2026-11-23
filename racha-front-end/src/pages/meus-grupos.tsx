@@ -1,87 +1,29 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { useLocation } from "react-router-dom";
-import {
-  ArrowRight,
-  Check,
-  CheckCircle2,
-  Clock,
-  Hourglass,
-  PieChart,
-  Plus,
-  Receipt,
-  ReceiptText,
-  Rocket,
-  Search,
-  UserPlus,
-  Wallet,
-  Banknote,
-  X,
-} from "lucide-react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useLocation, useSearchParams } from "react-router-dom";
 import AppShell from "../components/app-shell";
+import Link from "../components/app-link";
+import Icon from "../components/icon";
 import { ApiError, apiRequest } from "../lib/api";
 import { money } from "../lib/finance";
 import { useAppNavigate as useNavigate } from "../lib/navigation";
 import MeusGruposVazio from "./meus-grupos-vazio";
 
-/* =====================================================
-   TOKENS DO DESIGN
-
-   Ficam aqui dentro (e não no tema do Tailwind) para que
-   esta tela não interfira nas demais páginas do projeto.
-====================================================== */
-
-const C = {
-  primary: "#9b4500",
-  primaryContainer: "#ff8c42",
-  primaryFixed: "#ffdbc9",
-  onPrimaryFixed: "#331200",
-
-  secondary: "#ab3425",
-  secondaryContainer: "#fc6f5a",
-  secondaryFixed: "#ffdad4",
-  onSecondaryFixed: "#410100",
-
-  tertiary: "#855300",
-  tertiaryContainer: "#ed9800",
-  tertiaryFixed: "#ffddb8",
-  onTertiaryContainer: "#5b3700",
-
-  surfaceLowest: "#ffffff",
-  surfaceLow: "#eff4ff",
-  surfaceContainer: "#e6eeff",
-  surfaceHigh: "#dee9fc",
-  surfaceHighest: "#d9e3f6",
-
-  onSurface: "#121c2a",
-  onSurfaceVariant: "#564338",
-};
-
 type Categoria = "Viagem" | "Moradia" | "Evento";
 type Tom = "primary" | "tertiary" | "secondary";
 
-// Cores usadas pelo selo de status e pela barra de quitação
-const TONS: Record<Tom, { selo: string; textoSelo: string; ponto: string; texto: string; barra: string }> = {
-  primary: {
-    selo: C.primaryFixed,
-    textoSelo: C.onPrimaryFixed,
-    ponto: C.primary,
-    texto: C.primary,
-    barra: `linear-gradient(to right, ${C.primaryContainer}, ${C.primary})`,
-  },
-  tertiary: {
-    selo: C.surfaceHighest,
-    textoSelo: C.onSurface,
-    ponto: C.tertiary,
-    texto: C.tertiary,
-    barra: C.tertiaryContainer,
-  },
-  secondary: {
-    selo: C.secondaryFixed,
-    textoSelo: C.onSecondaryFixed,
-    ponto: C.secondary,
-    texto: C.secondary,
-    barra: C.secondaryContainer,
-  },
+// Classes do tema usadas pelo selo de status, pelo valor e pela barra de quitação
+const TONS: Record<Tom, { texto: string; ponto: string; barra: string }> = {
+  primary: { texto: "text-primary", ponto: "bg-primary", barra: "bg-gradient-to-r from-primary-container to-primary" },
+  tertiary: { texto: "text-tertiary", ponto: "bg-tertiary", barra: "bg-tertiary-container" },
+  secondary: { texto: "text-secondary", ponto: "bg-secondary", barra: "bg-secondary-container" },
+};
+
+// Capa decorativa de cada categoria (grupos sem categoria usam a padrão)
+const CAPAS: Record<Categoria | "padrao", { fundo: string; icone: string; imagem?: string }> = {
+  Viagem: { fundo: "bg-gradient-to-br from-primary-container to-tertiary-container", icone: "flight", imagem: "/images/florianopolis-cover.jpg" },
+  Moradia: { fundo: "bg-gradient-to-br from-tertiary-container to-primary", icone: "home_work" },
+  Evento: { fundo: "bg-gradient-to-br from-secondary-container to-primary-container", icone: "outdoor_grill" },
+  padrao: { fundo: "bg-gradient-to-br from-primary-container via-primary-container to-tertiary-container", icone: "groups" },
 };
 
 type Financeiro = {
@@ -175,7 +117,7 @@ const FILTROS: { id: Categoria | "todos"; nome: string }[] = [
   { id: "todos", nome: "Todos" },
   { id: "Viagem", nome: "Viagens" },
   { id: "Moradia", nome: "Casa" },
-  { id: "Evento", nome: "Eventos" },
+  { id: "Evento", nome: "Churrascos & Eventos" },
 ];
 
 // Os ids batem com as categorias da tela de criação manual
@@ -187,9 +129,10 @@ const CATEGORIAS_MODAL = [
 ];
 
 const CORES_AVATAR = [
-  { fundo: C.secondaryContainer, texto: "#6d0300" },
-  { fundo: C.primaryFixed, texto: C.onPrimaryFixed },
-  { fundo: C.surfaceHighest, texto: C.onSurface },
+  "bg-surface-container-high text-primary",
+  "bg-tertiary-fixed text-on-tertiary-fixed",
+  "bg-secondary-fixed text-on-secondary-fixed-variant",
+  "bg-primary-fixed text-on-primary-fixed",
 ];
 
 function formatarPercentual(valor: number) {
@@ -199,18 +142,27 @@ function formatarPercentual(valor: number) {
 export default function MeusGrupos() {
   const navigate = useNavigate();
   const preview = useLocation().pathname.startsWith("/previa");
+  const [searchParams] = useSearchParams();
 
   const [gruposApi, setGruposApi] = useState<GrupoApi[]>([]);
   const [carregando, setCarregando] = useState(!preview);
   const [erro, setErro] = useState("");
   const [tentativa, setTentativa] = useState(0);
 
+  // A busca do header chega como ?busca=termo e pré-preenche o filtro local
+  const buscaUrl = searchParams.get("busca") ?? "";
+  const [buscaUrlAnterior, setBuscaUrlAnterior] = useState(buscaUrl);
   const [filtro, setFiltro] = useState<Categoria | "todos">("todos");
-  const [busca, setBusca] = useState("");
+  const [busca, setBusca] = useState(buscaUrl);
   const [modalAberto, setModalAberto] = useState(false);
   const [nomeNovo, setNomeNovo] = useState("");
   const [categoriaNova, setCategoriaNova] = useState("viagem");
   const [aviso, setAviso] = useState("");
+
+  if (buscaUrl !== buscaUrlAnterior) {
+    setBuscaUrlAnterior(buscaUrl);
+    setBusca(buscaUrl);
+  }
 
   useEffect(() => {
     if (preview) return;
@@ -268,6 +220,8 @@ export default function MeusGrupos() {
       return !termo || grupo.nome.toLowerCase().includes(termo);
     });
   }, [grupos, filtro, busca]);
+
+  const totalParticipantes = grupos.reduce((soma, grupo) => soma + (grupo.participantes ?? 0), 0);
 
   // Métricas só existem para grupos com dados financeiros
   const metricas = useMemo(() => {
@@ -327,51 +281,41 @@ export default function MeusGrupos() {
 
   return (
     <AppShell title="Meus grupos">
-      <div
-        className="flex w-full flex-col gap-6 font-jakarta"
-        style={{ color: C.onSurface }}
-      >
-        {/* =====================================================
-            CABEÇALHO
-        ====================================================== */}
-
-        <section className="flex flex-col justify-between gap-4 pb-2 md:flex-row md:items-end">
-          <div className="flex flex-col gap-1">
-            <div
-              className="flex items-center gap-1 text-xs font-medium uppercase tracking-wider"
-              style={{ color: C.primary }}
-            >
-              <span
-                className="inline-block h-1.5 w-1.5 rounded-full"
-                style={{ backgroundColor: C.primary }}
-              />
-              <span>Visão Geral • {new Date().getFullYear()}</span>
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-space-xl py-space-lg">
+        {/* Saudação e visão geral */}
+        <div className="flex flex-col justify-between gap-space-md md:flex-row md:items-end">
+          <div className="space-y-space-xs">
+            <div className="flex items-center gap-space-xs font-label-md text-label-md uppercase tracking-wider text-primary">
+              <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-primary-container" />
+              Painel Financeiro • {new Date().getFullYear()}
             </div>
-            <h1 className="text-[2rem] font-bold leading-10 tracking-tight">
-              Meus grupos
+            <h1 className="font-headline-lg text-headline-lg tracking-tight text-on-surface">
+              Visão Geral dos Seus Rachas
             </h1>
-            <p className="max-w-xl text-sm" style={{ color: C.onSurfaceVariant }}>
-              Acompanhe despesas compartilhadas, saldos pendentes e divisão
-              instantânea com amigos e colegas de casa.
+            <p className="max-w-xl font-body-md text-body-md text-on-surface-variant">
+              Acompanhe saldos pendentes, resolva rateios pendentes e gerencie
+              suas despesas conjuntas sem atrito.
             </p>
           </div>
-          {!carregando && !erro && (
-            <span
-              className="self-start rounded-xl px-4 py-2 text-xs font-semibold shadow-sm md:self-auto"
-              style={{ backgroundColor: C.surfaceLowest }}
-            >
-              Ativos ({grupos.length})
-            </span>
-          )}
-        </section>
+          <button
+            type="button"
+            onClick={abrirModal}
+            className="inline-flex cursor-pointer items-center justify-center gap-space-xs self-start rounded-xl bg-primary-container px-space-lg py-3 font-label-md text-label-md text-on-primary shadow-md shadow-primary-container/20 transition-all duration-200 hover:bg-primary active:scale-[0.98] md:self-auto"
+          >
+            <Icon name="add_circle" size={20} />
+            <span>Criar Novo Grupo</span>
+          </button>
+        </div>
 
         {carregando ? (
-          <p role="status" className="text-sm" style={{ color: C.onSurfaceVariant }}>
+          <p role="status" className="flex items-center gap-space-sm font-body-sm text-body-sm text-on-surface-variant">
+            <Icon name="progress_activity" size={20} className="animate-spin text-primary-container" />
             Carregando seus grupos...
           </p>
         ) : erro ? (
-          <div className="rounded-xl bg-red-50 p-4">
-            <p role="alert" className="text-sm text-red-800">
+          <div className="flex flex-col items-start gap-space-sm rounded-xl bg-error-container p-space-lg sm:flex-row sm:items-center sm:justify-between">
+            <p role="alert" className="flex items-center gap-space-sm font-body-sm text-body-sm text-on-error-container">
+              <Icon name="error" size={20} />
               {erro}
             </p>
             <button
@@ -381,59 +325,71 @@ export default function MeusGrupos() {
                 setCarregando(true);
                 setTentativa((valor) => valor + 1);
               }}
-              className="mt-2 cursor-pointer text-sm font-semibold text-red-800 underline"
+              className="cursor-pointer rounded-lg bg-surface-container-lowest px-space-md py-2 font-label-md text-label-md text-on-error-container shadow-sm transition-colors hover:bg-surface-container-low"
             >
               Tentar novamente
             </button>
           </div>
         ) : (
           <>
-            {/* =====================================================
-                MÉTRICAS
-            ====================================================== */}
+            {/* Cartões de métricas */}
+            <div className="grid grid-cols-1 gap-space-md sm:grid-cols-2 lg:grid-cols-3">
+              {metricas && (
+                <>
+                  <Metrica
+                    rotulo="Saldo a Pagar"
+                    icone="arrow_upward_alt"
+                    corIcone="text-secondary"
+                    selo={`${metricas.abertos} ${metricas.abertos === 1 ? "pendência" : "pendências"}`}
+                    corSelo="bg-secondary-fixed text-on-secondary-fixed-variant"
+                    bolha="-right-4 -top-4 h-24 w-24 bg-secondary-fixed/30"
+                    valor={<ValorMoeda valor={metricas.suaParte} cor="text-secondary" />}
+                    legenda="Sua parte total nos grupos em aberto"
+                  />
+                  <Metrica
+                    rotulo="Despesas Movimentadas"
+                    icone="arrow_downward_alt"
+                    corIcone="text-tertiary"
+                    selo={`${formatarPercentual(metricas.indice)} quitado`}
+                    corSelo="bg-surface-container text-tertiary"
+                    bolha="-right-4 -top-4 h-24 w-24 bg-surface-container-low opacity-60"
+                    valor={<ValorMoeda valor={metricas.total} cor="text-tertiary" />}
+                    legenda={`${metricas.resolvidos} ${metricas.resolvidos === 1 ? "grupo" : "grupos"} 100% resolvido${metricas.resolvidos === 1 ? "" : "s"}`}
+                  />
+                </>
+              )}
+              <Metrica
+                rotulo="Grupos Ativos"
+                icone="diversity_3"
+                corIcone="text-primary"
+                selo="Total"
+                corSelo="bg-surface-container-high text-primary"
+                bolha="-bottom-6 -right-6 h-28 w-28 bg-surface-container-high/40"
+                className={metricas ? "sm:col-span-2 lg:col-span-1" : ""}
+                valor={
+                  <div className="flex items-baseline gap-2 font-numeric-stat text-numeric-stat tracking-tight text-on-surface">
+                    <span>{grupos.length}</span>
+                    <span className="font-headline-sm text-headline-sm font-normal text-on-surface-variant">
+                      {grupos.length === 1 ? "espaço colaborativo" : "espaços colaborativos"}
+                    </span>
+                  </div>
+                }
+                legenda={
+                  totalParticipantes > 0
+                    ? `${totalParticipantes} participantes sincronizados`
+                    : "Abra um grupo para ver membros e saldos"
+                }
+              />
+            </div>
 
-            {metricas && (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <Metrica
-                  rotulo="Sua parte total a pagar"
-                  valor={money(metricas.suaParte)}
-                  detalhe={`${metricas.abertos} ${metricas.abertos === 1 ? "grupo" : "grupos"} em aberto`}
-                  detalheIcone={<Clock className="h-4 w-4" />}
-                  corDetalhe={C.tertiary}
-                  icone={<Wallet className="h-6 w-6" />}
-                  fundoIcone={C.surfaceHigh}
-                  corIcone={C.primary}
-                />
-                <Metrica
-                  rotulo="Despesas totais movimentadas"
-                  valor={money(metricas.total)}
-                  detalhe={`${metricas.participantes} participantes no total`}
-                  detalheIcone={<ReceiptText className="h-4 w-4" />}
-                  icone={<Banknote className="h-6 w-6" />}
-                  fundoIcone={C.surfaceContainer}
-                  corIcone={C.onSurfaceVariant}
-                />
-                <Metrica
-                  rotulo="Índice de quitação"
-                  valor={formatarPercentual(metricas.indice)}
-                  corValor={C.tertiaryContainer}
-                  detalhe={`${metricas.resolvidos} ${metricas.resolvidos === 1 ? "grupo" : "grupos"} 100% resolvido${metricas.resolvidos === 1 ? "" : "s"}`}
-                  detalheIcone={<CheckCircle2 className="h-4 w-4" />}
-                  icone={<PieChart className="h-6 w-6" />}
-                  fundoIcone={C.tertiaryFixed}
-                  corIcone={C.onTertiaryContainer}
-                />
-              </div>
-            )}
-
-            {/* =====================================================
-                FILTROS E BUSCA
-            ====================================================== */}
-
-            <div className="flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
-              {temCategorias ? (
-                <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
-                  {FILTROS.map((item) => {
+            {/* Filtros e busca */}
+            <div className="flex flex-col items-stretch justify-between gap-space-md rounded-xl bg-surface-container-lowest p-space-md shadow-sm lg:flex-row lg:items-center">
+              <div className="flex flex-wrap items-center gap-space-xs overflow-x-auto pb-1 lg:pb-0">
+                <span className="mr-space-md hidden font-headline-sm text-headline-sm text-on-surface sm:inline">
+                  Meus Grupos
+                </span>
+                {temCategorias &&
+                  FILTROS.map((item) => {
                     const ativo = filtro === item.id;
                     return (
                       <button
@@ -441,27 +397,22 @@ export default function MeusGrupos() {
                         type="button"
                         aria-pressed={ativo}
                         onClick={() => setFiltro(item.id)}
-                        className={`cursor-pointer whitespace-nowrap rounded-full px-4 py-1 text-xs font-semibold transition-all ${
-                          ativo ? "" : "hover:bg-[#e6eeff] hover:text-[#121c2a]"
-                        }`}
-                        style={
+                        className={`cursor-pointer whitespace-nowrap rounded-full px-space-md py-1.5 font-label-md text-label-md transition-all duration-200 ${
                           ativo
-                            ? { backgroundColor: C.onSurface, color: "#f8f9ff" }
-                            : { backgroundColor: C.surfaceLow, color: C.onSurfaceVariant }
-                        }
+                            ? "bg-on-surface text-surface"
+                            : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
+                        }`}
                       >
                         {item.id === "todos" ? `Todos (${grupos.length})` : item.nome}
                       </button>
                     );
                   })}
-                </div>
-              ) : (
-                <span />
-              )}
-              <div className="relative w-full sm:w-72">
-                <Search
-                  className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2"
-                  style={{ color: C.onSurfaceVariant }}
+              </div>
+              <div className="relative flex-1 sm:w-64 sm:flex-none">
+                <Icon
+                  name="search"
+                  size={20}
+                  className="pointer-events-none absolute left-3 top-2.5 text-outline"
                 />
                 <label htmlFor="busca-grupo" className="sr-only">
                   Buscar grupo
@@ -471,78 +422,71 @@ export default function MeusGrupos() {
                   type="search"
                   value={busca}
                   onChange={(event) => setBusca(event.target.value)}
-                  placeholder="Buscar por nome do grupo..."
-                  className="w-full rounded-lg bg-white py-1.5 pl-9 pr-4 text-sm outline-none transition-all placeholder:text-[#56433899] focus:shadow-md"
+                  placeholder="Filtrar por nome do grupo..."
+                  className="w-full rounded-lg bg-surface-container-low py-2 pl-10 pr-space-md font-body-sm text-body-sm text-on-surface transition-all placeholder:text-outline focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary-container"
                 />
               </div>
             </div>
 
-            {/* =====================================================
-                GRADE DE GRUPOS
-            ====================================================== */}
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {gruposVisiveis.map((grupo) => (
-                <CartaoGrupo
-                  key={grupo.id}
-                  grupo={grupo}
-                  onAcessar={() =>
-                    navigate(grupo.destino.path, { state: grupo.destino.state })
-                  }
-                />
-              ))}
-
-              <button
-                type="button"
-                onClick={abrirModal}
-                className="group flex min-h-[340px] cursor-pointer flex-col items-center justify-center rounded-xl bg-[#eff4ff99] p-6 text-center shadow-sm transition-all duration-200 hover:bg-[#eff4ff]"
-                style={{ color: C.onSurfaceVariant }}
-              >
-                <div className="mb-2 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#ff8c42] shadow-sm transition-all duration-200 group-hover:scale-105 group-hover:bg-[#ff8c42] group-hover:text-white">
-                  <Plus className="h-7 w-7" />
+            {/* Grade de grupos */}
+            {gruposVisiveis.length > 0 ? (
+              <div className="grid grid-cols-1 gap-space-lg md:grid-cols-2">
+                {gruposVisiveis.map((grupo) => (
+                  <CartaoGrupo
+                    key={grupo.id}
+                    grupo={grupo}
+                    onAcessar={() =>
+                      navigate(grupo.destino.path, { state: grupo.destino.state })
+                    }
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-space-sm rounded-xl bg-surface-container-lowest p-space-xl text-center shadow-sm">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-container-low text-outline">
+                  <Icon name="search_off" size={24} />
                 </div>
-                <span className="text-xl font-bold text-[#121c2a] transition-colors group-hover:text-[#9b4500]">
-                  Criar novo grupo
-                </span>
-                <p className="mt-1 max-w-xs text-sm">
-                  Divida contas de uma viagem, república, festa ou projeto com
-                  cálculo automático por Pix.
+                <p className="font-body-sm text-body-sm text-on-surface-variant">
+                  Nenhum grupo encontrado com esses filtros.
                 </p>
-                <span
-                  className="mt-4 inline-flex items-center gap-1 rounded-full bg-white px-4 py-1 text-xs font-semibold shadow-sm transition-shadow group-hover:shadow"
-                  style={{ color: C.primary }}
-                >
-                  Começar divisão →
-                </span>
-              </button>
-            </div>
-
-            {gruposVisiveis.length === 0 && (
-              <p className="text-center text-sm" style={{ color: C.onSurfaceVariant }}>
-                Nenhum grupo encontrado com esses filtros.
-              </p>
+              </div>
             )}
 
-            {/* =====================================================
-                CONVITE
-            ====================================================== */}
-
-            <div
-              className="mt-4 flex flex-col items-center justify-between gap-6 rounded-2xl p-6 shadow-sm md:flex-row"
-              style={{ backgroundColor: C.surfaceLow }}
-            >
-              <div className="flex items-center gap-4">
-                <div
-                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-md"
-                  style={{ backgroundColor: C.primaryContainer }}
-                >
-                  <Rocket className="h-[30px] w-[30px]" />
+            {/* Dica de quitação via Pix */}
+            <div className="flex flex-col items-start justify-between gap-space-md rounded-xl bg-surface-container-low p-space-lg shadow-sm sm:flex-row sm:items-center">
+              <div className="flex items-center gap-space-md">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-tertiary-fixed text-on-tertiary-fixed">
+                  <Icon name="savings" size={24} />
                 </div>
-                <div className="flex flex-col">
-                  <h3 className="text-xl font-bold">
+                <div>
+                  <h2 className="font-headline-sm text-headline-sm text-on-surface">
+                    Quer quitar com Pix instantâneo?
+                  </h2>
+                  <p className="font-body-sm text-body-sm text-on-surface-variant">
+                    Conecte sua chave Pix favorita para receber estornos de
+                    despesas com um toque.
+                  </p>
+                </div>
+              </div>
+              <Link
+                to="/perfil?aba=pix"
+                className="whitespace-nowrap rounded-lg bg-surface-container-lowest px-space-md py-2 font-label-md text-label-md text-on-surface shadow-sm transition-colors hover:bg-surface-container-highest"
+              >
+                Configurar Chave
+              </Link>
+            </div>
+
+            {/* Convite rápido */}
+            <div className="flex flex-col items-start justify-between gap-space-md rounded-xl bg-surface-container-low p-space-lg shadow-sm sm:flex-row sm:items-center">
+              <div className="flex items-center gap-space-md">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-fixed text-primary">
+                  <Icon name="rocket_launch" size={24} />
+                </div>
+                <div>
+                  <h2 className="font-headline-sm text-headline-sm text-on-surface">
                     Convidar amigos via Pix ou link direto
-                  </h3>
-                  <p className="mt-0.5 max-w-xl text-sm" style={{ color: C.onSurfaceVariant }}>
+                  </h2>
+                  <p className="font-body-sm text-body-sm text-on-surface-variant">
                     Quem entra no grupo não precisa baixar aplicativo para
                     conferir a conta ou confirmar o comprovante de pagamento.
                   </p>
@@ -551,8 +495,9 @@ export default function MeusGrupos() {
               <button
                 type="button"
                 onClick={copiarConvite}
-                className="shrink-0 cursor-pointer rounded-lg bg-white px-6 py-2 text-sm font-bold shadow-sm transition-colors hover:bg-[#e6eeff]"
+                className="flex shrink-0 cursor-pointer items-center gap-space-xs whitespace-nowrap rounded-lg bg-surface-container-lowest px-space-md py-2 font-label-md text-label-md text-on-surface shadow-sm transition-colors hover:bg-surface-container-highest"
               >
+                <Icon name="content_copy" size={18} />
                 Copiar convite rápido
               </button>
             </div>
@@ -560,13 +505,10 @@ export default function MeusGrupos() {
         )}
       </div>
 
-      {/* =====================================================
-          MODAL — CRIAR NOVO GRUPO
-      ====================================================== */}
-
+      {/* Modal — criar novo grupo */}
       {modalAberto && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-[#27313f66] p-4 font-jakarta backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-inverse-surface/40 p-space-md backdrop-blur-sm"
           onClick={(event) => {
             if (event.target === event.currentTarget) setModalAberto(false);
           }}
@@ -575,35 +517,30 @@ export default function MeusGrupos() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="titulo-novo-grupo"
-            className="flex w-full max-w-lg flex-col gap-4 rounded-2xl bg-white p-6 shadow-2xl"
-            style={{ color: C.onSurface }}
+            className="flex w-full max-w-lg flex-col gap-space-lg rounded-xl bg-surface-container-lowest p-space-lg text-on-surface shadow-2xl sm:p-space-xl"
           >
-            <div className="flex items-center justify-between pb-1">
-              <div className="flex items-center gap-1">
-                <div
-                  className="mr-1 flex h-9 w-9 items-center justify-center rounded-xl"
-                  style={{ backgroundColor: `${C.primaryContainer}33`, color: C.primary }}
-                >
-                  <UserPlus className="h-5 w-5" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-space-sm">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-fixed text-primary">
+                  <Icon name="group_add" size={22} />
                 </div>
-                <h3 id="titulo-novo-grupo" className="text-xl font-bold">
+                <h2 id="titulo-novo-grupo" className="font-headline-sm text-headline-sm text-on-surface">
                   Criar novo grupo
-                </h3>
+                </h2>
               </div>
               <button
                 type="button"
                 aria-label="Fechar"
                 onClick={() => setModalAberto(false)}
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-[#e6eeff] hover:text-[#121c2a]"
-                style={{ color: C.onSurfaceVariant }}
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface"
               >
-                <X className="h-5 w-5" />
+                <Icon name="close" size={20} />
               </button>
             </div>
 
-            <form className="flex flex-col gap-4" onSubmit={criarGrupo}>
-              <div className="flex flex-col gap-1">
-                <label htmlFor="nome-novo-grupo" className="text-xs font-semibold">
+            <form className="flex flex-col gap-space-md" onSubmit={criarGrupo}>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="nome-novo-grupo" className="font-label-md text-label-md text-on-surface">
                   Nome do grupo
                 </label>
                 <input
@@ -614,49 +551,49 @@ export default function MeusGrupos() {
                   value={nomeNovo}
                   onChange={(event) => setNomeNovo(event.target.value)}
                   placeholder="Ex: Carnaval Salvador, Aluguel AP 402"
-                  className="w-full rounded-lg px-4 py-2 text-base outline-none transition-all focus:ring-2 focus:ring-[#ff8c42]"
-                  style={{ backgroundColor: C.surfaceLow }}
+                  className="h-12 w-full rounded-lg bg-surface-container-low px-space-md font-body-md text-body-md text-on-surface shadow-inner transition-all placeholder:text-outline focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary-container"
                 />
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label htmlFor="categoria-novo-grupo" className="text-xs font-semibold">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="categoria-novo-grupo" className="font-label-md text-label-md text-on-surface">
                   Categoria
                 </label>
-                <select
-                  id="categoria-novo-grupo"
-                  value={categoriaNova}
-                  onChange={(event) => setCategoriaNova(event.target.value)}
-                  className="w-full cursor-pointer rounded-lg px-4 py-2 text-sm outline-none transition-all focus:ring-2 focus:ring-[#ff8c42]"
-                  style={{ backgroundColor: C.surfaceLow }}
-                >
-                  {CATEGORIAS_MODAL.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.nome}
-                    </option>
-                  ))}
-                </select>
-                <span className="text-xs" style={{ color: C.onSurfaceVariant }}>
+                <div className="relative flex items-center">
+                  <select
+                    id="categoria-novo-grupo"
+                    value={categoriaNova}
+                    onChange={(event) => setCategoriaNova(event.target.value)}
+                    className="h-12 w-full cursor-pointer appearance-none rounded-lg bg-surface-container-low px-space-md pr-10 font-body-sm text-body-sm text-on-surface transition-all focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary-container"
+                  >
+                    {CATEGORIAS_MODAL.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.nome}
+                      </option>
+                    ))}
+                  </select>
+                  <Icon name="expand_more" size={20} className="pointer-events-none absolute right-3 text-outline" />
+                </div>
+                <span className="font-label-sm text-label-sm text-on-surface-variant">
                   Na próxima etapa você define o período e adiciona os
                   participantes.
                 </span>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-1">
+              <div className="flex flex-col-reverse items-stretch justify-end gap-space-sm pt-space-xs sm:flex-row sm:items-center">
                 <button
                   type="button"
                   onClick={() => setModalAberto(false)}
-                  className="cursor-pointer rounded-lg px-4 py-2 text-sm font-semibold transition-colors hover:bg-[#e6eeff]"
-                  style={{ backgroundColor: C.surfaceLow }}
+                  className="h-11 cursor-pointer rounded-lg bg-surface-container-low px-space-lg font-label-md text-label-md text-on-surface transition-colors hover:bg-surface-container-high"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="cursor-pointer rounded-lg px-6 py-2 text-sm font-bold text-white shadow-sm transition-all hover:brightness-105 active:scale-95"
-                  style={{ backgroundColor: C.primaryContainer }}
+                  className="flex h-11 cursor-pointer items-center justify-center gap-space-xs rounded-lg bg-primary-container px-space-lg font-label-md text-label-md text-on-primary shadow-[0_8px_20px_-4px_rgba(255,140,66,0.35)] transition-all hover:bg-primary-container/90 active:scale-[0.98]"
                 >
                   Criar grupo
+                  <Icon name="arrow_forward" size={18} />
                 </button>
               </div>
             </form>
@@ -668,10 +605,9 @@ export default function MeusGrupos() {
       {aviso && (
         <div
           role="status"
-          className="fixed bottom-6 right-6 z-[100] flex items-center gap-1 rounded-xl px-4 py-2 font-jakarta text-sm font-semibold shadow-xl"
-          style={{ backgroundColor: "#27313f", color: "#eaf1ff" }}
+          className="fixed bottom-6 right-6 z-[100] flex items-center gap-space-sm rounded-xl bg-inverse-surface px-space-md py-space-sm font-label-md text-label-md text-inverse-on-surface shadow-xl"
         >
-          <CheckCircle2 className="mr-1 h-[18px] w-[18px]" style={{ color: C.tertiaryFixed }} />
+          <Icon name="check_circle" size={18} filled className="text-tertiary-fixed" />
           {aviso}
         </div>
       )}
@@ -683,51 +619,54 @@ export default function MeusGrupos() {
    COMPONENTES AUXILIARES
 ====================================================== */
 
+function ValorMoeda({ valor, cor }: { valor: number; cor: string }) {
+  const [, numero] = money(valor).split(/\s/);
+  return (
+    <div className="flex items-baseline gap-1 font-numeric-stat text-numeric-stat tracking-tight text-on-surface">
+      <span className={`font-headline-sm text-headline-sm ${cor}`}>R$</span>
+      <span>{numero ?? money(valor)}</span>
+    </div>
+  );
+}
+
 function Metrica({
   rotulo,
-  valor,
-  corValor = C.onSurface,
-  detalhe,
-  detalheIcone,
-  corDetalhe = C.onSurfaceVariant,
   icone,
-  fundoIcone,
   corIcone,
+  selo,
+  corSelo,
+  bolha,
+  valor,
+  legenda,
+  className = "",
 }: {
   rotulo: string;
-  valor: string;
-  corValor?: string;
-  detalhe: string;
-  detalheIcone: React.ReactNode;
-  corDetalhe?: string;
-  icone: React.ReactNode;
-  fundoIcone: string;
+  icone: string;
   corIcone: string;
+  selo: string;
+  corSelo: string;
+  bolha: string;
+  valor: ReactNode;
+  legenda: string;
+  className?: string;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
-      <div className="flex flex-col">
-        <span className="text-xs font-medium" style={{ color: C.onSurfaceVariant }}>
+    <div
+      className={`relative flex min-h-[148px] flex-col justify-between overflow-hidden rounded-xl bg-surface-container-lowest p-space-lg shadow-sm transition-shadow duration-300 hover:shadow-md ${className}`}
+    >
+      <div className={`pointer-events-none absolute rounded-full ${bolha}`} />
+      <div className="z-10 flex items-center justify-between gap-space-sm">
+        <span className="flex items-center gap-space-xs font-label-md text-label-md text-on-surface-variant">
+          <Icon name={icone} size={18} className={corIcone} />
           {rotulo}
         </span>
-        <span
-          className="mt-0.5 text-[1.75rem] font-extrabold leading-9 tracking-tight"
-          style={{ color: corValor }}
-        >
-          {valor}
-        </span>
-        <span
-          className="mt-1 flex items-center gap-1 text-xs font-medium"
-          style={{ color: corDetalhe }}
-        >
-          {detalheIcone} {detalhe}
+        <span className={`whitespace-nowrap rounded-full px-2.5 py-0.5 font-label-sm text-label-sm font-bold ${corSelo}`}>
+          {selo}
         </span>
       </div>
-      <div
-        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
-        style={{ backgroundColor: fundoIcone, color: corIcone }}
-      >
-        {icone}
+      <div className="z-10 mt-space-md">
+        {valor}
+        <span className="font-body-sm text-body-sm text-outline">{legenda}</span>
       </div>
     </div>
   );
@@ -741,150 +680,137 @@ function CartaoGrupo({
   onAcessar: () => void;
 }) {
   const tom = TONS[grupo.tom];
+  const capa = CAPAS[grupo.categoria ?? "padrao"];
   const f = grupo.financeiro;
   const visiveis = grupo.membros.slice(0, 3);
   const extras = grupo.membros.length - visiveis.length;
   const quitado = f ? f.quitacao >= 100 : false;
-  const RodapeIcone = f?.rodapeIcone === "ok" ? Check : f?.rodapeIcone === "prazo" ? Hourglass : Receipt;
+  const rodapeIcone = f?.rodapeIcone === "ok" ? "check_circle" : f?.rodapeIcone === "prazo" ? "hourglass_top" : "receipt_long";
 
   return (
-    <article className="flex flex-col justify-between rounded-xl bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-xl">
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between gap-2">
-          <span
-            className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium"
-            style={{ backgroundColor: C.surfaceContainer, color: C.onSurfaceVariant }}
-          >
-            {grupo.categoria ?? "Grupo"}
-          </span>
-          <span
-            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold"
-            style={{ backgroundColor: tom.selo, color: tom.textoSelo }}
-          >
-            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tom.ponto }} />
-            {grupo.status}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2 pt-1">
-          <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl"
-            style={{ backgroundColor: C.surfaceContainer }}
-            aria-hidden="true"
-          >
-            {grupo.emoji}
-          </div>
-          <div className="flex min-w-0 flex-col">
-            <h2 className="truncate text-xl font-bold">{grupo.nome}</h2>
-            <span className="truncate text-sm" style={{ color: C.onSurfaceVariant }}>
-              {grupo.subtitulo}
+    <article className="group flex flex-col justify-between overflow-hidden rounded-xl bg-surface-container-lowest shadow-sm transition-all duration-300 hover:shadow-md">
+      <div>
+        {/* Capa */}
+        <div
+          className={`relative h-44 w-full overflow-hidden bg-cover bg-center ${capa.imagem ? "" : capa.fundo}`}
+          style={capa.imagem ? { backgroundImage: `url('${capa.imagem}')` } : undefined}
+        >
+          {!capa.imagem && (
+            <Icon
+              name={capa.icone}
+              size={120}
+              className="pointer-events-none absolute -right-4 -top-4 text-on-primary/25"
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-on-surface/80 via-on-surface/20 to-transparent" />
+          <div className="absolute left-space-md top-space-md flex items-center gap-space-xs">
+            <span className="rounded-md bg-surface-container-lowest/90 px-space-sm py-1 font-label-sm text-label-sm font-semibold text-on-surface shadow-sm backdrop-blur-md">
+              {grupo.categoria ?? "Grupo"}
+            </span>
+            <span className={`flex items-center gap-1 rounded-md bg-surface-container-lowest/90 px-space-sm py-1 font-label-sm text-label-sm font-semibold shadow-sm backdrop-blur-md ${tom.texto}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${tom.ponto}`} />
+              {grupo.status}
             </span>
           </div>
+          <div className="absolute bottom-space-md left-space-md right-space-md text-on-primary">
+            {grupo.categoria && (
+              <span className="block truncate font-label-sm text-label-sm uppercase tracking-wider opacity-80">
+                {grupo.subtitulo}
+              </span>
+            )}
+            <h3 className="flex items-center gap-space-xs font-headline-md text-headline-md font-bold tracking-tight text-on-primary drop-shadow-sm">
+              <span aria-hidden="true">{grupo.emoji}</span>
+              <span className="truncate">{grupo.nome}</span>
+            </h3>
+          </div>
         </div>
 
-        {grupo.participantes !== undefined && (
-          <div className="flex items-center justify-between pt-1">
-            <span className="text-xs font-medium" style={{ color: C.onSurfaceVariant }}>
-              {grupo.participantes} participantes
-            </span>
-            <div className="flex items-center -space-x-2">
-              {visiveis.map((letra, indice) => {
-                const cor = CORES_AVATAR[indice % CORES_AVATAR.length];
-                return (
+        {/* Corpo */}
+        <div className="space-y-space-md p-space-lg">
+          {grupo.participantes !== undefined && (
+            <div className="flex items-center justify-between gap-space-sm">
+              <div className="flex items-center -space-x-2" aria-label={`${grupo.participantes} participantes`}>
+                {visiveis.map((letra, indice) => (
                   <div
                     key={`${letra}-${indice}`}
-                    className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold shadow-sm ring-2 ring-white"
-                    style={{ backgroundColor: cor.fundo, color: cor.texto }}
+                    className={`flex h-8 w-8 items-center justify-center rounded-full font-label-sm text-label-sm font-bold shadow-sm ring-2 ring-surface-container-lowest ${CORES_AVATAR[indice % CORES_AVATAR.length]}`}
                   >
                     {letra}
                   </div>
-                );
-              })}
-              {extras > 0 && (
-                <div
-                  className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold shadow-sm ring-2 ring-white"
-                  style={{ backgroundColor: C.tertiaryFixed, color: C.onTertiaryContainer }}
-                >
-                  +{extras}
-                </div>
+                ))}
+                {extras > 0 && (
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-container-highest font-label-sm text-label-sm font-medium text-on-surface shadow-sm ring-2 ring-surface-container-lowest">
+                    +{extras}
+                  </div>
+                )}
+              </div>
+              {f && (
+                <span className="flex items-center gap-1 font-body-sm text-body-sm text-outline">
+                  <Icon name={rodapeIcone} size={16} />
+                  {f.rodape}
+                </span>
               )}
             </div>
-          </div>
-        )}
+          )}
 
-        {f && (
-          <>
-            <div
-              className="mt-2 flex flex-col gap-1 rounded-lg p-2"
-              style={{ backgroundColor: C.surfaceLow }}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-sm" style={{ color: C.onSurfaceVariant }}>
-                  Total despesas
-                </span>
-                <span className="text-sm font-bold">{money(f.total)}</span>
+          {f ? (
+            <div className="space-y-space-sm rounded-lg bg-surface-container-low p-space-md">
+              <div className="flex items-center justify-between gap-space-sm">
+                <div>
+                  <span className="block font-body-sm text-body-sm text-outline">Sua parte</span>
+                  <span className={`font-headline-sm text-headline-sm font-bold ${quitado ? "text-on-surface" : tom.texto}`}>
+                    {money(f.suaParte)}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="block font-body-sm text-body-sm text-outline">Gasto Total do Grupo</span>
+                  <span className="font-label-lg text-label-lg font-semibold text-on-surface">
+                    {money(f.total)}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span
-                  className="text-sm font-semibold"
-                  style={{ color: quitado ? C.onSurface : tom.texto }}
-                >
-                  Sua parte
-                </span>
-                <span
-                  className="text-xl font-extrabold"
-                  style={{ color: quitado ? C.onSurface : tom.texto }}
-                >
-                  {money(f.suaParte)}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1 pt-1">
-              <div className="flex items-center justify-between text-xs font-medium">
-                <span style={{ color: C.onSurfaceVariant }}>Quitação do grupo</span>
-                <span className="font-bold" style={{ color: tom.texto }}>
-                  {quitado ? "100% quitado" : `${f.quitacao}%`}
-                </span>
-              </div>
-              <div
-                className="h-2 w-full overflow-hidden rounded-full"
-                style={{ backgroundColor: C.surfaceContainer }}
-                role="progressbar"
-                aria-valuenow={f.quitacao}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-label={`Quitação de ${grupo.nome}`}
-              >
+              <div className="space-y-1">
+                <div className="flex items-center justify-between font-label-sm text-label-sm">
+                  <span className="text-on-surface-variant">Quitação do grupo</span>
+                  <span className={`font-bold ${tom.texto}`}>
+                    {quitado ? "100% quitado" : `${f.quitacao}%`}
+                  </span>
+                </div>
                 <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min(f.quitacao, 100)}%`, background: tom.barra }}
-                />
+                  className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-high"
+                  role="progressbar"
+                  aria-valuenow={f.quitacao}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label={`Quitação de ${grupo.nome}`}
+                >
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${tom.barra}`}
+                    style={{ width: `${Math.min(f.quitacao, 100)}%` }}
+                  />
+                </div>
               </div>
             </div>
-          </>
-        )}
+          ) : (
+            <div className="flex items-start gap-space-sm rounded-lg bg-surface-container-low p-space-md">
+              <Icon name="notes" size={18} className="mt-0.5 shrink-0 text-outline" />
+              <p className="line-clamp-2 font-body-sm text-body-sm text-on-surface-variant">
+                {grupo.subtitulo}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="mt-1 flex items-center justify-between pt-4">
-        <span
-          className="flex items-center gap-1 text-xs font-medium"
-          style={{ color: C.onSurfaceVariant }}
-        >
-          {f && (
-            <>
-              <RodapeIcone className="h-4 w-4" /> {f.rodape}
-            </>
-          )}
-        </span>
+      {/* Ação */}
+      <div className="p-space-lg pt-0">
         <button
           type="button"
           onClick={onAcessar}
-          className="flex cursor-pointer items-center gap-1 text-sm font-bold transition-colors hover:text-[#ff8c42]"
-          style={{ color: C.primary }}
+          className="flex w-full cursor-pointer items-center justify-center gap-space-xs rounded-lg bg-surface-container-high py-2.5 font-label-md text-label-md text-on-surface transition-all duration-200 group-hover:bg-primary-container group-hover:text-on-primary"
         >
-          <span>Acessar</span>
-          <ArrowRight className="h-[18px] w-[18px]" />
+          <span>Acessar Grupo</span>
+          <Icon name="arrow_forward" size={18} className="transition-transform group-hover:translate-x-1" />
         </button>
       </div>
     </article>

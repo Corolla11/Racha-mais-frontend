@@ -10,7 +10,45 @@ function extrairUsuario(sessao: AuthSessionResponse): AuthUser | null {
   return sessao?.user ?? null;
 }
 
+const MOCK_AUTH =
+  import.meta.env.DEV && import.meta.env.VITE_MOCK_AUTH === "true";
+
+const USUARIO_MOCK: AuthUser = {
+  id: "mock-user",
+  name: "Usuário Teste",
+  email: "teste@racha.dev",
+};
+
+// Modo de desenvolvimento sem backend: qualquer login/cadastro é aceito.
+function MockAuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<AuthUser | null>(USUARIO_MOCK);
+
+  const value = useMemo(
+    () => ({
+      user,
+      isLoading: false,
+      sessionError: null,
+      refreshSession: async () => user,
+      signIn: async (email: string) => {
+        setUser({ ...USUARIO_MOCK, email });
+      },
+      signUp: async (name: string, email: string) => {
+        setUser({ ...USUARIO_MOCK, name, email });
+      },
+      signOut: async () => setUser(null),
+    }),
+    [user],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
+  if (MOCK_AUTH) return <MockAuthProvider>{children}</MockAuthProvider>;
+  return <RealAuthProvider>{children}</RealAuthProvider>;
+}
+
+function RealAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);

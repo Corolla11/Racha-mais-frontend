@@ -78,7 +78,7 @@ textarea.ui-control { min-height:6.5rem; resize:vertical; }
 .racha-app .racha-topbar .racha-primary { min-height:var(--ui-control-height-sm); font-size:var(--ui-font-label); padding:0.5rem 0.75rem; }
 .racha-topbar { min-height:4rem; height:auto; padding-block:0.5rem; }
 .racha-breadcrumb { font-size:var(--ui-font-caption); }
-.racha-app nav a { min-height:var(--ui-control-height); font-size:var(--ui-font-body); }
+.racha-app > aside nav a { min-height:var(--ui-control-height); font-size:var(--ui-font-body); }
 .racha-icon { min-width:var(--ui-control-height-sm); min-height:var(--ui-control-height-sm); }
 .racha-auth-pitch h2 { font-size:var(--ui-font-page-title); }
 .racha-auth-form { max-width:25rem; }
