@@ -1,9 +1,7 @@
 import { apiRequest } from "./api.ts";
 
 /**
- * Pontos de entrada centralizados para todas as rotas do backend (atuais e futuras).
- * Para ajustar qualquer rota ou contrato dos módulos futuros (notificações, pagamentos, IA),
- * basta alterar os caminhos ou payloads abaixo.
+ * Pontos de entrada centralizados para todas as rotas do backend.
  */
 export const ENDPOINTS = {
   users: {
@@ -29,12 +27,14 @@ export const ENDPOINTS = {
   partes: {
     byId: (id: string) => `/partes/${encodeURIComponent(id)}`,
   },
-  // Módulos futuros (basta ajustar a rota quando forem criados no backend)
   notificacoes: {
     base: "/notificacoes",
     marcarLida: (id: string | number) => `/notificacoes/${encodeURIComponent(String(id))}/lida`,
-    marcarTodasLidas: "/notificacoes/ler-todas",
+    marcarTodasLidas: "/notificacoes/lidas",
     preferencias: "/notificacoes/preferencias",
+  },
+  planos: {
+    base: "/planos",
   },
   pagamentos: {
     base: "/pagamentos",
@@ -44,7 +44,7 @@ export const ENDPOINTS = {
     assinatura: "/pagamentos/assinatura",
   },
   ia: {
-    sugerirGrupo: "/ia/sugerir-grupo",
+    sugerirGrupo: "/ia/grupos/rascunho",
   },
 } as const;
 
@@ -66,6 +66,42 @@ export type UserProfileApi = {
   chavesPix: ChavePixApi[];
 };
 
+export type TipoNotificacaoApi =
+  | "MEMBRO_ADICIONADO"
+  | "TAREFA_CRIADA"
+  | "COBRANCA_CRIADA"
+  | "PRAZO_PROXIMO"
+  | "PRAZO_VENCIDO";
+
+export type NotificacaoApi = {
+  id: string;
+  tipo: TipoNotificacaoApi;
+  titulo: string;
+  mensagem: string;
+  idGrupo: string | null;
+  idTarefa: string | null;
+  idParte: string | null;
+  lidaEm: string | null;
+  createdAt: string;
+};
+
+export type NotificacoesResponseApi = {
+  notificacoes: NotificacaoApi[];
+  naoLidas: number;
+  pagina: number;
+  limite: number;
+  temMais: boolean;
+};
+
+export type PlanoApi = {
+  id: string;
+  nome: string;
+  ciclo: "mensal" | "anual";
+  valorCentavos: number;
+  moeda: string;
+  beneficios: string[];
+};
+
 export type IaSugestaoGrupo = {
   nome?: string;
   categoria?: string;
@@ -73,14 +109,20 @@ export type IaSugestaoGrupo = {
   itens?: { titulo: string; valor: number }[];
 };
 
-// Adapters minimalistas para os módulos futuros (Notificações, Pagamentos e IA)
 export const futureModules = {
   notificacoes: {
-    listar: () => apiRequest<unknown[]>(ENDPOINTS.notificacoes.base),
+    listar: (params?: { naoLidas?: boolean; pagina?: number; limite?: number }) => {
+      const qs = new URLSearchParams();
+      if (params?.naoLidas) qs.set("naoLidas", "true");
+      if (params?.pagina) qs.set("pagina", String(params.pagina));
+      if (params?.limite) qs.set("limite", String(params.limite));
+      const suffix = qs.toString() ? `?${qs.toString()}` : "";
+      return apiRequest<NotificacoesResponseApi>(`${ENDPOINTS.notificacoes.base}${suffix}`);
+    },
     marcarLida: (id: string | number) =>
-      apiRequest(ENDPOINTS.notificacoes.marcarLida(id), { method: "PATCH" }),
+      apiRequest<void>(ENDPOINTS.notificacoes.marcarLida(id), { method: "PATCH" }),
     marcarTodasLidas: () =>
-      apiRequest(ENDPOINTS.notificacoes.marcarTodasLidas, { method: "POST" }),
+      apiRequest<{ atualizadas: number }>(ENDPOINTS.notificacoes.marcarTodasLidas, { method: "PATCH" }),
     salvarPreferencias: (prefs: Record<string, boolean>) =>
       apiRequest(ENDPOINTS.notificacoes.preferencias, { method: "PUT", body: prefs }),
   },

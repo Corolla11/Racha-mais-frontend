@@ -1,12 +1,16 @@
-import { ForbiddenError } from "../../errors/AppError.js";
+import { AppError, ForbiddenError } from "../../errors/AppError.js";
+import { Prisma } from "../../generated/prisma/client.js";
 import {
   Funcao,
   TipoNotificacao,
   type StatusAndamento,
   type TipoTarefa,
 } from "../../generated/prisma/enums.js";
+import {
+  exigirMembro,
+  transacionarTarefa,
+} from "../../lib/grupo-helpers.js";
 import { prisma } from "../../lib/prisma.js";
-import { notificacaoRepository } from "../../modules/notificacoes/notificacao.repository.js";
 
 export type CriarTarefaDados = {
   idGrupo: string;
@@ -23,16 +27,6 @@ const membroPublico = {
   include: { user: { select: { id: true, name: true, image: true } } },
 };
 
-async function exigirMembro(idUser: string, idGrupo: string) {
-  await prisma.grupo.findUniqueOrThrow({ where: { id: idGrupo } });
-
-  const membro = await prisma.membro.findUnique({
-    where: { idUser_idGrupo: { idUser, idGrupo } },
-  });
-  if (!membro) throw new ForbiddenError("Você não participa deste grupo");
-  return membro;
-}
-
 async function exigirPermissaoEdicao(idUser: string, idTarefa: string) {
   const tarefa = await prisma.tarefa.findUniqueOrThrow({
     where: { id: idTarefa },
@@ -44,6 +38,7 @@ async function exigirPermissaoEdicao(idUser: string, idTarefa: string) {
       "Apenas o criador da tarefa ou o dono do grupo pode fazer isso",
     );
   }
+  return tarefa;
 }
 
 export const tarefaService = {
@@ -72,18 +67,20 @@ export const tarefaService = {
         .filter(Boolean)
         .join(" ");
 
-      await notificacaoRepository.criarNaTransacao(
-        tx,
-        membros.map(({ idUser: idDestinatario }) => ({
-          idUser: idDestinatario,
-          tipo: TipoNotificacao.TAREFA_CRIADA,
-          titulo: "Nova tarefa no grupo",
-          mensagem: detalhes,
-          idGrupo: dados.idGrupo,
-          idTarefa: tarefa.id,
-          chaveEvento: `tarefa-criada:${tarefa.id}:${idDestinatario}`,
-        })),
-      );
+      if (membros.length > 0) {
+        await tx.notificacao.createMany({
+          data: membros.map(({ idUser: idDestinatario }) => ({
+            idUser: idDestinatario,
+            tipo: TipoNotificacao.TAREFA_CRIADA,
+            titulo: "Nova tarefa no grupo",
+            mensagem: detalhes,
+            idGrupo: dados.idGrupo,
+            idTarefa: tarefa.id,
+            chaveEvento: `tarefa-criada:${tarefa.id}:${idDestinatario}`,
+          })),
+          skipDuplicates: true,
+        });
+      }
       return tarefa;
     });
   },
@@ -96,6 +93,16 @@ export const tarefaService = {
 
     return prisma.tarefa.findMany({
       where: { ...filtros, grupo: { membros: { some: { idUser } } } },
+      include: {
+        partes: {
+          select: {
+            id: true,
+            idUser: true,
+            valor: true,
+            status: true,
+          },
+        },
+      },
       orderBy: [{ dataFinal: "asc" }, { createdAt: "desc" }],
     });
   },
@@ -117,7 +124,35 @@ export const tarefaService = {
     idTarefa: string,
     dados: Partial<Omit<CriarTarefaDados, "idGrupo">>,
   ) {
-    await exigirPermissaoEdicao(idUser, idTarefa);
+    const tarefaAtual = await exigirPermissaoEdicao(idUser, idTarefa);
+
+    const dataInicio = dados.dataInicio ?? tarefaAtual.dataInicio;
+    const dataFinal = dados.dataFinal ?? tarefaAtual.dataFinal;
+    if (dataFinal < dataInicio) {
+      throw new AppError(
+        400,
+        "A data final deve ser igual ou posterior à data inicial",
+      );
+    }
+
+    if (dados.valorTotal !== undefined) {
+      const novoValorTotal = new Prisma.Decimal(dados.valorTotal);
+      return transacionarTarefa(idTarefa, async (tx) => {
+        const { _sum } = await tx.parte.aggregate({
+          where: { idTarefa },
+          _sum: { valor: true },
+        });
+        const somaAtual = _sum.valor ?? new Prisma.Decimal(0);
+        if (somaAtual.gt(novoValorTotal)) {
+          throw new AppError(
+            409,
+            "O valor total da tarefa não pode ser menor que a soma das partes cadastradas",
+          );
+        }
+        return tx.tarefa.update({ where: { id: idTarefa }, data: dados });
+      });
+    }
+
     return prisma.tarefa.update({ where: { id: idTarefa }, data: dados });
   },
 

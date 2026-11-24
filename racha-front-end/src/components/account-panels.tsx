@@ -155,7 +155,7 @@ export default function AccountPanels({ panel }: { panel: "pix" | "security" }) 
   const { user, changePassword } = useAuth();
   const [message, setMessage] = useState("");
   const [chaves, setChaves] = useState<ChavePixApi[]>([]);
-  const [key, setKey] = useState("(11) 98765-4321");
+  const [key, setKey] = useState("");
   const [keyType, setKeyType] = useState<TipoChavePix>("telefone");
   const [editing, setEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -170,8 +170,8 @@ export default function AccountPanels({ panel }: { panel: "pix" | "security" }) 
   const ids = useId();
 
   const principal = chaves[0];
-  const saved = principal?.chave ?? "(11) 98765-4321";
-  const titular = user?.name || "Rodrigo M.";
+  const saved = principal?.chave ?? "";
+  const titular = user?.name || "Titular da conta";
 
   useEffect(() => {
     if (panel !== "pix" || !user) return;
@@ -268,6 +268,7 @@ export default function AccountPanels({ panel }: { panel: "pix" | "security" }) 
   }
 
   async function copy() {
+    if (!saved) { setMessage("Cadastre uma chave Pix primeiro."); return; }
     try { await navigator.clipboard.writeText(saved); setMessage("Chave copiada."); } catch { setMessage("Selecione a chave exibida para copiar."); }
   }
   const savedKey = keyTypes[principal?.tipoChave ?? "telefone"];
@@ -289,18 +290,22 @@ export default function AccountPanels({ panel }: { panel: "pix" | "security" }) 
             <div className="w-12 h-12 rounded-xl bg-primary-fixed flex items-center justify-center shrink-0 text-on-primary-fixed"><Icon name={savedKey.icon} size={26}/></div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-space-xs mb-1">
-                <span className="font-label-lg text-label-lg text-on-surface truncate">{savedKey.label}</span>
-                <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-label-sm text-label-sm font-semibold flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-primary"/>{principal ? "Padrão Ativa" : "Exemplo"}</span>
-                <span className="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface font-label-sm text-label-sm flex items-center gap-1"><Icon name="verified" size={14} className="text-primary"/>Chave Principal</span>
+                <span className="font-label-lg text-label-lg text-on-surface truncate">{principal ? savedKey.label : "Nenhuma chave Pix cadastrada"}</span>
+                {principal && (
+                  <>
+                    <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-label-sm text-label-sm font-semibold flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-primary"/>Ativa</span>
+                    <span className="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface font-label-sm text-label-sm flex items-center gap-1"><Icon name="verified" size={14} className="text-primary"/>Chave Principal</span>
+                  </>
+                )}
               </div>
-              <div className="font-numeric-stat text-[18px] leading-6 font-bold text-on-surface tracking-normal truncate select-all">{saved}</div>
+              <div className="font-numeric-stat text-[18px] leading-6 font-bold text-on-surface tracking-normal truncate select-all">{saved || "Cadastre uma chave para receber seus rateios"}</div>
               <div className="font-body-sm text-body-sm text-on-surface-variant flex flex-wrap items-center gap-x-2 mt-0.5">
-                <span className="font-semibold text-on-surface">Nu Pagamentos S.A.</span><span>•</span><span>Conta Corrente</span><span>•</span><span>Titular: {titular}</span>
+                <span>Titular: {titular}</span>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-space-xs shrink-0 self-end md:self-center">
-            <button type="button" className={smallButton} title="Copiar Chave Pix" onClick={copy}><Icon name="content_copy" size={16}/><span>Copiar</span></button>
+            {principal && <button type="button" className={smallButton} title="Copiar Chave Pix" onClick={copy}><Icon name="content_copy" size={16}/><span>Copiar</span></button>}
             <button type="button" className={smallButton} title={principal ? "Editar chave Pix" : "Cadastrar chave Pix"} aria-expanded={editing} onClick={() => { if (editing) { setEditing(false); setEditingId(null); } else abrirEdicao(principal); }}><Icon name="edit" size={16}/><span>{principal ? "Editar" : "Cadastrar"}</span></button>
             {principal && <button type="button" className={smallButton} title="Remover chave Pix" onClick={() => void excluirChave(principal.id)}><Icon name="delete" size={16}/><span>Remover</span></button>}
           </div>
@@ -353,31 +358,20 @@ export default function AccountPanels({ panel }: { panel: "pix" | "security" }) 
         <div className="flex items-center justify-between gap-space-sm">
           <div>
             <h2 className="font-headline-sm text-headline-sm text-on-surface flex items-center gap-space-xs"><Icon name="credit_card" size={22} className="text-primary"/><span>Formas de Pagamento para Assinatura</span></h2>
-            <p className="font-body-sm text-body-sm text-on-surface-variant">Para assinaturas do Racha+ Pro e cobranças automáticas de cotas.</p>
+            <p className="font-body-sm text-body-sm text-on-surface-variant">Os pagamentos do Plano Pro por grupo são processados diretamente no checkout seguro.</p>
           </div>
-          <span className="px-space-sm py-1 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-semibold hidden sm:inline-block whitespace-nowrap">Exemplo visual</span>
         </div>
         <div className="bg-surface-container-lowest rounded-xl p-space-md md:p-space-lg shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-space-md">
           <div className="flex items-center gap-space-md">
-            <div className="w-16 h-11 rounded-lg bg-gradient-to-tr from-inverse-surface to-on-surface flex flex-col justify-between p-2 shadow-sm shrink-0" aria-hidden="true">
-              <div className="flex justify-between items-center">
-                <Icon name="contactless" size={14} className="text-on-primary"/>
-                <div className="flex -space-x-1.5"><div className="w-3.5 h-3.5 rounded-full bg-secondary-container opacity-90"/><div className="w-3.5 h-3.5 rounded-full bg-tertiary-container opacity-90"/></div>
-              </div>
-              <div className="font-numeric-stat text-[11px] leading-none text-surface font-semibold tracking-wider">•••• 4821</div>
-            </div>
+            <div className="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center shrink-0 text-primary"><Icon name="lock" size={22}/></div>
             <div>
-              <div className="flex items-center gap-space-xs">
-                <span className="font-label-lg text-label-lg text-on-surface">Mastercard Black</span>
-                <span className="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface font-label-sm text-label-sm font-medium">Principal</span>
-              </div>
-              <div className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Final 4821 • Expira em 08/29 • Rodrigo M.</div>
-              <div className="font-label-sm text-label-sm text-on-surface-variant mt-1 flex items-center gap-1"><Icon name="lock" size={14} className="text-primary"/><span>Cartão ilustrativo para revisão do layout.</span></div>
+              <p className="font-label-lg text-label-lg text-on-surface">Nenhum cartão salvo localmente</p>
+              <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Seus dados de pagamento são informados apenas no momento da contratação.</p>
             </div>
           </div>
-          <div className="flex items-center gap-space-xs shrink-0 self-end md:self-center">
-            <button type="button" className={smallButton} onClick={() => setMessage("O cadastro real de cartões será disponibilizado com a integração de pagamentos.")}><Icon name="credit_card_heart" size={16}/><span>Alterar Cartão</span></button>
-          </div>
+          <Link to="/assinatura" className={`${smallButton} shrink-0 self-end md:self-center`}>
+            <Icon name="workspace_premium" size={16}/><span>Ver planos</span>
+          </Link>
         </div>
       </section>
 

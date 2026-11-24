@@ -25,12 +25,12 @@ const PRESETS: Preset[] = [
     rotulo: "Viagem de Férias",
     emoji: "✈️",
     texto:
-      "Viagem para Florianópolis em Novembro de 2025 com 6 amigos: Camila, Lucas, Pedro, Mariana, Guilherme e Rodrigo. Teremos aluguel da casa de praia por R$ 2.400, churrasco de boas-vindas com carne e bebidas estimado em R$ 450 pago pela Mariana, e passeio de barco por R$ 720 pago pela Camila.",
-    titulo: "Viagem Florianópolis 2025",
+      "Viagem de praia no feriado com 6 amigos: Camila, Lucas, Pedro, Ana, Guilherme e Tiago. Teremos aluguel da casa de praia por R$ 2.400, churrasco de boas-vindas com carne e bebidas estimado em R$ 450 pago pela Ana, e passeio de barco por R$ 720 pago pela Camila.",
+    titulo: "Viagem Litoral 2025",
     categoria: "Férias & Lazer",
     categoriaId: "viagem",
     categoriaIcone: "flight_takeoff",
-    membros: ["Camila", "Lucas", "Pedro", "Mariana", "Guilherme", "Rodrigo"],
+    membros: ["Camila", "Lucas", "Pedro", "Ana", "Guilherme", "Tiago"],
     itens: [
       { nome: "Aluguel Casa de Praia", valor: "R$ 2.400" },
       { nome: "Churrasco Boas-Vindas", valor: "R$ 450" },

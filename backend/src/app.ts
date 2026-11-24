@@ -6,8 +6,8 @@ import { errorHandler } from "./middlewares/errorHandler.js";
 import { assinaturaController } from "./api/assinaturas/assinatura.controller.js";
 import { assinaturaRoutes } from "./api/assinaturas/assinatura.routes.js";
 import { planoRoutes } from "./api/assinaturas/plano.routes.js";
-import { notificacaoRoutes } from "./modules/notificacoes/notificacao.routes.js";
-import { iaRoutes } from "./modules/ia/ia.routes.js";
+import { notificacaoRoutes } from "./api/notificacoes/notificacao.routes.js";
+import { iaRoutes } from "./api/ia/ia.routes.js";
 import { routes } from "./routes.js";
 import swaggerDocument from "./lib/swagger-output.json" with { type: "json" };
 

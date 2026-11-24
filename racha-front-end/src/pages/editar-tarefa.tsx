@@ -89,7 +89,7 @@ function TituloSecao({ children, extra }: { children: ReactNode; extra?: ReactNo
 export default function EditarTarefa({
   tarefa,
   modo = "editar",
-  nomeGrupo = "Viagem Florianópolis",
+  nomeGrupo = "",
   onClose,
   onSave,
 }: EditarTarefaProps) {

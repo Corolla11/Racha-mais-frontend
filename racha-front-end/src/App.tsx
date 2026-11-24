@@ -44,7 +44,7 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/home" element={<Home />} />
             <Route path="/perfil" element={<Perfil />} />
-            <Route path="/grupo" element={<Grupo />} />
+            <Route path="/grupo" element={<Navigate to="/meus-grupos" replace />} />
             <Route path="/grupo/:idGrupo" element={<Grupo />} />
             <Route path="/criar-grupo" element={<EscolherCriacao />} />
             <Route path="/criar-grupo/manual" element={<CriarGrupo />} />

@@ -2,9 +2,9 @@ import { Router } from "express";
 import { chavePixRoutes } from "./api/chaves-pix/chavePix.routes.js";
 import { tarefaRoutes } from "./api/tarefas/tarefa.routes.js";
 import { userRoutes } from "./api/users/user.routes.js";
-import { grupoRoutes } from "./modules/grupos/grupo.routes.js";
-import { membroRoutes } from "./modules/membros/membro.routes.js";
-import { parteRoutes } from "./modules/partes/parte.routes.js";
+import { grupoRoutes } from "./api/grupos/grupo.routes.js";
+import { membroRoutes } from "./api/membros/membro.routes.js";
+import { parteRoutes } from "./api/partes/parte.routes.js";
 
 export const routes = Router();
 

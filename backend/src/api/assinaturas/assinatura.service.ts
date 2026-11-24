@@ -7,6 +7,12 @@ import {
 } from "../../generated/prisma/enums.js";
 import { AppError } from "../../errors/AppError.js";
 import { postAbacatePay } from "../../lib/abacatePay.js";
+import {
+  exigirDono,
+  exigirDonoNaTransacao,
+  exigirMembro,
+  transacionarGrupo,
+} from "../../lib/grupo-helpers.js";
 import { prisma } from "../../lib/prisma.js";
 
 const VALOR_MENSAL_CENTAVOS = 490;
@@ -83,22 +89,7 @@ function iguaisEmTempoConstante(a: string, b: string): boolean {
   return bufferA.length === bufferB.length && timingSafeEqual(bufferA, bufferB);
 }
 
-async function exigirDonoDoGrupo(idUser: string, idGrupo: string) {
-  const grupo = await prisma.grupo.findUnique({
-    where: { id: idGrupo },
-    select: { id: true },
-  });
-  if (!grupo) throw new AppError(404, "Grupo não encontrado");
-
-  const membro = await prisma.membro.findUnique({
-    where: { idUser_idGrupo: { idUser, idGrupo } },
-    select: { funcao: true },
-  });
-  if (!membro) throw new AppError(403, "Você não participa deste grupo");
-  if (membro.funcao !== Funcao.dono) {
-    throw new AppError(403, "Apenas o dono do grupo pode gerenciar o plano Pro");
-  }
-}
+const MSG_SOMENTE_DONO = "Apenas o dono do grupo pode gerenciar o plano Pro";
 
 export function verificarAssinaturaWebhook(
   corpo: Buffer,
@@ -139,17 +130,7 @@ export const assinaturaService = {
   },
 
   async obterDoGrupo(idUser: string, idGrupo: string) {
-    const grupo = await prisma.grupo.findUnique({
-      where: { id: idGrupo },
-      select: { id: true },
-    });
-    if (!grupo) throw new AppError(404, "Grupo não encontrado");
-
-    const membro = await prisma.membro.findUnique({
-      where: { idUser_idGrupo: { idUser, idGrupo } },
-      select: { funcao: true },
-    });
-    if (!membro) throw new AppError(403, "Você não participa deste grupo");
+    const membro = await exigirMembro(idUser, idGrupo);
 
     const assinatura = await prisma.assinaturaPro.findUnique({
       where: { idGrupo },
@@ -176,53 +157,67 @@ export const assinaturaService = {
   },
 
   async criarCheckout(idUser: string, idGrupo: string, ciclo: Ciclo) {
-    await exigirDonoDoGrupo(idUser, idGrupo);
-    const existente = await prisma.assinaturaPro.findUnique({
-      where: { idGrupo },
+    await exigirDono(idUser, idGrupo, MSG_SOMENTE_DONO);
+    const productId = produtoDoCiclo(ciclo);
+    const returnUrl = urlDeCheckout("ABACATEPAY_RETURN_URL");
+    const completionUrl = urlDeCheckout("ABACATEPAY_COMPLETION_URL");
+
+    const reserva = await transacionarGrupo(idGrupo, async (tx) => {
+      await exigirDonoNaTransacao(tx, idUser, idGrupo, MSG_SOMENTE_DONO);
+      const existente = await tx.assinaturaPro.findUnique({
+        where: { idGrupo },
+      });
+
+      if (existente?.status === StatusAssinaturaPro.ATIVA) {
+        throw new AppError(409, "Este grupo já possui uma assinatura Pro ativa");
+      }
+      if (existente?.status === StatusAssinaturaPro.PENDENTE) {
+        if (existente.ciclo === definirCiclo(ciclo) && existente.checkoutUrl) {
+          return {
+            reaproveitado: true as const,
+            resposta: {
+              checkoutUrl: existente.checkoutUrl,
+              status: existente.status,
+              ciclo: existente.ciclo,
+              valorCentavos: existente.valorCentavos,
+              moeda: "BRL",
+            },
+          };
+        }
+        throw new AppError(
+          409,
+          "Já existe um checkout Pro pendente para este grupo",
+        );
+      }
+
+      const assinatura = existente
+        ? await tx.assinaturaPro.update({
+            where: { idGrupo },
+            data: {
+              idUser,
+              ciclo: definirCiclo(ciclo),
+              status: StatusAssinaturaPro.PENDENTE,
+              valorCentavos: valorDoCiclo(ciclo),
+              providerCheckoutId: null,
+              providerSubscriptionId: null,
+              checkoutUrl: null,
+            },
+          })
+        : await tx.assinaturaPro.create({
+            data: {
+              idGrupo,
+              idUser,
+              ciclo: definirCiclo(ciclo),
+              status: StatusAssinaturaPro.PENDENTE,
+              valorCentavos: valorDoCiclo(ciclo),
+            },
+          });
+
+      return { reaproveitado: false as const, assinatura };
     });
 
-    if (existente?.status === StatusAssinaturaPro.ATIVA) {
-      throw new AppError(409, "Este grupo já possui uma assinatura Pro ativa");
-    }
-    if (existente?.status === StatusAssinaturaPro.PENDENTE) {
-      if (existente.ciclo === definirCiclo(ciclo) && existente.checkoutUrl) {
-        return {
-          checkoutUrl: existente.checkoutUrl,
-          status: existente.status,
-          ciclo: existente.ciclo,
-          valorCentavos: existente.valorCentavos,
-          moeda: "BRL",
-        };
-      }
-      throw new AppError(
-        409,
-        "Já existe um checkout Pro pendente para este grupo",
-      );
-    }
-
-    const productId = produtoDoCiclo(ciclo);
-    const assinatura = existente
-      ? await prisma.assinaturaPro.update({
-          where: { idGrupo },
-          data: {
-            idUser,
-            ciclo: definirCiclo(ciclo),
-            status: StatusAssinaturaPro.PENDENTE,
-            valorCentavos: valorDoCiclo(ciclo),
-            providerCheckoutId: null,
-            providerSubscriptionId: null,
-            checkoutUrl: null,
-          },
-        })
-      : await prisma.assinaturaPro.create({
-          data: {
-            idGrupo,
-            idUser,
-            ciclo: definirCiclo(ciclo),
-            status: StatusAssinaturaPro.PENDENTE,
-            valorCentavos: valorDoCiclo(ciclo),
-          },
-        });
+    if (reserva.reaproveitado) return reserva.resposta;
+    const { assinatura } = reserva;
 
     try {
       const checkout = await postAbacatePay(
@@ -230,8 +225,8 @@ export const assinaturaService = {
         {
           items: [{ id: productId, quantity: 1 }],
           externalId: assinatura.id,
-          returnUrl: urlDeCheckout("ABACATEPAY_RETURN_URL"),
-          completionUrl: urlDeCheckout("ABACATEPAY_COMPLETION_URL"),
+          returnUrl,
+          completionUrl,
           methods: ["CARD"],
         },
         checkoutSchema,
@@ -274,7 +269,7 @@ export const assinaturaService = {
   },
 
   async cancelarDoGrupo(idUser: string, idGrupo: string) {
-    await exigirDonoDoGrupo(idUser, idGrupo);
+    await exigirDono(idUser, idGrupo, MSG_SOMENTE_DONO);
     const assinatura = await prisma.assinaturaPro.findUnique({
       where: { idGrupo },
     });

@@ -2,9 +2,9 @@ import AppShell from "../components/app-shell";
 import Icon from "../components/icon";
 
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { useAuth } from "../auth/auth-context";
-import { apiRequest } from "../lib/api";
+import { ApiError, apiRequest } from "../lib/api";
 import { ENDPOINTS } from "../lib/endpoints";
 import GroupFlows, { type GroupFlowControl, type Activity } from "../components/group-flows";
 import { share, type Payment } from "../lib/finance";
@@ -22,112 +22,8 @@ import VisualizarTarefa, {
 } from "./tarefa";
 import TarefaConcluida from "./tarefa-concluida";
 
-const nomeGrupo = "Viagem Florianópolis";
-const categoriaGrupo = "Praia & Lazer";
-const destinoGrupo = "Praia da Joaquina & Campeche";
-
-/** Participante que representa o usuário logado nesta demonstração. */
-const USUARIO_ID = "1";
-
-const participantesGrupo: ParticipanteTarefa[] = [
-  { id: "1", nome: "Rodrigo Martins", selecionado: true },
-  {
-    id: "2",
-    nome: "Mariana Silveira",
-    email: "mariana.s@gmail.com",
-    selecionado: true,
-  },
-  { id: "3", nome: "Lucas Martins", selecionado: true },
-  { id: "4", nome: "Beatriz Alves", selecionado: true },
-  { id: "5", nome: "Pedro Henrique", selecionado: true },
-  { id: "6", nome: "Camila Rocha", selecionado: true },
-];
-
-function criarParticipantes(ids: string[]): ParticipanteTarefa[] {
-  return participantesGrupo.map((p) => ({
-    ...p,
-    selecionado: ids.includes(p.id),
-  }));
-}
-
-const tarefasIniciais: DadosTarefa[] = [
-  {
-    id: "tarefa-01",
-    titulo: "Aluguel de Van executivo",
-    descricao:
-      "Organizar o aluguel de uma van executiva para transportar todos os participantes durante a viagem. Confirmar disponibilidade, horários de saída e retorno, capacidade e condições de pagamento.",
-    dataLimite: "2025-11-14",
-    horario: "09:00",
-    responsavelId: "3",
-    participantes: criarParticipantes(["1", "2", "3", "4", "5", "6"]),
-    possuiDespesa: true,
-    valorTotal: 1200,
-    pagadorId: "3",
-    comprovante: "",
-    concluida: true,
-  },
-  {
-    id: "tarefa-02",
-    titulo: "Comprar carnes e bebidas para o churrasco",
-    descricao:
-      "Comprar carnes, bebidas, carvão, gelo e demais itens necessários para o churrasco do grupo. Verificar preços e organizar as compras antes do evento.",
-    dataLimite: "2025-11-15",
-    horario: "10:00",
-    responsavelId: "2",
-    participantes: criarParticipantes(["1", "2", "3", "5"]),
-    possuiDespesa: true,
-    valorTotal: 650,
-    pagadorId: "2",
-    comprovante: "",
-    concluida: false,
-  },
-  {
-    id: "tarefa-03",
-    titulo: "Reservar passeios de barco na ilha",
-    descricao:
-      "Pesquisar e reservar passeios de barco para o grupo durante a viagem. Comparar preços, horários, duração e condições de cancelamento.",
-    dataLimite: "2025-11-18",
-    horario: "10:00",
-    responsavelId: "1",
-    participantes: criarParticipantes(["1", "2", "3", "4", "5"]),
-    possuiDespesa: true,
-    valorTotal: 190,
-    pagadorId: "1",
-    comprovante: "",
-    concluida: false,
-  },
-  {
-    id: "tarefa-04",
-    titulo: "Comprar bebidas e gelo para o barco",
-    descricao:
-      "Comprar bebidas, gelo e itens de apoio para o passeio de barco. Verificar quantidades e organizar o transporte dos produtos.",
-    dataLimite: "2025-11-20",
-    horario: "08:00",
-    responsavelId: "5",
-    participantes: criarParticipantes(["1", "2", "5"]),
-    possuiDespesa: true,
-    valorTotal: 320,
-    pagadorId: "5",
-    comprovante: "",
-    concluida: false,
-  },
-  {
-    id: "tarefa-05",
-    titulo: "Jantar de confraternização",
-    descricao:
-      "Organizar um jantar de confraternização para todos os participantes. Escolher restaurante, verificar cardápio, reservar mesa e combinar o horário.",
-    dataLimite: "2025-11-22",
-    horario: "19:00",
-    responsavelId: "6",
-    participantes: criarParticipantes(["1", "2", "3", "4", "5", "6"]),
-    possuiDespesa: true,
-    valorTotal: 450,
-    pagadorId: "6",
-    comprovante: "",
-    concluida: false,
-  },
-];
-
+const categoriaGrupo = "Grupo";
+const destinoGrupo = "";
 
 type GrupoDetalheApi = {
   id: string;
@@ -143,7 +39,7 @@ type GrupoDetalheApi = {
 type TarefaDetalheApi = {
   id: string;
   idGrupo: string;
-  idUserCriador: string | null;
+  idUser: string;
   nome: string;
   descricao: string | null;
   valorTotal: string | number | null;
@@ -218,7 +114,7 @@ const coresAvatar = [
   "bg-surface-container-high text-on-surface",
 ];
 
-function corAvatar(id: string, lista: ParticipanteTarefa[] = participantesGrupo) {
+function corAvatar(id: string, lista: ParticipanteTarefa[] = []) {
   const indice = lista.findIndex((p) => p.id === id);
   return coresAvatar[(indice < 0 ? 0 : indice) % coresAvatar.length];
 }
@@ -231,7 +127,9 @@ function nomeResponsavel(tarefa: DadosTarefa, currentUserId: string, currentUser
   if (!participante) return "Não definido";
 
   return participante.id === currentUserId
-    ? `Você (${currentUserName?.split(" ")[0] || "Rodrigo"})`
+    ? currentUserName
+      ? `Você (${currentUserName.split(" ")[0]})`
+      : "Você"
     : participante.nome;
 }
 
@@ -387,13 +285,15 @@ function ProgressoCircular({ valor, rotulo }: { valor: number; rotulo: string })
 
 export default function Grupo({ memberMode: initialMemberMode = false }: { memberMode?: boolean }) {
   const { idGrupo } = useParams<{ idGrupo?: string }>();
+  const estado = useLocation().state as { nomeGrupo?: string } | null;
   const { user } = useAuth();
-  const currentUserId = idGrupo && user?.id ? user.id : USUARIO_ID;
+  const currentUserId = user?.id ?? "";
   const [memberMode, setMemberMode] = useState(initialMemberMode);
   const [participantesAtuais, setParticipantesAtuais] =
-    useState<ParticipanteTarefa[]>(participantesGrupo);
+    useState<ParticipanteTarefa[]>([]);
   const [parteIds, setParteIds] = useState<Record<string, string>>({});
-  const [groupName, setGroupName] = useState(nomeGrupo);
+  const [groupName, setGroupName] = useState(estado?.nomeGrupo || "Grupo");
+  const [adminName, setAdminName] = useState("");
   const [closed, setClosed] = useState(false);
   const [creating, setCreating] = useState(false);
   const [payments, setPayments] = useState<Record<string, Payment>>({});
@@ -402,7 +302,7 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
   function record(text: string) { setFeedback(text); setTaskEvents(old => [{ text, date: new Date().toISOString() }, ...old]); }
   const flowControl = useRef<GroupFlowControl>(null);
 
-  const [tarefas, setTarefas] = useState<DadosTarefa[]>(idGrupo ? [] : tarefasIniciais);
+  const [tarefas, setTarefas] = useState<DadosTarefa[]>([]);
   const [tarefaSelecionadaId, setTarefaSelecionadaId] =
     useState<string | null>(null);
 
@@ -421,29 +321,23 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
         if (!ativo) return;
         setGroupName(grupo.nome);
 
+        const dono = grupo.membros.find((m) => m.funcao === "dono");
+        if (dono) setAdminName(dono.user.name);
+
         const listaParticipantes: ParticipanteTarefa[] = grupo.membros.map((m) => ({
           id: m.idUser,
           nome: m.user.name,
           selecionado: true,
         }));
-        if (listaParticipantes.length > 0) {
-          setParticipantesAtuais(listaParticipantes);
-        }
+        setParticipantesAtuais(listaParticipantes);
 
         const meuMembro = grupo.membros.find((m) => m.idUser === user?.id);
         if (meuMembro) {
           setMemberMode(meuMembro.funcao !== "dono");
         }
 
-        const listaTarefas = await apiRequest<TarefaDetalheApi[]>(
+        const detalhes = await apiRequest<TarefaDetalheApi[]>(
           `${ENDPOINTS.tarefas.base}?idGrupo=${encodeURIComponent(idGrupo!)}`,
-        );
-        if (!ativo) return;
-
-        const detalhes = await Promise.all(
-          listaTarefas.map((t) =>
-            apiRequest<TarefaDetalheApi>(ENDPOINTS.tarefas.byId(t.id)).catch(() => t),
-          ),
         );
         if (!ativo) return;
 
@@ -457,7 +351,7 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
             partes.map((p) => p.idUser).filter((id): id is string => Boolean(id)),
           );
           const responsavel =
-            t.idUserCriador ?? listaParticipantes[0]?.id ?? currentUserId;
+            t.idUser ?? listaParticipantes[0]?.id ?? currentUserId;
 
           for (const p of partes) {
             if (p.idUser) {
@@ -478,10 +372,7 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
             dataLimite: t.dataFinal ? t.dataFinal.slice(0, 10) : "",
             horario: t.dataFinal ? t.dataFinal.slice(11, 16) || "09:00" : "09:00",
             responsavelId: responsavel,
-            participantes: (listaParticipantes.length > 0
-              ? listaParticipantes
-              : participantesGrupo
-            ).map((m) => ({
+            participantes: listaParticipantes.map((m) => ({
               ...m,
               selecionado: idsNasPartes.size > 0 ? idsNasPartes.has(m.id) : true,
             })),
@@ -497,8 +388,10 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
         setParteIds(novasPartes);
         setPayments(novosPagamentos);
         setTarefas(mapeadas);
-      } catch {
-        // Mantém estado atual caso a API não esteja disponível
+      } catch (err) {
+        if (ativo) {
+          setFeedback(err instanceof ApiError ? err.message : "Não foi possível carregar os dados do grupo.");
+        }
       }
     }
 
@@ -648,14 +541,15 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
             body: {
               nome: atualizada.titulo,
               descricao: atualizada.descricao,
-              valorTotal: atualizada.possuiDespesa ? atualizada.valorTotal : null,
+              valorTotal: atualizada.possuiDespesa ? atualizada.valorTotal : 0,
               dataFinal: dataFinal.toISOString(),
               statusAndamento: atualizada.concluida ? "FINALIZADA" : "EM_ANDAMENTO",
             },
           });
         }
-      } catch {
-        // Segue com atualização otimista
+      } catch (err) {
+        setFeedback(err instanceof ApiError ? err.message : "Não foi possível salvar a tarefa.");
+        return;
       }
     }
 
@@ -1023,7 +917,7 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
           </section>
         )}
 
-        <GroupFlows idGrupo={idGrupo} currentUserId={currentUserId} parteIds={parteIds} taskEvents={taskEvents} ref={flowControl} payments={payments} setPayments={setPayments} tasks={tarefas} name={groupName} onName={setGroupName} closed={closed} onCloseGroup={() => setClosed(true)} memberMode={memberMode}/>
+        <GroupFlows idGrupo={idGrupo} currentUserId={currentUserId} adminName={adminName} parteIds={parteIds} taskEvents={taskEvents} ref={flowControl} payments={payments} setPayments={setPayments} tasks={tarefas} name={groupName} onName={setGroupName} closed={closed} onCloseGroup={() => setClosed(true)} memberMode={memberMode}/>
 
         {!closed && !memberMode && <>
           {/* TAREFAS E DESPESAS — VISÃO DO ADMINISTRADOR */}

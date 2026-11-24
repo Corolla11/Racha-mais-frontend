@@ -13,14 +13,14 @@ import PixPreview from "./pix-preview";
 type Member = { id: string; nome: string; admin: boolean; active: boolean; email?: string };
 export type Activity = { text: string; date: string };
 export interface GroupFlowControl { openPayments: (taskId?: string) => void }
-interface Props { idGrupo?: string; currentUserId?: string; parteIds?: Record<string, string>; taskEvents: Activity[]; tasks: DadosTarefa[]; name: string; onName: (name: string) => void; closed: boolean; onCloseGroup: () => void; memberMode: boolean; payments: Record<string, Payment>; setPayments: Dispatch<SetStateAction<Record<string, Payment>>>; ref?: Ref<GroupFlowControl> }
+interface Props { idGrupo?: string; currentUserId?: string; adminName?: string; parteIds?: Record<string, string>; taskEvents: Activity[]; tasks: DadosTarefa[]; name: string; onName: (name: string) => void; closed: boolean; onCloseGroup: () => void; memberMode: boolean; payments: Record<string, Payment>; setPayments: Dispatch<SetStateAction<Record<string, Payment>>>; ref?: Ref<GroupFlowControl> }
 
-export default function GroupFlows({ idGrupo, currentUserId = "1", parteIds = {}, taskEvents, tasks, name, onName, closed, onCloseGroup, memberMode, payments, setPayments, ref }: Props) {
+export default function GroupFlows({ idGrupo, currentUserId = "", adminName, parteIds = {}, taskEvents, tasks, name, onName, closed, onCloseGroup, memberMode, payments, setPayments, ref }: Props) {
   const [view, setView] = useState<"payments" | "members" | "edit" | "close" | "leave" | null>(null);
   const [tab, setTab] = useState("tasks");
   const [memberTab, setMemberTab] = useState("members");
   const [members, setMembers] = useState<Member[]>(() => (tasks[0]?.participantes ?? []).map(p => ({ id: p.id, nome: p.nome, admin: p.id === currentUserId, active: true })));
-  const [events, setEvents] = useState<Activity[]>([{ text: "Grupo criado · Rodrigo Martins", date: "2025-11-14T12:00:00.000Z" }]);
+  const [events, setEvents] = useState<Activity[]>([]);
   const [selected, setSelected] = useState("");
   useImperativeHandle(ref, () => ({ openPayments(taskId) { setView("payments"); setSelected(taskId ? `${taskId}:${currentUserId}` : ""); } }), [currentUserId]);
   const [receipt, setReceipt] = useState<{ data: string; name: string } | null>(null);
@@ -131,15 +131,15 @@ export default function GroupFlows({ idGrupo, currentUserId = "1", parteIds = {}
     reader.readAsDataURL(file);
   }
   const canInform = active && !closed && (active.person.id === currentUserId || !memberMode) && ["pendente", "contestado"].includes(active.payment.status);
-  const pixDisplay = recipientPix || "(11) 98765-4321";
-  const pixCopyValue = recipientPix || "CHAVE-ILUSTRATIVA-SEM-VALOR-FINANCEIRO";
+  const pixDisplay = recipientPix || "";
+  const pixCopyValue = recipientPix || "";
   const payer = active?.task.participantes.find(p => p.id === active.task.pagadorId);
   const activeShares = active ? active.task.participantes.filter(p => p.selecionado).length : 0;
   const expenses = tasks.filter(task => task.possuiDespesa).sort((a, b) => b.valorTotal - a.valorTotal);
   const timeline = [...events, ...taskEvents].sort((a, b) => b.date.localeCompare(a.date));
   const toolbarButton = "inline-flex items-center gap-1.5 rounded-lg bg-surface-container-lowest px-space-md py-2 font-label-md text-label-md text-on-surface shadow-sm transition-colors hover:bg-surface-container-low";
   return <section className="flex flex-col gap-space-lg font-body-md text-body-md text-on-surface">
-    {view === "close" ? <GroupAudit name={name} tasks={tasks} memberCount={activeMembers.length} total={total} paid={paid} pending={pending} canClose={canClose} settings={settings} entries={entries} onBack={dismiss} onConfirm={() => setConfirmClose(true)}/> : view === "payments" && !active ? <PaymentManagement name={name} entries={visibleEntries} onBack={dismiss} onOpen={key => { setSelected(key); setMessage(""); }} onConfirm={key => updatePayment(key, "confirmado")} onExport={() => setMessage("A exportação de comprovantes depende dos registros reais do grupo.")} message={message} memberMode={memberMode}/> : <>
+    {view === "close" ? <GroupAudit name={name} tasks={tasks} memberCount={activeMembers.length} total={total} paid={paid} pending={pending} canClose={canClose} settings={settings} entries={entries} currentUserId={currentUserId} adminName={adminName} onBack={dismiss} onConfirm={() => setConfirmClose(true)}/> : view === "payments" && !active ? <PaymentManagement name={name} entries={visibleEntries} onBack={dismiss} onOpen={key => { setSelected(key); setMessage(""); }} onConfirm={key => updatePayment(key, "confirmado")} onExport={() => setMessage("A exportação de comprovantes depende dos registros reais do grupo.")} message={message} memberMode={memberMode}/> : <>
       {closed && <div className="relative flex flex-col items-center justify-between gap-space-lg overflow-hidden rounded-xl bg-surface-container-lowest p-space-lg shadow-md md:flex-row md:p-space-xl" role="status">
         <div className="pointer-events-none absolute -bottom-10 -right-10 h-64 w-64 rounded-full bg-primary-container/10 blur-2xl"/>
         <div className="relative flex items-center gap-space-lg">
@@ -182,7 +182,7 @@ export default function GroupFlows({ idGrupo, currentUserId = "1", parteIds = {}
     </>}
     {view && view !== "close" && !(view === "payments" && !active) && !receiptView && <Overlay
       title={view === "payments" ? active ? "Acertar Pagamento via Pix" : "Gerenciar Pagamentos e Comprovantes" : view === "members" ? "Membros & Convites" : view === "edit" ? "Editar Grupo" : "Sair do grupo"}
-      eyebrow={view === "members" ? "Painel do Administrador" : view === "edit" ? "Painel do Organizador · ID: #FLN-2025" : view === "payments" && active ? "Liquidação Direta · Pix Instantâneo" : undefined}
+      eyebrow={view === "members" ? "Painel do Administrador" : view === "edit" ? "Painel do Organizador" : view === "payments" && active ? "Liquidação Direta · Pix" : undefined}
       description={view === "edit" ? "Atualize informações básicas, regras de rateio e capa do grupo" : view === "members" ? "Gerencie participantes, permissões e adicione novos amigos ao racha." : active ? "Transfira sua cota diretamente para o responsável da compra." : undefined}
       onClose={dismiss} drawer={view === "edit"}
       footer={view === "edit" ? <><button type="button" className={btnSecondary} onClick={dismiss}>Cancelar</button><button className={btnPrimary} form="racha-edit-group-form" type="submit"><Icon name="check" size={18}/>Salvar Alterações</button></> : view === "members" ? <><small className="flex items-center gap-1.5 font-label-sm text-label-sm text-on-surface-variant sm:mr-auto"><Icon name="verified_user" size={16} className="text-primary"/>Alterações salvas instantaneamente nesta prévia</small><button type="button" className={btnSecondary} onClick={dismiss}>Cancelar</button><button type="button" className={btnPrimary} onClick={dismiss}><Icon name="check" size={18}/>Concluir</button></> : active ? <><button type="button" className={btnSecondary} onClick={dismiss}>Cancelar / Fechar</button>{canInform ? <button type="button" className={btnPrimary} onClick={() => updatePayment(active.key, "informado")}><Icon name="send" size={20}/>Informar que realizei o Pagamento</button> : <button type="button" className={btnPrimary} onClick={dismiss}><Icon name="check" size={18}/>Concluir</button>}</> : undefined}>
@@ -201,7 +201,7 @@ export default function GroupFlows({ idGrupo, currentUserId = "1", parteIds = {}
           <div className="flex items-center justify-between gap-space-sm pt-space-xs">
             <div className="flex min-w-0 items-center gap-space-sm">
               <div className="relative shrink-0"><span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-fixed font-label-md text-label-md font-bold text-on-primary-fixed shadow-sm">{payer?.nome.slice(0, 1)}</span><span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary-container text-on-primary shadow-sm"><Icon name="verified" size={10} filled/></span></div>
-              <div className="flex min-w-0 flex-col"><div className="flex flex-wrap items-center gap-1"><span className="truncate font-label-md text-label-md font-bold text-on-surface">{payer?.nome}</span><span className="rounded bg-surface-container px-1.5 text-[11px] font-semibold text-on-surface-variant">Responsável pela compra</span></div><span className="truncate font-label-sm text-label-sm text-on-surface-variant">Nu Pagamentos S.A. · conta ilustrativa</span></div>
+              <div className="flex min-w-0 flex-col"><div className="flex flex-wrap items-center gap-1"><span className="truncate font-label-md text-label-md font-bold text-on-surface">{payer?.nome ?? "Responsável"}</span><span className="rounded bg-surface-container px-1.5 text-[11px] font-semibold text-on-surface-variant">Responsável pela compra</span></div><span className="truncate font-label-sm text-label-sm text-on-surface-variant">{recipientPix ? "Chave Pix cadastrada pelo responsável" : "Sem chave Pix cadastrada"}</span></div>
             </div>
             <div className="hidden shrink-0 items-center gap-1 font-label-sm text-label-sm text-on-surface-variant sm:flex"><Icon name="bolt" size={16} className="text-tertiary"/><span>Recebimento direto</span></div>
           </div>
@@ -209,21 +209,14 @@ export default function GroupFlows({ idGrupo, currentUserId = "1", parteIds = {}
         <div className="grid grid-cols-1 items-center gap-space-lg md:grid-cols-12">
           <div className="flex flex-col items-center justify-center rounded-xl bg-surface-container-low p-space-md shadow-sm md:col-span-5">
             <div className="relative flex flex-col items-center rounded-lg bg-surface-container-lowest p-space-sm shadow-sm"><PixPreview size={148}/></div>
-            <span className="mt-space-sm flex items-center gap-1 text-center font-label-sm text-label-sm font-medium text-on-surface-variant"><Icon name="photo_camera" size={16} className="text-primary"/>Aponte a câmera no app do seu banco</span>
+            <span className="mt-space-sm flex items-center gap-1 text-center font-label-sm text-label-sm font-medium text-on-surface-variant"><Icon name="photo_camera" size={16} className="text-primary"/>QR Code ilustrativo</span>
           </div>
           <div className="flex flex-col gap-space-md md:col-span-7">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="pix-key" className="flex items-center justify-between font-label-sm text-label-sm font-semibold text-on-surface"><span>Chave Pix (Telefone Celular)</span><span className="text-[11px] font-bold uppercase text-tertiary">{recipientPix ? "Cadastrada" : "Demonstração"}</span></label>
+              <label htmlFor="pix-key" className="flex items-center justify-between font-label-sm text-label-sm font-semibold text-on-surface"><span>Chave Pix</span><span className="text-[11px] font-bold uppercase text-tertiary">{recipientPix ? "Cadastrada" : "Indisponível"}</span></label>
               <div className="flex items-center gap-space-xs rounded-lg bg-surface-container p-1">
-                <div className="flex min-w-0 grow items-center gap-space-xs px-space-sm py-1.5"><Icon name="smartphone" size={20} className="shrink-0 text-on-surface-variant"/><input id="pix-key" readOnly value={pixDisplay} className="w-full bg-transparent font-label-md text-label-md font-semibold text-on-surface focus:outline-none"/></div>
-                <button type="button" onClick={() => copy(pixCopyValue)} className="flex shrink-0 items-center gap-1 rounded-md bg-surface-container-lowest px-space-md py-1.5 font-label-sm text-label-sm font-semibold text-on-surface shadow-sm transition-all hover:bg-surface-container-high active:scale-95"><Icon name="content_copy" size={16}/>Copiar Chave</button>
-              </div>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <span className="flex items-center justify-between font-label-sm text-label-sm font-semibold text-on-surface"><span>Código Pix Copia e Cola</span><span className="text-[12px] font-normal text-on-surface-variant">Ilustrativo</span></span>
-              <div className="flex flex-col gap-space-xs">
-                <div className="max-h-16 select-all overflow-y-auto break-all rounded-lg bg-surface-container-low p-space-sm font-mono text-[11px] leading-relaxed text-on-surface-variant">PREVIA-RACHA-SEM-VALOR-FINANCEIRO<br/>Código ilustrativo para revisão da interface.</div>
-                <button type="button" onClick={() => copy("PREVIA-RACHA-SEM-VALOR-FINANCEIRO")} className="flex w-full items-center justify-center gap-space-xs rounded-lg bg-primary px-space-md py-2.5 font-label-md text-label-md font-bold text-on-primary shadow-md transition-all hover:bg-primary-container active:scale-[0.99]"><Icon name="copy_all" size={18}/>Copiar Código Pix Completo</button>
+                <div className="flex min-w-0 grow items-center gap-space-xs px-space-sm py-1.5"><Icon name="smartphone" size={20} className="shrink-0 text-on-surface-variant"/><input id="pix-key" readOnly value={pixDisplay || "Nenhuma chave cadastrada"} className="w-full bg-transparent font-label-md text-label-md font-semibold text-on-surface focus:outline-none"/></div>
+                <button type="button" disabled={!pixCopyValue} onClick={() => copy(pixCopyValue)} className="flex shrink-0 items-center gap-1 rounded-md bg-surface-container-lowest px-space-md py-1.5 font-label-sm text-label-sm font-semibold text-on-surface shadow-sm transition-all hover:bg-surface-container-high active:scale-95 disabled:opacity-50"><Icon name="content_copy" size={16}/>Copiar Chave</button>
               </div>
             </div>
           </div>

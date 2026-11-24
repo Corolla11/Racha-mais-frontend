@@ -97,7 +97,7 @@ export function GroupEditForm({ name, settings, onSave }: { name: string; settin
 
 interface LedgerItem { key: string; task: DadosTarefa; person: { id: string; nome: string }; amount: number; payment: Payment }
 
-export function GroupAudit({ name, tasks, memberCount, total, paid, pending, canClose, onBack, onConfirm, settings, entries = [] }: { name: string; tasks: DadosTarefa[]; memberCount: number; total: number; paid: number; pending: number; canClose: boolean; onBack: () => void; onConfirm: () => void; settings: GroupSettings; entries?: LedgerItem[] }) {
+export function GroupAudit({ name, tasks, memberCount, total, paid, pending, canClose, onBack, onConfirm, settings, entries = [], currentUserId, adminName }: { name: string; tasks: DadosTarefa[]; memberCount: number; total: number; paid: number; pending: number; canClose: boolean; onBack: () => void; onConfirm: () => void; settings: GroupSettings; entries?: LedgerItem[]; currentUserId?: string; adminName?: string }) {
   const [agreed, setAgreed] = useState(false);
   const completed = tasks.filter(task => task.concluida).length;
   const expenses = tasks.filter(task => task.possuiDespesa).sort((a, b) => b.valorTotal - a.valorTotal);
@@ -153,13 +153,12 @@ export function GroupAudit({ name, tasks, memberCount, total, paid, pending, can
           <div className="relative flex h-32 items-end overflow-hidden bg-surface-container-high bg-cover bg-center p-space-md" style={{ backgroundImage: `url(${settings.cover || groupCover})` }}>
             <div className="absolute inset-0 bg-gradient-to-t from-on-background/85 via-on-background/40 to-transparent"/>
             <div className="relative z-10 flex w-full flex-wrap items-center justify-between gap-2">
-              <span className="flex items-center gap-1.5 rounded-full bg-surface-container-lowest/90 px-2.5 py-1 font-label-sm text-label-sm font-semibold text-on-surface backdrop-blur-md"><Icon name={categoryIcon(settings.category)} size={15} className="text-primary"/>{settings.category} {canClose ? "Concluída" : "em andamento"} • {formatDate(settings.start)} a {formatDate(settings.end)}</span>
-              <span className="font-label-sm text-label-sm font-medium text-surface">Florianópolis, SC</span>
+              <span className="flex items-center gap-1.5 rounded-full bg-surface-container-lowest/90 px-2.5 py-1 font-label-sm text-label-sm font-semibold text-on-surface backdrop-blur-md"><Icon name={categoryIcon(settings.category)} size={15} className="text-primary"/>{settings.category} {canClose ? "Concluída" : "em andamento"}{settings.start && settings.end ? ` • ${formatDate(settings.start)} a ${formatDate(settings.end)}` : ""}</span>
             </div>
           </div>
           <div className="flex flex-col gap-space-md p-space-lg">
             <div className="flex flex-col justify-between gap-space-sm sm:flex-row sm:items-center">
-              <div><h2 className="font-headline-md text-headline-md text-on-surface">{name}</h2><p className="mt-0.5 flex items-center gap-1 font-body-sm text-body-sm text-on-surface-variant"><Icon name="admin_panel_settings" size={16} className="text-primary"/>Administrador: <strong className="font-semibold text-on-surface">Rodrigo M. (Você)</strong></p></div>
+              <div><h2 className="font-headline-md text-headline-md text-on-surface">{name}</h2><p className="mt-0.5 flex items-center gap-1 font-body-sm text-body-sm text-on-surface-variant"><Icon name="admin_panel_settings" size={16} className="text-primary"/>Administrador: <strong className="font-semibold text-on-surface">{adminName || "Organizador"}</strong></p></div>
               <div className="flex shrink-0 items-center gap-2 rounded-full bg-surface-container-low px-3 py-1.5">
                 <div className="flex -space-x-2 overflow-hidden">{people.slice(0, 6).map((person, index) => <span key={person.id} className={`inline-block h-7 w-7 rounded-full text-center text-[11px] font-bold leading-7 shadow-sm ${avatarColors[index % avatarColors.length]}`}>{initials(person.nome)}</span>)}</div>
                 <span className="font-label-sm text-label-sm font-semibold text-on-surface">{memberCount} {memberCount === 1 ? "integrante" : "integrantes"}</span>
@@ -168,7 +167,7 @@ export function GroupAudit({ name, tasks, memberCount, total, paid, pending, can
             {people.length > 0 && <div className="mt-2 flex flex-col gap-space-xs overflow-x-auto">
               <div className="flex min-w-[28rem] items-center justify-between rounded-lg bg-surface-container-low px-3 py-2"><span className="font-label-sm text-label-sm font-semibold uppercase text-on-surface-variant">Participante</span><div className="flex items-center gap-space-lg"><span className="w-24 text-right font-label-sm text-label-sm font-semibold uppercase text-on-surface-variant">Cota Paga</span><span className="w-24 text-right font-label-sm text-label-sm font-semibold uppercase text-on-surface-variant">Saldo Final</span><span className="w-20 text-right font-label-sm text-label-sm font-semibold uppercase text-on-surface-variant">Status</span></div></div>
               {people.map((person, index) => <div key={person.id} className="flex min-w-[28rem] items-center justify-between rounded-lg px-3 py-2.5 transition-colors hover:bg-surface-container-low/50">
-                <div className="flex items-center gap-2.5"><span className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${avatarColors[index % avatarColors.length]}`}>{initials(person.nome)}</span><div><span className="block font-label-md text-label-md leading-tight text-on-surface">{person.nome}</span>{person.id === "1" && <span className="font-label-sm text-[11px] text-primary">Você • Criador</span>}</div></div>
+                <div className="flex items-center gap-2.5"><span className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${avatarColors[index % avatarColors.length]}`}>{initials(person.nome)}</span><div><span className="block font-label-md text-label-md leading-tight text-on-surface">{person.nome}</span>{currentUserId && person.id === currentUserId && <span className="font-label-sm text-[11px] text-primary">Você</span>}</div></div>
                 <div className="flex items-center gap-space-lg"><span className="w-24 text-right font-body-sm text-body-sm text-on-surface">{money(person.settled)}</span><span className="w-24 text-right font-body-sm text-body-sm font-semibold text-on-surface">{money(person.open)}</span><span className="w-20 text-right"><span className={`inline-flex items-center rounded-md px-2 py-0.5 font-label-sm text-[11px] font-bold ${person.open === 0 ? "bg-surface-container text-primary" : "bg-error-container text-on-error-container"}`}>{person.open === 0 ? "Quitado" : "Pendente"}</span></span></div>
               </div>)}
             </div>}
@@ -213,7 +212,7 @@ export function GroupAudit({ name, tasks, memberCount, total, paid, pending, can
 
 export function PaymentManagement({ name, entries, onBack, onOpen, onConfirm, onExport, message, memberMode }: { name: string; entries: LedgerItem[]; onBack: () => void; onOpen: (key: string) => void; onConfirm: (key: string) => void; onExport: () => void; message: string; memberMode: boolean }) {
   const tasks = [...new Map(entries.map(entry => [entry.task.id, entry.task])).values()];
-  const [taskId, setTaskId] = useState(tasks.find(task => task.id === "tarefa-02")?.id ?? tasks[0]?.id ?? "");
+  const [taskId, setTaskId] = useState(tasks[0]?.id ?? "");
   const [onlyPending, setOnlyPending] = useState(false);
   const task = tasks.find(item => item.id === taskId);
   const shares = entries.filter(entry => entry.task.id === taskId);

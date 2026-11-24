@@ -1,5 +1,5 @@
-import { useEffect, useId, useState, type ReactNode } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useEffect, useId, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth, type AuthUser } from "../auth/auth-context";
 import AccountPanels, { SettingsBreadcrumb, SettingsTabs, StatusToast, ToggleRow } from "../components/account-panels";
 import AppShell from "../components/app-shell";
@@ -26,9 +26,7 @@ const panelInfo: Record<Panel, { crumb: string; width: string; eyebrow?: string;
 
 function Perfil() {
   const [params, setParams] = useSearchParams();
-  const { pathname } = useLocation();
   const { user } = useAuth();
-  const demo = (pathname.startsWith("/previa") || pathname.startsWith("/revisao")) && !user;
   const initial = params.get("aba");
   const panel: Panel = initial === "pix" || initial === "security" || initial === "notifications" ? initial : "profile";
   function setPanel(value: "profile" | "notifications" | "security" | "pix") {
@@ -72,28 +70,6 @@ function Perfil() {
     }
   }
 
-  let aside: ReactNode = null;
-  if (demo && panel === "profile") aside = (
-    <div className="inline-flex items-center gap-space-xs self-start md:self-auto px-space-md py-1.5 rounded-full bg-surface-container-low text-on-surface-variant">
-      <Icon name="schedule" size={18} className="text-primary"/><span className="font-label-sm text-label-sm">Última alteração em 24 de Outubro</span>
-    </div>
-  );
-  if (demo && panel === "security") aside = (
-    <div className="flex items-center gap-space-md bg-surface-container-lowest p-space-sm pl-space-md rounded-xl shadow-sm self-start md:self-auto">
-      <ScoreRing value={92} size="w-10 h-10" stroke={3} label={<span className="absolute font-label-sm text-label-sm font-bold text-on-surface">92%</span>}/>
-      <div className="pr-space-xs">
-        <p className="font-label-sm text-label-sm font-bold text-on-surface">Proteção Alta</p>
-        <p className="font-body-sm text-xs text-outline">Senha forte ativa</p>
-      </div>
-    </div>
-  );
-  if (demo && panel === "pix") aside = (
-    <div className="flex items-center gap-space-sm px-space-md py-space-xs bg-surface-container-lowest rounded-full shadow-sm w-fit">
-      <span className="relative flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-container opacity-75"/><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"/></span>
-      <span className="font-label-sm text-label-sm text-on-surface-variant">Pix Instantâneo Conectado</span>
-    </div>
-  );
-
   return (
     <AppShell title="Configurações da Conta" bare>
       <div className="relative w-full overflow-hidden">
@@ -111,14 +87,13 @@ function Perfil() {
                 </div>
               ) : undefined}
             />
-            {aside}
           </div>
           <SettingsTabs active={panel} onSelect={setPanel}/>
 
           {(panel === "security" || panel === "pix") && <AccountPanels key={panel} panel={panel}/>}
 
           <div hidden={panel !== "profile"}>
-            <ProfilePanel key={user?.id ?? "demo"} user={user} demo={demo} chavePix={perfil?.chavesPix?.[0]} onManageKeys={() => setPanel("pix")}/>
+            <ProfilePanel key={user?.id ?? "guest"} user={user} chavePix={perfil?.chavesPix?.[0]} onManageKeys={() => setPanel("pix")}/>
           </div>
 
           {panel === "notifications" && (
@@ -148,32 +123,19 @@ function Perfil() {
   );
 }
 
-function ScoreRing({ value, size, stroke, label }: { value: number; size: string; stroke: number; label: ReactNode }) {
-  const path = "M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831";
-  return (
-    <div className={`relative ${size} shrink-0 flex items-center justify-center`}>
-      <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36" aria-hidden="true">
-        <path className="text-surface-container-high" d={path} fill="none" stroke="currentColor" strokeWidth={stroke}/>
-        <path className="text-primary-container" d={path} fill="none" stroke="currentColor" strokeDasharray={`${value}, 100`} strokeLinecap="round" strokeWidth={stroke}/>
-      </svg>
-      {label}
-    </div>
-  );
-}
-
 type ProfileForm = { name: string; handle: string; bio: string; city: string; email: string; phone: string };
 
-const demoProfile: ProfileForm = { name: "Rodrigo Mendes de Alencar", handle: "rodrigo.m", bio: "Organizador dos churrascos e viagens da galera 🏖️", city: "São Paulo, SP", email: "rodrigo@exemplo.com", phone: "(11) 98765-4321" };
+const emptyProfile: ProfileForm = { name: "", handle: "", bio: "", city: "", email: "", phone: "" };
 
 const fieldClass = "w-full py-3 rounded-lg bg-surface-container-low text-on-surface placeholder:text-outline font-body-md text-body-md focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary-container transition-all";
 const labelClass = "font-label-md text-label-md text-on-surface font-medium flex items-center justify-between gap-space-sm";
 
-function ProfilePanel({ user, demo, chavePix, onManageKeys }: { user: AuthUser | null; demo: boolean; chavePix?: ChavePixApi; onManageKeys: () => void }) {
+function ProfilePanel({ user, chavePix, onManageKeys }: { user: AuthUser | null; chavePix?: ChavePixApi; onManageKeys: () => void }) {
   const ids = useId();
-  const [saved, setSaved] = useState<ProfileForm>(() => user ? { name: user.name, handle: user.email.split("@")[0], bio: "", city: "", email: user.email, phone: "" } : demoProfile);
+  const [saved, setSaved] = useState<ProfileForm>(() => user ? { name: user.name, handle: user.email.split("@")[0], bio: "", city: "", email: user.email, phone: "" } : emptyProfile);
   const [form, setForm] = useState<ProfileForm>(saved);
   const [message, setMessage] = useState("");
-  const pixKey = chavePix?.chave ?? (user ? "" : "(11) 98765-4321");
+  const pixKey = chavePix?.chave ?? "";
   const pixType = chavePix ? LABELS_PIX[chavePix.tipoChave] ?? chavePix.tipoChave : "Celular";
   const dirty = (Object.keys(form) as (keyof ProfileForm)[]).some(field => form[field] !== saved[field]);
   function update(field: keyof ProfileForm, value: string) { setForm(previous => ({ ...previous, [field]: value })); }
@@ -202,11 +164,6 @@ function ProfilePanel({ user, demo, chavePix, onManageKeys }: { user: AuthUser |
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm"><Icon name="verified" size={14} filled/>Perfil Verificado</span>
                 </div>
                 {subtitle && <p className="font-body-sm text-body-sm text-on-surface-variant">{subtitle}</p>}
-                {demo && (
-                  <div className="pt-1 flex items-center justify-center sm:justify-start gap-space-xs text-on-surface-variant font-label-sm text-label-sm">
-                    <Icon name="calendar_today" size={16} className="text-tertiary"/><span>Membro desde Março 2023</span>
-                  </div>
-                )}
               </div>
             </div>
             <div className="flex flex-row sm:flex-col items-center gap-space-xs shrink-0">
@@ -263,7 +220,7 @@ function ProfilePanel({ user, demo, chavePix, onManageKeys }: { user: AuthUser |
                 <label htmlFor={`${ids}-phone`} className={labelClass}><span>WhatsApp / Celular</span></label>
                 <div className="relative flex items-center">
                   <Icon name="phone_iphone" size={20} className="absolute left-space-md text-outline pointer-events-none"/>
-                  <input id={`${ids}-phone`} type="tel" autoComplete="tel" placeholder="(11) 98765-4321" value={form.phone} onChange={event => update("phone", event.target.value)} className={`${fieldClass} pl-11 pr-space-md`}/>
+                  <input id={`${ids}-phone`} type="tel" autoComplete="tel" placeholder="(00) 00000-0000" value={form.phone} onChange={event => update("phone", event.target.value)} className={`${fieldClass} pl-11 pr-space-md`}/>
                 </div>
                 <p className="font-label-sm text-label-sm text-on-surface-variant">Usado para receber lembretes de rateios e comprovantes de Pix.</p>
               </div>
@@ -271,7 +228,7 @@ function ProfilePanel({ user, demo, chavePix, onManageKeys }: { user: AuthUser |
                 <label htmlFor={`${ids}-cpf`} className="font-label-md text-label-md text-on-surface font-medium flex items-center gap-1.5"><span>CPF</span><Icon name="lock" size={16} className="text-tertiary"/></label>
                 <div className="relative flex items-center">
                   <Icon name="shield" size={20} className="absolute left-space-md text-outline pointer-events-none"/>
-                  <input id={`${ids}-cpf`} type="text" disabled value={demo ? "***.921.408-**" : ""} placeholder="Não informado" className="w-full pl-11 pr-24 py-3 rounded-lg bg-surface-container text-on-surface-variant placeholder:text-outline font-body-md text-body-md cursor-not-allowed"/>
+                  <input id={`${ids}-cpf`} type="text" disabled value="" placeholder="Não informado" className="w-full pl-11 pr-24 py-3 rounded-lg bg-surface-container text-on-surface-variant placeholder:text-outline font-body-md text-body-md cursor-not-allowed"/>
                   <span className="absolute right-space-md font-label-sm text-label-sm text-outline font-medium">Protegido</span>
                 </div>
                 <p className="font-label-sm text-label-sm text-on-surface-variant">Para alterar dados fiscais cadastrados, solicite ao suporte.</p>
@@ -307,30 +264,6 @@ function ProfilePanel({ user, demo, chavePix, onManageKeys }: { user: AuthUser |
               <Icon name="settings" size={18}/><span>Gerenciar Chaves</span>
             </button>
           </div>
-
-          {demo && (
-            <div className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm space-y-space-md">
-              <div className="flex items-center justify-between">
-                <span className="font-label-sm text-label-sm font-semibold tracking-wider uppercase text-tertiary">Comportamento</span>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-label-sm text-label-sm font-bold"><Icon name="star" size={14} filled/>Ouro</span>
-              </div>
-              <div>
-                <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Sua Reputação</h3>
-                <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">Calculada pelo histórico de quitações e pontualidade nos grupos.</p>
-              </div>
-              <div className="flex items-center gap-space-md p-space-md rounded-lg bg-surface-container-low">
-                <ScoreRing value={99.4} size="w-16 h-16" stroke={3.5} label={<span className="absolute font-label-md text-label-md font-bold text-on-surface">99%</span>}/>
-                <div>
-                  <span className="font-numeric-stat text-numeric-stat font-extrabold text-on-surface leading-none">99.4%</span>
-                  <p className="font-label-sm text-label-sm text-on-surface-variant">Pontualidade em Rateios</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-space-sm pt-1">
-                <div className="p-space-sm rounded-lg bg-surface-container-low text-center"><span className="font-headline-sm text-headline-sm font-bold text-on-surface">7</span><p className="font-label-sm text-label-sm text-on-surface-variant">Grupos Ativos</p></div>
-                <div className="p-space-sm rounded-lg bg-surface-container-low text-center"><span className="font-headline-sm text-headline-sm font-bold text-emerald-600">0</span><p className="font-label-sm text-label-sm text-on-surface-variant">Atrasos</p></div>
-              </div>
-            </div>
-          )}
 
           <div className="rounded-xl p-space-md bg-surface-container-high/60 flex items-start gap-space-sm">
             <Icon name="policy" size={20} className="text-on-surface-variant shrink-0 mt-0.5"/>

@@ -1,10 +1,12 @@
 import "dotenv/config";
 import app from "./app.js";
-import { iniciarAgendadorDeNotificacoes } from "./modules/notificacoes/notificacao.service.js";
+import { iniciarAgendadorDeNotificacoes } from "./api/notificacoes/notificacao.service.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
-  iniciarAgendadorDeNotificacoes();
+  if (process.env.ENABLE_NOTIFICACAO_JOB !== "false") {
+    iniciarAgendadorDeNotificacoes();
+  }
 });

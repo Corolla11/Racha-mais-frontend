@@ -18,9 +18,9 @@ const DESTAQUES_HERO = [
 ];
 
 const INTEGRANTES = [
-  { iniciais: "MA", nome: "Mariana (Organizadora)", fundo: "bg-primary-fixed text-on-primary-fixed" },
-  { iniciais: "LU", nome: "Lucas", fundo: "bg-secondary-fixed text-on-secondary-fixed" },
-  { iniciais: "PE", nome: "Pedro", fundo: "bg-tertiary-fixed text-on-tertiary-fixed" },
+  { iniciais: "OR", nome: "Organizador", fundo: "bg-primary-fixed text-on-primary-fixed" },
+  { iniciais: "M1", nome: "Membro 1", fundo: "bg-secondary-fixed text-on-secondary-fixed" },
+  { iniciais: "M2", nome: "Membro 2", fundo: "bg-tertiary-fixed text-on-tertiary-fixed" },
 ];
 
 const BENEFICIOS = [
@@ -216,7 +216,7 @@ function Home() {
                       </div>
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Viagem Florianópolis</h3>
+                          <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Viagem em Grupo</h3>
                           <span className="px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-label-sm">Ativo</span>
                         </div>
                         <p className="font-body-sm text-body-sm text-on-surface-variant">5 amigos • 12 despesas registradas</p>
@@ -287,7 +287,7 @@ function Home() {
                           <span className="font-body-sm text-body-sm font-medium text-on-surface line-through opacity-60 truncate">Comprar carvão e carnes</span>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-surface-container-highest text-on-surface-variant">Mariana</span>
+                          <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-surface-container-highest text-on-surface-variant">Organizador</span>
                           <Icon name="check_circle" size={18} className="text-tertiary" />
                         </div>
                       </div>
@@ -297,7 +297,7 @@ function Home() {
                           <span className="font-body-sm text-body-sm font-medium text-on-surface truncate">Aluguel da Van executiva</span>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-secondary-fixed text-on-secondary-fixed">Lucas</span>
+                          <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-secondary-fixed text-on-secondary-fixed">Membro</span>
                           <Icon name="pending" size={18} className="text-secondary" />
                         </div>
                       </div>

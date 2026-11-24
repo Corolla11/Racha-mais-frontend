@@ -26,8 +26,15 @@ export async function postAbacatePay<T>(
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(15_000),
     });
   } catch (error) {
+    if (
+      error instanceof Error &&
+      (error.name === "TimeoutError" || error.name === "AbortError")
+    ) {
+      throw new AppError(504, "A AbacatePay demorou demais para responder");
+    }
     if (error instanceof TypeError) {
       throw new AppError(502, "Não foi possível conectar à AbacatePay");
     }

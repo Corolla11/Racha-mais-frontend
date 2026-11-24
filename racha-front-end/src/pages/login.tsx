@@ -166,9 +166,6 @@ export default function Login() {
             <Icon name="format_quote" size={20} className="text-white/70 mt-0.5" />
             <p className="font-body-md text-body-md italic text-white/95">
               “Nunca mais tivemos discussão sobre dinheiro na nossa república.”
-              <span className="block not-italic font-label-sm text-label-sm font-semibold text-white/80 mt-1">
-                — Rodrigo M., Morador • República Vila Madalena
-              </span>
             </p>
           </div>
         </div>

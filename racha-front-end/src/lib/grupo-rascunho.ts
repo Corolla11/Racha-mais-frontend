@@ -36,7 +36,7 @@ export interface GrupoRascunho {
   cota: number;
 }
 
-const CHAVE = "racha-demo-created-group";
+const CHAVE = "racha-grupo-rascunho";
 
 export function salvarRascunho(grupo: GrupoRascunho) {
   try {

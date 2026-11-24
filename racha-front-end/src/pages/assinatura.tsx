@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/auth-context";
 import { SettingsBreadcrumb, SettingsTabs, StatusToast } from "../components/account-panels";
@@ -7,6 +7,8 @@ import Icon from "../components/icon";
 import Overlay from "../components/overlay";
 import PixPreview from "../components/pix-preview";
 import { PageHeading } from "../components/ui";
+import { apiRequest } from "../lib/api";
+import { ENDPOINTS, type PlanoApi } from "../lib/endpoints";
 import { money } from "../lib/finance";
 
 
@@ -36,15 +38,37 @@ function renewalDate(annual: boolean) {
 export default function Assinatura({ manage = false }: { manage?: boolean }) {
   const [annual, setAnnual] = useState(false);
   const [selected, setSelected] = useState<Plan | null>(null);
-  const [subscription, setSubscription] = useState<Subscription | null>(() => {
-    try { return JSON.parse(sessionStorage.getItem("racha-demo-subscription") ?? "null"); } catch { return null; }
-  });
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [planosBackend, setPlanosBackend] = useState<PlanoApi[]>([]);
   const [cancel, setCancel] = useState(false);
   const [message, setMessage] = useState("");
   const [openQuestion, setOpenQuestion] = useState<number | null>(null);
+
+  useEffect(() => {
+    let ativo = true;
+    apiRequest<{ planos: PlanoApi[] }>(ENDPOINTS.planos.base)
+      .then((res) => {
+        if (ativo && Array.isArray(res.planos)) setPlanosBackend(res.planos);
+      })
+      .catch(() => {});
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
+  const planosVisiveis = plans.map((plano, index) => {
+    if (index !== 1 || planosBackend.length === 0) return plano;
+    const mensal = planosBackend.find((p) => p.ciclo === "mensal");
+    const anual = planosBackend.find((p) => p.ciclo === "anual");
+    return {
+      ...plano,
+      month: mensal ? mensal.valorCentavos / 100 : plano.month,
+      year: anual ? anual.valorCentavos / 100 : plano.year,
+    };
+  });
+
   function save(value: Subscription) {
     setSubscription(value);
-    sessionStorage.setItem("racha-demo-subscription", JSON.stringify(value));
   }
   return (
     <AppShell title={selected ? "Finalizar assinatura" : manage ? "Configurações da conta" : "Visão Geral"} bare>
@@ -142,7 +166,7 @@ export default function Assinatura({ manage = false }: { manage?: boolean }) {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-space-lg items-stretch max-w-6xl mx-auto mb-space-xl pt-space-sm">
-              {plans.map((plan, index) => {
+              {planosVisiveis.map((plan, index) => {
                 const featured = index === 1;
                 const price = annual ? plan.year / 12 : plan.month;
                 return (
@@ -373,7 +397,7 @@ function Checkout({ plan, annual, onBack, onApprove }: { plan: Plan; annual: boo
             <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
               <div className="md:col-span-2 flex flex-col gap-1.5">
                 <label htmlFor={`${ids}-name`} className={labelClass}>Nome Completo</label>
-                <input id={`${ids}-name`} placeholder="Rodrigo Martins de Almeida" autoComplete="name" className={fieldClass}/>
+                <input id={`${ids}-name`} placeholder="Seu nome completo" autoComplete="name" className={fieldClass}/>
               </div>
               <div className="flex flex-col gap-1.5">
                 <label htmlFor={`${ids}-cpf`} className={labelClass}>CPF (para emissão de Nota Fiscal)</label>
@@ -381,7 +405,7 @@ function Checkout({ plan, annual, onBack, onApprove }: { plan: Plan; annual: boo
               </div>
               <div className="flex flex-col gap-1.5">
                 <label htmlFor={`${ids}-email`} className={labelClass}>E-mail para comprovante</label>
-                <input id={`${ids}-email`} type="email" placeholder="rodrigo@exemplo.com" autoComplete="email" className={fieldClass}/>
+                <input id={`${ids}-email`} type="email" placeholder="seuemail@exemplo.com" autoComplete="email" className={fieldClass}/>
               </div>
             </div>
           </div>

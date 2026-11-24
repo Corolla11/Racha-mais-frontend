@@ -53,10 +53,10 @@ test("salva, lê e limpa rascunho de grupo no sessionStorage", () => {
 });
 
 test("ignora JSON inválido ou estrutura incompleta no sessionStorage", () => {
-  globalThis.sessionStorage.setItem("racha-demo-created-group", "{invalido");
+  globalThis.sessionStorage.setItem("racha-grupo-rascunho", "{invalido");
   assert.equal(lerRascunho(), null);
 
-  globalThis.sessionStorage.setItem("racha-demo-created-group", JSON.stringify({ nome: "Sem membros" }));
+  globalThis.sessionStorage.setItem("racha-grupo-rascunho", JSON.stringify({ nome: "Sem membros" }));
   assert.equal(lerRascunho(), null);
 });
 

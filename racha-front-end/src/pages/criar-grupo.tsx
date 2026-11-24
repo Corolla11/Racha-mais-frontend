@@ -1,6 +1,7 @@
 import EditarTarefa, { type DadosTarefa } from "./editar-tarefa";
 import { useMemo, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/auth-context";
 import { salvarRascunho, type GrupoRascunho } from "../lib/grupo-rascunho";
 
 import AppShell from "../components/app-shell";
@@ -50,75 +51,6 @@ const modelosRateio = [
   },
 ];
 
-const membrosIniciais: Membro[] = [
-  {
-    id: 1,
-    nome: "Mariana Silva",
-    contato: "Chave Pix vinculada: mariana.silva@pix.me",
-    iniciais: "MS",
-    etiqueta: "Você (Admin)",
-    admin: true,
-    adiantado: 0,
-  },
-  {
-    id: 2,
-    nome: "Pedro Alves",
-    contato: "pedro.alves@banco.com.br",
-    iniciais: "PA",
-    etiqueta: "Adiantou R$ 240,00",
-    admin: false,
-    adiantado: 240,
-  },
-  {
-    id: 3,
-    nome: "Lucas Mendes",
-    contato: "WhatsApp: (11) 98722-1044",
-    iniciais: "LM",
-    etiqueta: "1 Tarefa",
-    admin: false,
-    adiantado: 0,
-  },
-  {
-    id: 4,
-    nome: "Beatriz Lima",
-    contato: "WhatsApp: (11) 99318-4420",
-    iniciais: "BL",
-    etiqueta: "Convidado",
-    admin: false,
-    adiantado: 0,
-  },
-];
-
-const itensIniciais: Item[] = [
-  {
-    id: 1,
-    titulo: "Aluguel do Quiosque 04",
-    tipo: "tarefa",
-    responsavel: "Pedro Alves",
-    detalhe: "com comprovante em PDF anexo",
-    valor: 240,
-    pago: true,
-  },
-  {
-    id: 2,
-    titulo: "Carnes Nobres, Espetos e Bebidas",
-    tipo: "tarefa",
-    responsavel: "Mariana Silva",
-    detalhe: "(no mercado na sexta-feira)",
-    valor: 400,
-    pago: false,
-  },
-  {
-    id: 3,
-    titulo: "Comprar 3 sacos de gelo e 2 de carvão",
-    tipo: "tarefa",
-    responsavel: "Lucas Mendes",
-    detalhe: "• Prazo: Sábado até 11:30",
-    valor: 0,
-    pago: false,
-  },
-];
-
 const etiquetasItem: Record<TipoItem, { rotulo: string; icone: string }> = {
   tarefa: { rotulo: "Tarefa com despesa opcional", icone: "task_alt" },
 };
@@ -152,43 +84,56 @@ function gerarIniciais(nome: string) {
 
 export default function CriarGrupo() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Nome e categoria podem vir do modal "Criar novo grupo";
   // o rascunho completo volta da tela de confirmação ("Editar detalhes")
   const estadoInicial = useLocation().state as
-    | { nome?: unknown; categoria?: unknown; rascunho?: GrupoRascunho }
+    | { nome?: unknown; categoria?: unknown; descricao?: unknown; rascunho?: GrupoRascunho }
     | null;
   const rascunho = estadoInicial?.rascunho;
   const nomeInicial =
     rascunho?.nome ??
     (typeof estadoInicial?.nome === "string" && estadoInicial.nome
       ? estadoInicial.nome
-      : "Churrasco de Boas-Vindas da Turma");
+      : "");
   const categoriaPedida = rascunho?.categoria ?? estadoInicial?.categoria;
   const categoriaInicial =
     typeof categoriaPedida === "string" &&
     categorias.some((item) => item.id === categoriaPedida)
       ? categoriaPedida
       : "evento";
+  const descricaoInicial =
+    rascunho?.descricao ??
+    (typeof estadoInicial?.descricao === "string" ? estadoInicial.descricao : "");
+
+  const organizadorPadrao: Membro[] = [
+    {
+      id: 1,
+      nome: user?.name || "Você",
+      contato: user?.email || "",
+      iniciais: gerarIniciais(user?.name || "VC"),
+      etiqueta: "Você (Admin)",
+      admin: true,
+      adiantado: 0,
+    },
+  ];
 
   // DADOS DO GRUPO
   const [nomeGrupo, setNomeGrupo] = useState(nomeInicial);
   const [categoria, setCategoria] = useState(categoriaInicial);
-  const [dataEvento, setDataEvento] = useState(rascunho?.data ?? "Próximo Sábado, 12:30");
+  const [dataEvento, setDataEvento] = useState(rascunho?.data ?? "");
   const [moeda, setMoeda] = useState(rascunho?.moeda ?? "BRL");
-  const [descricao, setDescricao] = useState(
-    rascunho?.descricao ??
-      "Quiosque 04 reservado no nome do Pedro. Trazer toalha de banho individual. A cerveja já está calculada no valor coletivo."
-  );
+  const [descricao, setDescricao] = useState(descricaoInicial);
 
   // PARTICIPANTES
-  const [membros, setMembros] = useState<Membro[]>(rascunho?.membros ?? membrosIniciais);
+  const [membros, setMembros] = useState<Membro[]>(rascunho?.membros ?? organizadorPadrao);
   const [novoNome, setNovoNome] = useState("");
   const [novoContato, setNovoContato] = useState("");
   const [rateio, setRateio] = useState(rascunho?.rateio ?? "igual");
 
   // DESPESAS E TAREFAS
-  const [itens, setItens] = useState<Item[]>(rascunho?.itens ?? itensIniciais);
+  const [itens, setItens] = useState<Item[]>(rascunho?.itens ?? []);
   const [modalAberto, setModalAberto] = useState(false);
 
   const totalCadastrado = useMemo(
@@ -723,7 +668,7 @@ export default function CriarGrupo() {
               </div>
 
               <div className="flex h-2 w-full overflow-hidden rounded-full bg-surface-container-high">
-                {itensComValor.map((item, indice) => (
+                {totalCadastrado > 0 && itensComValor.map((item, indice) => (
                   <div
                     key={item.id}
                     title={`${item.titulo} — ${formatarMoeda(item.valor)}`}
