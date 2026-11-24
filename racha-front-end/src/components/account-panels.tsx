@@ -24,11 +24,11 @@ const settingsTabs: { value: SettingsTab; label: string; icon: string; to: strin
 /** Barra de abas das Configurações. Com `onSelect`, as abas do perfil viram botões; "Planos" é sempre link. */
 export function SettingsTabs({ active, onSelect }: { active: SettingsTab; onSelect?: (tab: Exclude<SettingsTab, "plans">) => void }) {
   return (
-    <div className="w-full overflow-x-auto [scrollbar-width:none] mb-space-xl">
-      <div className="flex items-center gap-2 p-1.5 bg-surface-container-low rounded-xl w-max min-w-full md:min-w-0">
+    <div className="w-full scroll-fade-x md:overflow-visible mb-space-xl">
+      <div className="flex items-center gap-2 p-1.5 bg-surface-container-low rounded-xl w-max min-w-full md:w-full md:flex-wrap">
         {settingsTabs.map(tab => {
           const current = tab.value === active;
-          const className = `px-space-md py-2.5 rounded-lg font-label-md text-label-md transition-all flex items-center gap-2 whitespace-nowrap ${current ? "bg-surface-container-lowest text-primary font-bold shadow-sm" : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-lowest/60"}`;
+          const className = `px-space-md min-h-11 py-2.5 rounded-lg font-label-md text-label-md transition-all flex items-center gap-2 whitespace-nowrap ${current ? "bg-surface-container-lowest text-primary font-bold shadow-sm" : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-lowest/60"}`;
           const content = <><Icon name={tab.icon} size={18} filled={current}/><span>{tab.label}</span></>;
           if (onSelect && tab.value !== "plans") {
             const value = tab.value;

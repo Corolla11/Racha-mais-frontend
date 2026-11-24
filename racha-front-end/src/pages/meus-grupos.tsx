@@ -316,7 +316,7 @@ export default function MeusGrupos() {
                 selo="Total"
                 corSelo="bg-surface-container-high text-primary"
                 bolha="-bottom-6 -right-6 h-28 w-28 bg-surface-container-high/40"
-                className={metricas ? "sm:col-span-2 lg:col-span-1" : ""}
+                className={metricas ? "sm:col-span-2 lg:col-span-1" : "sm:col-span-2 lg:col-span-3"}
                 valor={
                   <div className="flex items-baseline gap-2 font-numeric-stat text-numeric-stat tracking-tight text-on-surface">
                     <span>{grupos.length}</span>
@@ -335,10 +335,10 @@ export default function MeusGrupos() {
 
             {/* Filtros e busca */}
             <div className="flex flex-col items-stretch justify-between gap-space-md rounded-xl bg-surface-container-lowest p-space-md shadow-sm lg:flex-row lg:items-center">
-              <div className="flex flex-wrap items-center gap-space-xs overflow-x-auto pb-1 lg:pb-0">
-                <span className="mr-space-md hidden font-headline-sm text-headline-sm text-on-surface sm:inline">
+              <div className="flex flex-wrap items-center gap-space-xs scroll-fade-x pb-1 lg:pb-0">
+                <h2 className="mr-space-md font-headline-sm text-headline-sm text-on-surface">
                   Meus Grupos
-                </span>
+                </h2>
                 {temCategorias &&
                   FILTROS.map((item) => {
                     const ativo = filtro === item.id;
@@ -421,7 +421,7 @@ export default function MeusGrupos() {
               </div>
               <Link
                 to="/perfil?aba=pix"
-                className="whitespace-nowrap rounded-lg bg-surface-container-lowest px-space-md py-2 font-label-md text-label-md text-on-surface shadow-sm transition-colors hover:bg-surface-container-highest"
+                className="inline-flex items-center min-h-11 whitespace-nowrap rounded-lg bg-surface-container-lowest px-space-md py-2 font-label-md text-label-md text-on-surface shadow-sm transition-colors hover:bg-surface-container-highest"
               >
                 Configurar Chave
               </Link>
@@ -446,7 +446,7 @@ export default function MeusGrupos() {
               <button
                 type="button"
                 onClick={copiarConvite}
-                className="flex shrink-0 cursor-pointer items-center gap-space-xs whitespace-nowrap rounded-lg bg-surface-container-lowest px-space-md py-2 font-label-md text-label-md text-on-surface shadow-sm transition-colors hover:bg-surface-container-highest"
+                className="flex shrink-0 cursor-pointer items-center gap-space-xs whitespace-nowrap rounded-lg bg-surface-container-lowest px-space-md min-h-11 py-2 font-label-md text-label-md text-on-surface shadow-sm transition-colors hover:bg-surface-container-highest"
               >
                 <Icon name="content_copy" size={18} />
                 Copiar convite rápido

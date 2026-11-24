@@ -636,14 +636,14 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
 
   const barraFiltros = (
     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-space-md bg-surface-container-lowest p-space-md rounded-xl shadow-sm">
-      <div className="flex items-center gap-space-xs overflow-x-auto pb-1 sm:pb-0" role="group" aria-label="Filtrar tarefas">
+      <div className="flex items-center gap-space-xs scroll-fade-x pb-1 sm:pb-0" role="group" aria-label="Filtrar tarefas">
         {filtros.map(([valor, texto]) => (
           <button
             key={valor}
             type="button"
             onClick={() => setFiltro(valor)}
             aria-pressed={filtro === valor}
-            className={`px-space-md py-1.5 rounded-full font-label-sm text-label-sm transition-colors whitespace-nowrap ${
+            className={`px-space-md min-h-11 py-2 rounded-full font-label-sm text-label-sm transition-colors whitespace-nowrap cursor-pointer ${
               filtro === valor
                 ? "bg-inverse-surface text-inverse-on-surface"
                 : "bg-surface-container-low hover:bg-surface-container-high text-on-surface-variant"
@@ -772,10 +772,12 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
                     {periodo}
                   </span>
                 )}
-                <span className="inline-flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
-                  <Icon name="location_on" size={16}/>
-                  {destinoGrupo}
-                </span>
+                {destinoGrupo && (
+                  <span className="inline-flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+                    <Icon name="location_on" size={16}/>
+                    {destinoGrupo}
+                  </span>
+                )}
               </div>
               <h1 className="font-headline-lg text-headline-lg text-on-surface tracking-tight mt-1 break-words">
                 {groupName}
@@ -957,17 +959,17 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
                       <div className="flex flex-col gap-space-sm w-full">
                         <div className="flex items-center justify-between gap-2">
                           {tarefa.possuiDespesa ? (
-                            <span className="px-2.5 py-0.5 rounded-md bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-label-sm font-semibold flex items-center gap-1">
+                            <span className="px-2.5 py-0.5 rounded-md bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-label-sm font-semibold inline-flex items-center gap-1 whitespace-nowrap">
                               <Icon name="sell" size={14}/>
                               Tarefa com custo
                             </span>
                           ) : (
-                            <span className="px-2.5 py-0.5 rounded-md bg-surface-container-high text-on-surface font-label-sm text-label-sm font-semibold flex items-center gap-1">
+                            <span className="px-2.5 py-0.5 rounded-md bg-surface-container-high text-on-surface font-label-sm text-label-sm font-semibold inline-flex items-center gap-1 whitespace-nowrap">
                               <Icon name="task_alt" size={14}/>
                               Tarefa
                             </span>
                           )}
-                          <span className={`px-2 py-0.5 rounded-md font-label-sm text-label-sm font-semibold flex items-center gap-1 ${status.classe}`}>
+                          <span className={`px-2 py-0.5 rounded-md font-label-sm text-label-sm font-semibold inline-flex items-center gap-1 whitespace-nowrap ${status.classe}`}>
                             <Icon name={status.icone} size={14}/>
                             {status.texto}
                           </span>

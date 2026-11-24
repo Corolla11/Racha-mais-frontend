@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/auth-context";
 import { ApiError } from "../lib/api";
+import BrandLogo, { BrandMark } from "../components/brand-logo";
 import Icon from "../components/icon";
 
 // Logo do Google usado no botão de login social
@@ -102,45 +103,45 @@ export default function Login() {
     }
   }
 
+  const googleAuthHabilitado = import.meta.env.VITE_GOOGLE_AUTH_ENABLED === "true";
+
   return (
-    <div className="bg-surface font-body-md text-on-surface antialiased min-h-screen w-full flex flex-col md:flex-row">
+    <div className="bg-surface font-body-md text-on-surface antialiased min-h-screen w-full flex flex-col-reverse md:flex-row">
       {/* PAINEL ESQUERDO — laranja */}
-      <section className="w-full md:w-1/2 bg-primary-container text-surface-container-lowest flex flex-col justify-between p-8 sm:p-12 lg:p-16 relative overflow-hidden">
+      <section className="hidden md:flex md:w-1/2 bg-gradient-to-br from-primary-container to-primary text-on-primary flex-col justify-between p-8 sm:p-12 lg:p-16 relative overflow-hidden">
         <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-white/10 blur-2xl pointer-events-none" />
         <div className="absolute -bottom-32 -left-20 w-80 h-80 rounded-full bg-secondary-container/20 blur-3xl pointer-events-none" />
 
         {/* Marca */}
-        <Link to="/" className="relative z-10 flex items-center space-x-3 w-fit" aria-label="Racha+, página inicial">
-          <div className="w-10 h-10 rounded-xl bg-surface-container-lowest text-primary-container flex items-center justify-center shadow-md">
-            <Icon name="pie_chart" filled className="text-primary-container" />
-          </div>
+        <Link to="/apresentacao" className="relative z-10 inline-flex items-center space-x-3 w-fit min-h-11" aria-label="Racha+, página inicial">
+          <BrandMark size={40} className="rounded-xl shadow-md" />
           <div className="flex items-center tracking-tight">
-            <span className="font-display text-headline-md font-extrabold text-surface-container-lowest">Racha</span>
-            <span className="font-display text-headline-md font-extrabold text-surface-container-lowest opacity-90">+</span>
+            <span className="font-display text-headline-md font-extrabold text-on-primary">Racha</span>
+            <span className="font-display text-headline-md font-extrabold text-tertiary-fixed">+</span>
           </div>
         </Link>
 
         {/* Chamada principal */}
         <div className="relative z-10 my-auto py-10 max-w-lg">
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-label-sm font-semibold bg-white/20 text-surface-container-lowest backdrop-blur-sm mb-6 uppercase tracking-wider">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-label-sm font-semibold bg-white/20 text-on-primary backdrop-blur-sm mb-6 uppercase tracking-wider">
             Divisão inteligente de despesas
           </span>
-          <h1 className="font-display text-display-mobile lg:text-display font-extrabold leading-tight text-surface-container-lowest mb-6">
+          <p className="font-display text-display-mobile lg:text-display font-extrabold leading-tight text-on-primary mb-6">
             Organize qualquer grupo em minutos.
-          </h1>
-          <p className="font-body-lg text-body-lg text-white/90 leading-relaxed max-w-md mb-10 font-normal">
+          </p>
+          <p className="font-body-lg text-body-lg text-white/95 leading-relaxed max-w-md mb-10 font-normal">
             O jeito mais fácil e transparente de dividir contas e organizar
             tarefas coletivas sem atritos ou planilhas confusas.
           </p>
 
           {/* Cartão ilustrativo */}
           <div className="w-full bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-sm" aria-hidden="true">
-            <div className="flex items-center justify-between text-label-sm text-white/90 font-medium mb-3">
+            <div className="flex items-center justify-between text-label-sm text-white/95 font-medium mb-3">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-surface-container-lowest" />
+                <span className="w-2 h-2 rounded-full bg-on-primary" />
                 Aluguel da República
               </span>
-              <span className="font-numeric-stat text-label-md text-surface-container-lowest">R$ 3.450 / 4</span>
+              <span className="font-numeric-stat text-label-md text-on-primary tabular-nums whitespace-nowrap">R$ 3.450 / 4</span>
             </div>
             <div className="h-2.5 w-full bg-white/20 rounded-full overflow-hidden flex gap-1 mb-5">
               {FATIAS.map((fundo) => (
@@ -152,13 +153,13 @@ export default function Login() {
                 {MEMBROS.map((membro) => (
                   <div
                     key={membro.iniciais}
-                    className={`w-8 h-8 rounded-full ${membro.fundo} text-primary-container font-label-sm text-label-sm flex items-center justify-center font-bold shadow-sm`}
+                    className={`w-8 h-8 rounded-full ${membro.fundo} text-primary font-label-sm text-label-sm flex items-center justify-center font-bold shadow-sm`}
                   >
                     {membro.iniciais}
                   </div>
                 ))}
               </div>
-              <div className="flex items-center gap-1.5 text-label-sm text-surface-container-lowest font-medium">
+              <div className="flex items-center gap-1.5 text-label-sm text-on-primary font-medium">
                 <Icon name="check_circle" size={14} filled />
                 Tudo equilibrado
               </div>
@@ -169,7 +170,7 @@ export default function Login() {
         {/* Depoimento */}
         <div className="relative z-10 pt-6">
           <div className="flex items-start gap-3">
-            <Icon name="format_quote" size={20} className="text-white/70 mt-0.5" />
+            <Icon name="format_quote" size={20} className="text-white/80 mt-0.5" />
             <p className="font-body-md text-body-md italic text-white/95">
               “Nunca mais tivemos discussão sobre dinheiro na nossa república.”
             </p>
@@ -178,12 +179,16 @@ export default function Login() {
       </section>
 
       {/* PAINEL DIREITO — formulário */}
-      <section className="w-full md:w-1/2 bg-surface-container-lowest flex items-center justify-center px-6 py-12 sm:px-12 lg:px-20">
+      <main className="w-full md:w-1/2 flex-1 bg-surface-container-lowest flex items-center justify-center px-6 py-10 sm:px-12 lg:px-20">
         <div className="w-full max-w-[440px] flex flex-col">
+          <Link to="/apresentacao" className="md:hidden mb-8 inline-flex items-center min-h-11 w-fit" aria-label="Racha+, página inicial">
+            <BrandLogo />
+          </Link>
+
           <div className="mb-8">
-            <h2 className="font-headline-lg text-headline-lg font-bold text-on-surface tracking-tight">
+            <h1 className="font-headline-lg text-headline-lg font-bold text-on-surface tracking-tight">
               Acesse sua conta
-            </h2>
+            </h1>
             <p className="font-body-md text-body-md text-on-surface-variant mt-2 font-normal">
               Bem-vindo de volta! Insira seus dados para continuar.
             </p>
@@ -243,7 +248,7 @@ export default function Login() {
                   aria-label="Alternar visibilidade da senha"
                   aria-pressed={mostrarSenha}
                   onClick={() => setMostrarSenha((atual) => !atual)}
-                  className="absolute right-3.5 p-1 rounded text-outline hover:text-on-surface transition-colors cursor-pointer flex items-center justify-center"
+                  className="absolute right-1 min-w-11 min-h-11 rounded-lg text-outline hover:text-on-surface transition-colors cursor-pointer flex items-center justify-center"
                 >
                   <Icon name={mostrarSenha ? "visibility_off" : "visibility"} size={18} />
                 </button>
@@ -251,14 +256,14 @@ export default function Login() {
             </div>
 
             {/* Lembrar de mim / Esqueci minha senha */}
-            <div className="flex items-center justify-between pt-1">
-              <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+              <label className="flex items-center gap-2.5 min-h-11 py-2 cursor-pointer select-none group">
                 <input
                   id="remember-me"
                   type="checkbox"
                   checked={formulario.lembrar}
                   onChange={(event) => handleChange("lembrar", event.target.checked)}
-                  className="w-4 h-4 rounded accent-primary-container cursor-pointer transition-colors"
+                  className="w-5 h-5 rounded accent-primary-container cursor-pointer transition-colors"
                 />
                 <span className="font-body-sm text-body-sm text-on-surface font-normal group-hover:text-primary transition-colors">
                   Lembrar de mim
@@ -266,7 +271,7 @@ export default function Login() {
               </label>
               <Link
                 to="/esqueceu-senha"
-                className="font-label-sm text-label-sm text-primary hover:text-on-primary-container font-semibold transition-colors focus:underline outline-none"
+                className="inline-flex items-center min-h-11 py-2 font-label-sm text-label-sm text-primary hover:text-on-surface font-semibold transition-colors focus:underline outline-none"
               >
                 Esqueci minha senha
               </Link>
@@ -276,46 +281,46 @@ export default function Login() {
             <button
               type="submit"
               disabled={enviando}
-              className="w-full mt-2 py-3.5 px-6 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-label-lg text-label-lg font-semibold shadow-sm hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer disabled:cursor-wait disabled:opacity-80"
+              className="w-full min-h-11 mt-2 py-3.5 px-6 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-label-lg text-label-lg font-semibold shadow-sm hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer disabled:cursor-wait disabled:opacity-80"
             >
               <span>{enviando ? "Entrando..." : "Entrar"}</span>
               <Icon name="arrow_forward" size={18} />
             </button>
 
-            {/* Divisor */}
-            <div className="relative flex items-center justify-center my-6">
-              <div className="w-full h-px bg-surface-container-highest" />
-              <span className="absolute bg-surface-container-lowest px-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider font-medium">
-                ou continue com
-              </span>
-            </div>
+            {googleAuthHabilitado && (
+              <>
+                <div className="relative flex items-center justify-center my-6">
+                  <div className="w-full h-px bg-surface-container-highest" />
+                  <span className="absolute bg-surface-container-lowest px-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider font-medium">
+                    ou continue com
+                  </span>
+                </div>
 
-            {/* Login social (ainda não configurado) */}
-            <button
-              type="button"
-              disabled
-              title="Login com Google ainda não está configurado."
-              className="w-full py-3.5 px-6 rounded-lg bg-surface-container-low text-on-surface font-label-lg text-label-md font-semibold transition-all duration-200 flex items-center justify-center gap-3 shadow-sm cursor-not-allowed opacity-60"
-            >
-              <IconeGoogle />
-              <span>Continuar com o Google</span>
-            </button>
+                <button
+                  type="button"
+                  className="w-full min-h-11 py-3.5 px-6 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-lg text-label-md font-semibold transition-all duration-200 flex items-center justify-center gap-3 shadow-sm cursor-pointer"
+                >
+                  <IconeGoogle />
+                  <span>Continuar com o Google</span>
+                </button>
+              </>
+            )}
           </form>
 
           {/* Cadastro */}
-          <div className="mt-8 text-center">
+          <div className="mt-6 text-center">
             <p className="font-body-sm text-body-sm text-on-surface-variant font-normal">
               Ainda não tem uma conta?
               <Link
                 to="/cadastro"
-                className="font-label-sm text-label-sm font-bold text-primary hover:text-on-primary-container transition-colors ml-1 focus:underline outline-none"
+                className="inline-flex items-center min-h-11 px-1 font-label-sm text-label-sm font-bold text-primary hover:text-on-surface transition-colors ml-1 focus:underline outline-none"
               >
                 Cadastre-se gratuitamente
               </Link>
             </p>
           </div>
         </div>
-      </section>
+      </main>
     </div>
   );
 }

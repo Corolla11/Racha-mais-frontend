@@ -129,7 +129,8 @@ export default function ConfirmarGrupo() {
       const amanha = new Date(agora.getTime() + 24 * 60 * 60 * 1000);
       for (const item of grupo.itens) {
         try {
-          const dataFinal = item.dataLimite ? new Date(`${item.dataLimite}T23:59:59`) : amanha;
+          const parsed = item.dataLimite ? new Date(`${item.dataLimite}T23:59:59`) : amanha;
+          const dataFinal = Number.isNaN(parsed.getTime()) ? amanha : parsed;
           const dataInicio = dataFinal > agora ? agora : new Date(dataFinal.getTime() - 3600_000);
           const tarefaCriada = await apiRequest<{ id: string }>(ENDPOINTS.tarefas.base, {
             method: "POST",
@@ -149,19 +150,25 @@ export default function ConfirmarGrupo() {
             for (let i = 0; i < idsAdicionados.length; i++) {
               const cota = share(item.valor, idsAdicionados.length, i);
               if (cota > 0) {
-                await apiRequest(ENDPOINTS.tarefas.partes(tarefaCriada.id), {
-                  method: "POST",
-                  body: {
-                    idUser: idsAdicionados[i],
-                    descricao: `Cota: ${item.titulo.trim()}`,
-                    valor: cota.toFixed(2),
-                  },
-                }).catch(() => {});
+                try {
+                  await apiRequest(ENDPOINTS.tarefas.partes(tarefaCriada.id), {
+                    method: "POST",
+                    body: {
+                      idUser: idsAdicionados[i],
+                      descricao: `Cota: ${item.titulo.trim()}`,
+                      valor: cota.toFixed(2),
+                    },
+                  });
+                } catch (error) {
+                  const motivo = error instanceof ApiError ? error.message : "falha ao dividir cota";
+                  naoAdicionados.push(`Parte da tarefa "${item.titulo.trim()}": ${motivo}`);
+                }
               }
             }
           }
-        } catch {
-          // Segue mesmo se alguma tarefa opcional falhar
+        } catch (error) {
+          const motivo = error instanceof ApiError ? error.message : "falha ao criar tarefa";
+          naoAdicionados.push(`Tarefa "${item.titulo.trim()}": ${motivo}`);
         }
       }
 

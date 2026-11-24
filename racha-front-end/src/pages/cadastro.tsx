@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/auth-context";
 import { ApiError } from "../lib/api";
+import BrandLogo, { BrandMark } from "../components/brand-logo";
 import Icon from "../components/icon";
 
 // Logo do Google usado no botão de cadastro social
@@ -122,23 +123,23 @@ export default function Cadastro() {
     }
   }
 
+  const googleAuthHabilitado = import.meta.env.VITE_GOOGLE_AUTH_ENABLED === "true";
+
   return (
-    <div className="font-body-md text-on-surface antialiased min-h-screen w-full flex flex-col md:flex-row bg-surface-container-lowest">
+    <div className="font-body-md text-on-surface antialiased min-h-screen w-full flex flex-col-reverse md:flex-row bg-surface-container-lowest">
       {/* PAINEL ESQUERDO — laranja */}
-      <section className="w-full md:w-1/2 bg-primary-container text-on-primary flex flex-col justify-between p-8 md:p-14 lg:p-20 relative overflow-hidden select-none">
+      <section className="hidden md:flex md:w-1/2 bg-gradient-to-br from-primary-container to-primary text-on-primary flex-col justify-between p-8 md:p-14 lg:p-20 relative overflow-hidden select-none">
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary-fixed/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-on-primary-container/10 rounded-full blur-3xl pointer-events-none" />
 
         {/* Marca */}
-        <Link to="/" className="flex items-center gap-3 relative z-10 w-fit" aria-label="Racha+, página inicial">
-          <div className="w-11 h-11 rounded-xl bg-on-primary text-primary-container flex items-center justify-center shadow-md">
-            <Icon name="pie_chart" size={28} className="font-bold" />
-          </div>
+        <Link to="/apresentacao" className="inline-flex items-center gap-3 relative z-10 w-fit min-h-11" aria-label="Racha+, página inicial">
+          <BrandMark size={44} className="rounded-xl shadow-md" />
           <div className="flex flex-col">
             <span className="font-display text-headline-sm text-on-primary tracking-tight font-extrabold flex items-center">
               Racha<span className="text-tertiary-fixed ml-0.5">+</span>
             </span>
-            <span className="text-on-primary/80 font-label-sm uppercase tracking-wider text-[10px]">Divisão Inteligente</span>
+            <span className="text-on-primary/85 font-label-sm uppercase tracking-wider text-[10px]">Divisão Inteligente</span>
           </div>
         </Link>
 
@@ -149,9 +150,9 @@ export default function Cadastro() {
               <Icon name="bolt" size={15} />
               Configuração instantânea
             </span>
-            <h1 className="font-display text-display-mobile md:text-display text-on-primary leading-tight font-extrabold tracking-tight">
+            <p className="font-display text-display-mobile md:text-display text-on-primary leading-tight font-extrabold tracking-tight">
               Comece a organizar em menos de 1 minuto.
-            </h1>
+            </p>
             <p className="font-body-lg text-body-lg text-on-primary/90 leading-relaxed font-normal">
               Crie grupos para viagens, república, eventos ou peladas com
               rateio automático e divisão justa.
@@ -213,37 +214,41 @@ export default function Cadastro() {
       </section>
 
       {/* PAINEL DIREITO — formulário */}
-      <section className="w-full md:w-1/2 bg-surface-container-lowest flex items-center justify-center p-6 sm:p-10 md:p-14 lg:p-16">
-        <div className="w-full max-w-[480px] flex flex-col justify-center py-6">
+      <main className="w-full md:w-1/2 flex-1 bg-surface-container-lowest flex items-center justify-center p-6 sm:p-10 md:p-14 lg:p-16">
+        <div className="w-full max-w-[480px] flex flex-col justify-center py-4">
+          <Link to="/apresentacao" className="md:hidden mb-6 inline-flex items-center min-h-11 w-fit" aria-label="Racha+, página inicial">
+            <BrandLogo />
+          </Link>
+
           <div className="mb-7">
-            <h2 className="font-headline-lg text-headline-lg text-on-surface font-extrabold tracking-tight">
+            <h1 className="font-headline-lg text-headline-lg text-on-surface font-extrabold tracking-tight">
               Crie sua conta no Racha+
-            </h2>
-            <p className="font-body-md text-body-md text-outline mt-1.5">
+            </h1>
+            <p className="font-body-md text-body-md text-on-surface-variant mt-1.5">
               Preencha seus dados para organizar seus grupos com facilidade.
             </p>
           </div>
 
-          {/* Cadastro social (ainda não configurado) */}
-          <button
-            type="button"
-            disabled
-            title="Cadastro com Google ainda não está configurado."
-            className="w-full py-3 px-4 rounded-lg bg-surface-container-low transition-colors flex items-center justify-center gap-3 shadow-sm cursor-not-allowed opacity-60"
-          >
-            <IconeGoogle />
-            <span className="font-label-lg text-label-md text-on-surface font-semibold">
-              Cadastrar com o Google
-            </span>
-          </button>
+          {googleAuthHabilitado && (
+            <>
+              <button
+                type="button"
+                className="w-full min-h-11 py-3 px-4 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors flex items-center justify-center gap-3 shadow-sm cursor-pointer"
+              >
+                <IconeGoogle />
+                <span className="font-label-lg text-label-md text-on-surface font-semibold">
+                  Cadastrar com o Google
+                </span>
+              </button>
 
-          {/* Divisor */}
-          <div className="relative my-6 flex items-center justify-center">
-            <div className="w-full h-px bg-surface-container-high" />
-            <span className="absolute bg-surface-container-lowest px-3 font-label-sm text-outline text-xs uppercase tracking-wider">
-              ou cadastre com seu e-mail
-            </span>
-          </div>
+              <div className="relative my-6 flex items-center justify-center">
+                <div className="w-full h-px bg-surface-container-high" />
+                <span className="absolute bg-surface-container-lowest px-3 font-label-sm text-on-surface-variant text-xs uppercase tracking-wider">
+                  ou cadastre com seu e-mail
+                </span>
+              </div>
+            </>
+          )}
 
           {erro && (
             <p
@@ -318,7 +323,7 @@ export default function Cadastro() {
                   type="button"
                   aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
                   onClick={() => setMostrarSenha((atual) => !atual)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center text-outline hover:text-on-surface transition-colors cursor-pointer"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 min-w-11 min-h-11 flex items-center justify-center text-outline hover:text-on-surface transition-colors cursor-pointer rounded-lg"
                 >
                   <Icon name={mostrarSenha ? "visibility_off" : "visibility"} size={20} />
                 </button>
@@ -363,35 +368,35 @@ export default function Cadastro() {
             </div>
 
             {/* Termos */}
-            <div className="flex items-start gap-3 mt-1">
+            <div className="flex items-start gap-3 mt-1 py-1">
               <input
                 id="termos"
                 type="checkbox"
                 required
                 checked={formulario.termos}
                 onChange={(event) => handleChange("termos", event.target.checked)}
-                className="mt-1 w-4 h-4 shrink-0 rounded cursor-pointer accent-primary-container"
+                className="mt-0.5 w-5 h-5 shrink-0 rounded cursor-pointer accent-primary-container"
               />
               <label
                 htmlFor="termos"
                 className="font-body-sm text-body-sm text-on-surface-variant cursor-pointer select-none leading-snug"
               >
                 Concordo com os{" "}
-                <a
-                  href="#"
+                <Link
+                  to="/faq#termos"
                   onClick={(event) => event.stopPropagation()}
                   className="font-semibold text-primary hover:underline"
                 >
                   Termos de Uso
-                </a>{" "}
+                </Link>{" "}
                 e a{" "}
-                <a
-                  href="#"
+                <Link
+                  to="/faq#privacidade"
                   onClick={(event) => event.stopPropagation()}
                   className="font-semibold text-primary hover:underline"
                 >
                   Política de Privacidade
-                </a>
+                </Link>
                 .
               </label>
             </div>
@@ -400,7 +405,7 @@ export default function Cadastro() {
             <button
               type="submit"
               disabled={enviando}
-              className="w-full mt-3 py-3.5 px-6 rounded-lg bg-primary-container hover:bg-on-primary-container text-on-primary font-label-lg text-label-lg font-bold shadow-md hover:shadow-lg transition-all duration-150 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:cursor-wait disabled:opacity-80"
+              className="w-full min-h-11 mt-3 py-3.5 px-6 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-label-lg text-label-lg font-bold shadow-md hover:shadow-lg transition-all duration-150 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:cursor-wait disabled:opacity-80"
             >
               <span>{enviando ? "Criando conta..." : "Criar conta"}</span>
               <Icon name="arrow_forward" size={20} />
@@ -413,14 +418,14 @@ export default function Cadastro() {
               Já possui uma conta?
               <Link
                 to="/login"
-                className="font-semibold text-primary hover:text-on-primary-container underline underline-offset-4 ml-1 transition-colors"
+                className="inline-flex items-center min-h-11 px-1 font-semibold text-primary hover:text-on-surface underline underline-offset-4 ml-1 transition-colors"
               >
                 Entrar
               </Link>
             </p>
           </div>
         </div>
-      </section>
+      </main>
     </div>
   );
 }

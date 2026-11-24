@@ -700,6 +700,21 @@ export default function Faq() {
               </div>
             </aside>
           </div>
+
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-space-md pt-space-md">
+            <article id="termos" className="rounded-xl bg-surface-container-lowest p-space-lg shadow-sm scroll-mt-24 space-y-2">
+              <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold">Termos de Uso</h2>
+              <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                O Racha+ organiza o cálculo e o registro colaborativo de despesas entre participantes de um grupo. Cada usuário é responsável pela exatidão dos valores lançados e pela quitação externa via Pix junto ao recebedor.
+              </p>
+            </article>
+            <article id="privacidade" className="rounded-xl bg-surface-container-lowest p-space-lg shadow-sm scroll-mt-24 space-y-2">
+              <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold">Política de Privacidade</h2>
+              <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                Seus dados cadastrais e chaves Pix são usados exclusivamente para identificação nos grupos e instruções de acerto entre participantes, sem venda ou compartilhamento externo.
+              </p>
+            </article>
+          </section>
         </div>
       </div>
     </AppShell>

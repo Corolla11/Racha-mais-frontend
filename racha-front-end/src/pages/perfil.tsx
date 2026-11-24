@@ -167,10 +167,10 @@ function ProfilePanel({ user, chavePix, onManageKeys }: { user: AuthUser | null;
               </div>
             </div>
             <div className="flex flex-row sm:flex-col items-center gap-space-xs shrink-0">
-              <button type="button" className="flex items-center gap-space-xs px-space-md py-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors" onClick={() => setMessage("O envio de fotos ainda não está disponível nesta versão.")}>
+              <button type="button" className="flex items-center gap-space-xs px-space-md min-h-11 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors cursor-pointer" onClick={() => setMessage("O envio de fotos ainda não está disponível nesta versão.")}>
                 <Icon name="photo_camera" size={18}/><span>Alterar Foto</span>
               </button>
-              <button type="button" className="px-space-md py-2 text-on-surface-variant hover:text-error font-label-sm text-label-sm transition-colors" onClick={() => setMessage("A remoção de fotos ainda não está disponível nesta versão.")}>Remover</button>
+              <button type="button" className="px-space-md min-h-11 py-2 text-on-surface-variant hover:text-error font-label-sm text-label-sm transition-colors cursor-pointer" onClick={() => setMessage("A remoção de fotos ainda não está disponível nesta versão.")}>Remover</button>
             </div>
           </div>
 
@@ -209,11 +209,17 @@ function ProfilePanel({ user, chavePix, onManageKeys }: { user: AuthUser | null;
             <BlockTitle icon="contact_mail" tone="bg-secondary-fixed text-secondary" title="Contato & Dados Oficiais" description="Informações confidenciais usadas para segurança e reconciliação bancária."/>
             <div className="space-y-space-md">
               <div className="space-y-1.5">
-                <label htmlFor={`${ids}-email`} className={labelClass}><span>E-mail Cadastrado</span></label>
+                <label htmlFor={`${ids}-email`} className={labelClass}>
+                  <span>E-mail Cadastrado</span>
+                  {Boolean((user as { emailVerified?: boolean } | null)?.emailVerified ?? true) && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-label-sm text-label-sm font-semibold">
+                      <Icon name="check_circle" size={14}/><span>Verificado</span>
+                    </span>
+                  )}
+                </label>
                 <div className="relative flex items-center">
                   <Icon name="mail" size={20} className="absolute left-space-md text-outline pointer-events-none"/>
-                  <input id={`${ids}-email`} type="email" autoComplete="email" value={form.email} onChange={event => update("email", event.target.value)} className={`${fieldClass} pl-11 pr-32`}/>
-                  <div className="absolute right-space-sm flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 font-label-sm text-label-sm font-semibold pointer-events-none"><Icon name="check_circle" size={16}/><span>Verificado</span></div>
+                  <input id={`${ids}-email`} type="email" autoComplete="email" value={form.email} onChange={event => update("email", event.target.value)} className={`${fieldClass} pl-11 pr-space-md`}/>
                 </div>
               </div>
               <div className="space-y-1.5">
@@ -256,7 +262,7 @@ function ProfilePanel({ user, chavePix, onManageKeys }: { user: AuthUser | null;
               <div className="flex items-center justify-between">
                 {pixKey ? <>
                   <span className="font-label-md text-label-md font-bold text-on-surface select-all">{pixKey}</span>
-                  <button type="button" className="text-primary hover:text-on-primary-container transition-colors" title="Copiar Chave" aria-label="Copiar chave Pix" onClick={copyKey}><Icon name="content_copy" size={20}/></button>
+                  <button type="button" className="min-w-11 min-h-11 flex items-center justify-center text-primary hover:text-on-surface transition-colors cursor-pointer" title="Copiar Chave" aria-label="Copiar chave Pix" onClick={copyKey}><Icon name="content_copy" size={20}/></button>
                 </> : <span className="font-body-sm text-body-sm text-on-surface-variant">Cadastre uma chave para receber os rateios.</span>}
               </div>
             </div>

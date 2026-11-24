@@ -9,11 +9,11 @@
    p-space-lg, font-headline-sm text-headline-sm etc.
 ====================================================== */
 @theme {
-  /* Cores */
+  /* Cores (ajustadas para WCAG AA >= 4.5:1) */
   --color-primary: #9b4500;
   --color-on-primary: #ffffff;
-  --color-primary-container: #ff8c42;
-  --color-on-primary-container: #6a2d00;
+  --color-primary-container: #c2410c;
+  --color-on-primary-container: #ffffff;
   --color-primary-fixed: #ffdbc9;
   --color-primary-fixed-dim: #ffb68d;
   --color-on-primary-fixed: #331200;
@@ -59,7 +59,7 @@
   --color-on-surface-variant: #564338;
   --color-inverse-surface: #27313f;
   --color-inverse-on-surface: #eaf1ff;
-  --color-outline: #897266;
+  --color-outline: #6f5b50;
   --color-outline-variant: #ddc1b3;
 
   /* Espaçamentos nomeados */
@@ -140,11 +140,7 @@
   --text-numeric-stat--letter-spacing: -0.02em;
   --text-numeric-stat--font-weight: 700;
 
-  /* Tokens legados (telas antigas ainda podem usar) */
-  --color-neutral: #9AA5B1;
-  --color-input: #F5F7FB;
-  --color-text-primary: #071D33;
-  --color-text-secondary: #596A7B;
+  /* Tokens tipográficos mantidos para src/lib/typography.ts */
   --text-ui-meta: var(--ui-font-meta);
   --text-ui-meta--line-height: var(--ui-line-body);
   --text-ui-caption: var(--ui-font-caption);
@@ -168,6 +164,11 @@
 }
 
 @layer base {
+  html {
+    color-scheme: light;
+    accent-color: var(--color-primary-container);
+    scrollbar-color: var(--color-outline) var(--color-surface-container-low);
+  }
   html, body { margin: 0; padding: 0; }
   body {
     background: var(--color-surface);
@@ -176,6 +177,63 @@
     -webkit-font-smoothing: antialiased;
     overscroll-behavior: none;
   }
+  ::selection {
+    background: var(--color-primary-fixed);
+    color: var(--color-on-primary-fixed);
+  }
+}
+
+@media (forced-colors: active) {
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    outline-color: Highlight;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    border: 1px solid ButtonBorder;
+  }
+}
+
+@property --fade-start {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --fade-end {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@keyframes reveal-fade-start {
+  to {
+    --fade-start: var(--fade-size);
+  }
+}
+
+@keyframes hide-fade-end {
+  from {
+    --fade-end: var(--fade-size);
+  }
+}
+
+.scroll-fade-x {
+  overflow-x: auto;
+  scroll-padding-inline: 2.5rem;
+  --fade-size: 2.5rem;
+  mask:
+    linear-gradient(black, black) no-clip subtract,
+    linear-gradient(to right, black, transparent) 0 0 / var(--fade-start) 100% no-repeat no-clip,
+    linear-gradient(to right, transparent, black) 100% 0 / var(--fade-end) 100% no-repeat no-clip;
+  animation: reveal-fade-start linear both, hide-fade-end linear both;
+  animation-timeline: scroll(self inline);
+  animation-range: 0 var(--fade-size), calc(100% - var(--fade-size)) 100%;
 }
 
 .material-symbols-outlined {
@@ -186,7 +244,13 @@
   line-height: 1;
   letter-spacing: normal;
   text-transform: none;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  overflow: hidden;
+  flex-shrink: 0;
   white-space: nowrap;
   word-wrap: normal;
   direction: ltr;

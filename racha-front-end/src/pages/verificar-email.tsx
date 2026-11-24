@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ClipboardEvent, type FormEvent, type 
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/auth-context";
 import { ApiError } from "../lib/api";
+import { BrandMark } from "../components/brand-logo";
 import Icon from "../components/icon";
 
 const DESTAQUES = [
@@ -148,16 +149,14 @@ export default function VerificarEmail() {
   return (
     <div className="bg-surface font-body-md text-on-surface antialiased min-h-screen w-full flex flex-col md:flex-row">
       {/* PAINEL ESQUERDO — laranja (mesma linguagem das telas de login/cadastro) */}
-      <section className="w-full md:w-1/2 lg:w-5/12 bg-primary-container text-on-primary flex flex-col justify-between p-8 sm:p-12 lg:p-16 relative overflow-hidden">
+      <section className="hidden md:flex w-full md:w-1/2 lg:w-5/12 bg-gradient-to-br from-primary-container to-primary text-on-primary flex-col justify-between p-8 sm:p-12 lg:p-16 relative overflow-hidden">
         <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-white/10 blur-2xl pointer-events-none" />
         <div className="absolute -bottom-32 -left-20 w-80 h-80 rounded-full bg-secondary-container/20 blur-3xl pointer-events-none" />
 
         {/* Marca */}
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
-          <Link to="/login" className="flex items-center gap-3" aria-label="Racha+, voltar para o login">
-            <span className="w-11 h-11 rounded-xl bg-on-primary text-primary-container flex items-center justify-center shadow-md">
-              <Icon name="pie_chart" size={26} filled />
-            </span>
+          <Link to="/login" className="inline-flex items-center gap-3 min-h-11" aria-label="Racha+, voltar para o login">
+            <BrandMark size={44} className="rounded-xl shadow-md" />
             <span className="flex flex-col">
               <span className="font-display text-headline-sm text-on-primary tracking-tight font-extrabold leading-none">
                 Racha<span className="text-tertiary-fixed ml-0.5">+</span>

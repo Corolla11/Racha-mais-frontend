@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { BrandMark } from "./brand-logo";
 import Icon from "./icon";
 
 const ETAPAS = ["Solicitar", "Confirmado", "Nova Senha"];
@@ -30,10 +31,8 @@ export default function RecuperacaoLayout({
 
         {/* Marca */}
         <div className="relative z-10 flex items-center justify-between gap-4">
-          <Link to="/login" className="flex items-center gap-3" aria-label="Racha+, voltar para o login">
-            <span className="w-11 h-11 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-sm">
-              <Icon name="pie_chart" size={24} className="text-white font-bold" />
-            </span>
+          <Link to="/login" className="flex items-center gap-3 min-h-11" aria-label="Racha+, voltar para o login">
+            <BrandMark size={44} className="rounded-xl shadow-sm" />
             <span className="flex flex-col">
               <span className="font-display text-headline-sm text-white tracking-tight leading-none">
                 Racha<span className="text-tertiary-fixed">+</span>

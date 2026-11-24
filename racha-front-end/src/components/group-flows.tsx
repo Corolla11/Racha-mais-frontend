@@ -297,7 +297,9 @@ export default function GroupFlows({ idGrupo, currentUserId = "", adminName, par
         {receiptView.receipt?.startsWith("data:image/") ? <div className="overflow-hidden rounded-xl bg-surface-container-low p-space-sm"><img className="mx-auto max-h-[60vh] w-auto rounded-lg object-contain" src={receiptView.receipt} alt="Comprovante anexado pelo participante"/></div> : <a className={`${btnPrimary} self-start`} href={receiptView.receipt} download={receiptView.receiptName}><Icon name="download" size={18}/>Baixar comprovante PDF</a>}
       </div>
     </Overlay>}
-    <small className="flex items-center gap-1 font-label-sm text-label-sm text-outline"><Icon name="info" size={14}/>Ambiente de demonstração · sem movimentações financeiras reais.</small>
+    {import.meta.env.DEV && import.meta.env.VITE_MOCK_AUTH === "true" && (
+      <small className="flex items-center gap-1 font-label-sm text-label-sm text-outline"><Icon name="info" size={14}/>Ambiente de demonstração · sem movimentações financeiras reais.</small>
+    )}
   </section>;
 }
 

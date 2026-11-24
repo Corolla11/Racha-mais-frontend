@@ -84,17 +84,17 @@ function Home() {
               <a
                 key={item.href}
                 href={item.href}
-                className="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors"
+                className="inline-flex items-center min-h-11 px-2 font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors"
               >
                 {item.rotulo}
               </a>
             ))}
-            <Link
-              to="/assinatura"
-              className="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors"
+            <a
+              href="#precos"
+              className="inline-flex items-center min-h-11 px-2 font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors"
             >
               Preços
-            </Link>
+            </a>
           </nav>
 
           <div className="flex items-center gap-space-sm sm:gap-space-md">
@@ -131,13 +131,13 @@ function Home() {
               <>
                 <Link
                   to="/login"
-                  className="font-label-md text-label-md text-on-surface px-space-sm sm:px-space-md py-space-sm hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors"
+                  className="inline-flex items-center min-h-11 font-label-md text-label-md text-on-surface px-space-sm sm:px-space-md hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors"
                 >
                   Entrar
                 </Link>
                 <Link
                   to="/cadastro"
-                  className="font-label-md text-label-md bg-primary-container text-on-primary font-semibold px-space-md py-space-sm rounded-lg shadow-sm hover:bg-primary transition-all active:scale-[0.98]"
+                  className="inline-flex items-center min-h-11 font-label-md text-label-md bg-primary-container text-on-primary font-semibold px-space-md rounded-lg shadow-sm hover:bg-primary transition-all active:scale-[0.98]"
                 >
                   Criar conta
                 </Link>
@@ -169,7 +169,7 @@ function Home() {
                   <h1 className="font-display text-display-mobile sm:text-display text-on-surface font-extrabold tracking-tight">
                     Você combina.
                     <br />
-                    <span className="text-primary-container">O Racha+ organiza.</span>
+                    <span className="text-primary">O Racha+ organiza.</span>
                   </h1>
                   <p className="font-body-lg text-body-lg text-on-surface-variant max-w-xl leading-relaxed">
                     Divida despesas de viagens, repúblicas, churrascos e eventos
@@ -216,7 +216,7 @@ function Home() {
                       </div>
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Viagem em Grupo</h3>
+                          <p className="font-headline-sm text-headline-sm font-bold text-on-surface">Viagem em Grupo</p>
                           <span className="px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-label-sm">Ativo</span>
                         </div>
                         <p className="font-body-sm text-body-sm text-on-surface-variant">5 amigos • 12 despesas registradas</p>
@@ -252,51 +252,51 @@ function Home() {
                   </div>
 
                   <div className="bg-surface-container rounded-xl p-5 space-y-3">
-                    <div className="flex items-end justify-between gap-3">
+                    <div className="flex flex-wrap items-end justify-between gap-3">
                       <div>
                         <span className="font-label-sm text-label-sm font-medium text-on-surface-variant block">Total do grupo</span>
-                        <span className="font-numeric-stat text-numeric-stat text-on-surface font-extrabold">R$ 2.450,00</span>
+                        <span className="font-numeric-stat text-numeric-stat text-on-surface font-extrabold tabular-nums whitespace-nowrap">R$ 2.450,00</span>
                       </div>
                       <div className="text-right">
                         <span className="font-label-sm text-label-sm font-semibold text-primary block">Sua parte</span>
-                        <span className="font-numeric-stat text-numeric-stat text-primary-container font-extrabold">R$ 490,00</span>
+                        <span className="font-numeric-stat text-numeric-stat text-primary font-extrabold tabular-nums whitespace-nowrap">R$ 490,00</span>
                       </div>
                     </div>
                     <div className="space-y-1.5">
                       <div className="w-full bg-surface-container-highest rounded-full h-2.5 overflow-hidden">
                         <div className="bg-primary-container h-full rounded-full w-[78%]" />
                       </div>
-                      <div className="flex justify-between font-label-sm text-label-sm text-on-surface-variant">
+                      <div className="flex justify-between font-label-sm text-label-sm text-on-surface-variant tabular-nums">
                         <span>78% quitado</span>
-                        <span>R$ 540,00 pendentes</span>
+                        <span className="whitespace-nowrap">R$ 540,00 pendentes</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-label-md text-label-md font-bold text-on-surface">Tarefas do Grupo</h4>
+                      <p className="font-label-md text-label-md font-bold text-on-surface">Tarefas do Grupo</p>
                       <span className="font-label-sm text-label-sm text-primary font-semibold">Ver todas (8)</span>
                     </div>
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-surface-container-low">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg bg-surface-container-low">
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="w-5 h-5 shrink-0 rounded bg-primary-container text-on-primary flex items-center justify-center">
                             <Icon name="check" size={14} />
                           </span>
-                          <span className="font-body-sm text-body-sm font-medium text-on-surface line-through opacity-60 truncate">Comprar carvão e carnes</span>
+                          <span className="font-body-sm text-body-sm font-medium text-on-surface line-through opacity-75">Comprar carvão e carnes</span>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-2 shrink-0 pl-8 sm:pl-0">
                           <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-surface-container-highest text-on-surface-variant">Organizador</span>
                           <Icon name="check_circle" size={18} className="text-tertiary" />
                         </div>
                       </div>
-                      <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-surface-container-low">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg bg-surface-container-low">
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="w-5 h-5 shrink-0 rounded bg-surface-container-highest" />
-                          <span className="font-body-sm text-body-sm font-medium text-on-surface truncate">Aluguel da Van executiva</span>
+                          <span className="font-body-sm text-body-sm font-medium text-on-surface">Aluguel da Van executiva</span>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-2 shrink-0 pl-8 sm:pl-0">
                           <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-secondary-fixed text-on-secondary-fixed">Membro</span>
                           <Icon name="pending" size={18} className="text-secondary" />
                         </div>
@@ -360,8 +360,50 @@ function Home() {
           </div>
         </section>
 
+        {/* PLANOS PÚBLICOS (#precos) */}
+        <section id="precos" className="w-full bg-surface py-16 lg:py-20 scroll-mt-16">
+          <div className="max-w-5xl mx-auto px-6 lg:px-12 space-y-10">
+            <div className="text-center max-w-2xl mx-auto space-y-2">
+              <span className="font-label-sm text-label-sm font-bold tracking-widest text-primary uppercase">
+                Planos transparentes
+              </span>
+              <h2 className="font-headline-lg-mobile sm:font-headline-lg font-bold text-on-surface">
+                Comece grátis e evolua quando precisar
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="rounded-2xl bg-surface-container-lowest p-8 shadow-sm flex flex-col justify-between gap-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Gratuito</h3>
+                    <span className="px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm font-semibold">Para sempre</span>
+                  </div>
+                  <p className="font-numeric-stat text-numeric-stat text-on-surface font-extrabold tabular-nums">R$ 0<span className="font-body-sm text-on-surface-variant font-normal"> /mês</span></p>
+                  <p className="font-body-sm text-body-sm text-on-surface-variant">Até 3 grupos gratuitos ativos com divisão por tarefas e histórico de rateio.</p>
+                </div>
+                <Link to={destinoCriar} className="min-h-11 inline-flex items-center justify-center rounded-xl bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md font-semibold transition-colors">
+                  Começar grátis
+                </Link>
+              </div>
+              <div className="rounded-2xl bg-surface-container-lowest p-8 shadow-md ring-2 ring-primary-container/25 flex flex-col justify-between gap-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Racha+ Pro</h3>
+                    <span className="px-2.5 py-1 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-bold">Mais grupos</span>
+                  </div>
+                  <p className="font-numeric-stat text-numeric-stat text-primary font-extrabold tabular-nums">Plano Pro<span className="font-body-sm text-on-surface-variant font-normal"> • mensal ou anual</span></p>
+                  <p className="font-body-sm text-body-sm text-on-surface-variant">Grupos ilimitados por assinatura do grupo, comprovantes e automações completas.</p>
+                </div>
+                <Link to={user ? "/assinatura" : "/cadastro"} className="min-h-11 inline-flex items-center justify-center rounded-xl bg-primary-container hover:bg-primary text-on-primary font-label-md font-bold transition-colors">
+                  {user ? "Ver planos Pro" : "Criar conta e conhecer"}
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* CTA FINAL */}
-        <section className="w-full bg-surface py-16 lg:py-20">
+        <section className="w-full bg-surface py-12 lg:py-16">
           <div className="max-w-5xl mx-auto px-6 lg:px-12">
             <div className="relative overflow-hidden rounded-3xl bg-inverse-surface text-inverse-on-surface p-8 sm:p-12 lg:p-16 text-center space-y-8 shadow-2xl">
               <div className="pointer-events-none absolute -top-20 -right-20 w-80 h-80 rounded-full bg-primary-container/20 blur-3xl" />
@@ -373,7 +415,7 @@ function Home() {
                 <h2 className="font-display text-headline-lg lg:text-display font-extrabold tracking-tight">
                   Pronto para o próximo rolê sem estresse de dinheiro?
                 </h2>
-                <p className="font-body-lg text-body-lg text-inverse-on-surface/80">
+                <p className="font-body-lg text-body-lg text-inverse-on-surface/90">
                   {user
                     ? "Crie um novo grupo agora e compartilhe o link direto no WhatsApp dos seus amigos."
                     : "Crie sua conta gratuita agora e compartilhe o link do grupo direto no WhatsApp dos seus amigos."}
@@ -382,12 +424,12 @@ function Home() {
               <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link
                   to={destinoCriar}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-primary-container text-on-primary font-label-lg text-label-lg font-bold shadow-lg hover:bg-primary transition-all active:scale-[0.98]"
+                  className="w-full sm:w-auto min-h-11 inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-primary-container text-on-primary font-label-lg text-label-lg font-bold shadow-lg hover:bg-primary transition-all active:scale-[0.98]"
                 >
                   <span>{user ? "Criar novo grupo" : "Criar conta gratuita"}</span>
                   <Icon name="rocket_launch" size={20} />
                 </Link>
-                <span className="text-inverse-on-surface/60 font-label-sm text-label-sm">
+                <span className="text-inverse-on-surface/90 font-label-sm text-label-sm">
                   Sem cartão de crédito necessário
                 </span>
               </div>

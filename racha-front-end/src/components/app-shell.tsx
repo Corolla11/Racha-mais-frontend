@@ -1,7 +1,10 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/auth-context";
+import { apiRequest } from "../lib/api";
+import { ENDPOINTS, type NotificacoesResponseApi } from "../lib/endpoints";
 import Aba from "./aba-perfil";
+import { BrandMark } from "./brand-logo";
 import Icon from "./icon";
 
 const navigation = [
@@ -16,11 +19,9 @@ function isActive(pathname: string, match: string[]) {
 /** Logo do Racha+ usado no header do redesign. */
 export function RachaLogo({ to = "/meus-grupos" }: { to?: string }) {
   return (
-    <Link to={to} className="flex items-center gap-space-sm group" aria-label="Racha+, meus grupos">
-      <div className="w-9 h-9 rounded-lg bg-primary-container flex items-center justify-center shadow-[0_2px_8px_rgba(255,140,66,0.3)] transition-transform group-hover:scale-105">
-        <Icon name="pie_chart" size={20} className="text-on-primary"/>
-      </div>
-      <span className="font-headline-sm text-headline-sm font-bold text-on-surface tracking-tight">Racha<span className="text-primary-container">+</span></span>
+    <Link to={to} className="inline-flex items-center gap-space-sm min-h-11 group" aria-label="Racha+, meus grupos">
+      <BrandMark size={36} className="transition-transform group-hover:scale-105" />
+      <span className="font-headline-sm text-headline-sm font-bold text-on-surface tracking-tight">Racha<span className="text-primary">+</span></span>
     </Link>
   );
 }
@@ -33,12 +34,12 @@ export function AppFooter() {
         <div className="flex items-center gap-space-sm flex-wrap justify-center">
           <div className="w-6 h-6 rounded-md bg-primary-container flex items-center justify-center text-on-primary"><Icon name="payments" size={14}/></div>
           <span className="font-label-md text-label-md text-on-surface-variant font-semibold">Racha+ © {new Date().getFullYear()}</span>
-          <span className="font-body-sm text-body-sm text-outline">• Gestão colaborativa simplificada</span>
+          <span className="font-body-sm text-body-sm text-on-surface-variant">• Gestão colaborativa simplificada</span>
         </div>
-        <div className="flex items-center gap-space-lg font-body-sm text-body-sm text-on-surface-variant">
-          <Link className="hover:text-primary transition-colors" to="/faq">Termos</Link>
-          <Link className="hover:text-primary transition-colors" to="/faq">Privacidade</Link>
-          <Link className="hover:text-primary transition-colors" to="/faq">Ajuda</Link>
+        <div className="flex items-center gap-space-md font-body-sm text-body-sm text-on-surface-variant">
+          <Link className="inline-flex items-center min-h-11 px-2 hover:text-primary transition-colors" to="/faq#termos">Termos</Link>
+          <Link className="inline-flex items-center min-h-11 px-2 hover:text-primary transition-colors" to="/faq#privacidade">Privacidade</Link>
+          <Link className="inline-flex items-center min-h-11 px-2 hover:text-primary transition-colors" to="/faq">Ajuda</Link>
         </div>
       </div>
     </footer>
@@ -59,11 +60,20 @@ export default function AppShell({ title, children, bare = false }: { title: str
   const [profile, setProfile] = useState(false);
   const [menu, setMenu] = useState(false);
   const [busca, setBusca] = useState("");
+  const [naoLidas, setNaoLidas] = useState(0);
   const { user } = useAuth();
   const name = user?.name || "Usuário";
   const shortName = name.trim().split(/\s+/).slice(0, 2).map((part, index) => index === 0 ? part : `${part[0]}.`).join(" ");
 
   useEffect(() => { document.title = `${title} | Racha+`; }, [title]);
+  useEffect(() => {
+    if (!user) return;
+    let ativo = true;
+    apiRequest<NotificacoesResponseApi>(`${ENDPOINTS.notificacoes.base}?limite=1`)
+      .then((res) => { if (ativo) setNaoLidas(res.naoLidas ?? 0); })
+      .catch(() => { if (ativo) setNaoLidas(0); });
+    return () => { ativo = false; };
+  }, [user, pathname]);
   // Fecha os menus ao trocar de rota (ajuste de estado durante o render, sem efeito).
   const [rotaAnterior, setRotaAnterior] = useState(pathname);
   if (rotaAnterior !== pathname) {
@@ -83,7 +93,7 @@ export default function AppShell({ title, children, bare = false }: { title: str
       <header className="fixed top-0 left-0 w-full z-50 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
         <div className="h-16 max-w-6xl mx-auto px-gutter-mobile sm:px-gutter flex items-center justify-between gap-space-md">
           <div className="flex items-center gap-space-lg shrink-0">
-            <button type="button" className="md:hidden w-10 h-10 -ml-2 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high" aria-label="Abrir menu" aria-expanded={menu} onClick={() => setMenu(!menu)}>
+            <button type="button" className="md:hidden min-w-11 min-h-11 -ml-2 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high" aria-label="Abrir menu" aria-expanded={menu} onClick={() => setMenu(!menu)}>
               <Icon name={menu ? "close" : "menu"} size={22}/>
             </button>
             <RachaLogo/>
@@ -96,8 +106,8 @@ export default function AppShell({ title, children, bare = false }: { title: str
                     to={path}
                     aria-current={active ? "page" : undefined}
                     className={() => active
-                      ? "px-space-md py-space-sm transition-colors bg-surface-container-high text-on-surface font-label-md text-label-md font-semibold rounded-lg"
-                      : "px-space-md py-space-sm font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors rounded-lg"}
+                      ? "px-space-md min-h-11 inline-flex items-center transition-colors bg-surface-container-high text-on-surface font-label-md text-label-md font-semibold rounded-lg"
+                      : "px-space-md min-h-11 inline-flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors rounded-lg"}
                   >
                     {label}
                   </NavLink>
@@ -112,21 +122,21 @@ export default function AppShell({ title, children, bare = false }: { title: str
               <input
                 value={busca}
                 onChange={event => setBusca(event.target.value)}
-                className="w-full pl-11 pr-space-md py-space-xs h-10 rounded-lg bg-surface-container-lowest text-on-surface placeholder:text-outline font-body-sm text-body-sm shadow-[0_1px_2px_rgba(0,0,0,0.03)] focus:outline-none focus:ring-2 focus:ring-primary-container transition-all"
+                className="w-full pl-11 pr-space-md py-space-xs h-11 rounded-lg bg-surface-container-lowest text-on-surface placeholder:text-outline font-body-sm text-body-sm shadow-[0_1px_2px_rgba(0,0,0,0.03)] focus:outline-none focus:ring-2 focus:ring-primary-container transition-all"
                 placeholder="Buscar despesas, grupos ou pessoas"
                 type="search"
               />
             </label>
           </form>
-          <div className="flex items-center gap-space-sm sm:gap-space-md shrink-0">
-            <Link to="/notificacoes" aria-label="Notificações" className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-colors ${pathname.endsWith("/notificacoes") ? "bg-surface-container-high text-on-surface" : "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"}`}>
+          <div className="flex items-center gap-space-xs sm:gap-space-md shrink-0">
+            <Link to="/notificacoes" aria-label={naoLidas > 0 ? `Notificações (${naoLidas} não lidas)` : "Notificações"} className={`relative min-w-11 min-h-11 rounded-full flex items-center justify-center transition-colors ${pathname.endsWith("/notificacoes") ? "bg-surface-container-high text-on-surface" : "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"}`}>
               <Icon name="notifications" size={22}/>
-              <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-secondary-container ring-2 ring-surface"/>
+              {naoLidas > 0 && <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-secondary-container ring-2 ring-surface"/>}
             </Link>
-            <Link to="/criar-grupo" className="hidden sm:flex items-center gap-space-xs px-space-md h-10 rounded-lg bg-primary-container hover:bg-primary-container/90 text-on-primary font-label-md text-label-md shadow-[0_4px_14px_rgba(255,140,66,0.35)] active:scale-[0.98] transition-all">
+            <Link to="/criar-grupo" className="hidden sm:inline-flex items-center gap-space-xs px-space-md min-h-11 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-label-md text-label-md shadow-[0_4px_14px_rgba(194,65,12,0.3)] active:scale-[0.98] transition-all">
               <Icon name="add" size={20}/><span>Novo Grupo</span>
             </Link>
-            <button type="button" className="flex items-center gap-space-sm pl-space-xs group" aria-label="Menu do perfil" aria-expanded={profile} onClick={() => setProfile(!profile)}>
+            <button type="button" className="flex items-center gap-space-sm min-h-11 px-1.5 group cursor-pointer" aria-label="Menu do perfil" aria-expanded={profile} onClick={() => setProfile(!profile)}>
               <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center overflow-hidden">
                 {user?.image ? <img src={user.image} alt="" className="w-full h-full object-cover"/> : <Icon name="person" size={18} className="text-on-primary"/>}
               </div>
