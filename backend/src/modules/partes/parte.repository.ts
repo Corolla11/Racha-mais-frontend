@@ -1,7 +1,11 @@
 import { AppError } from "../../errors/AppError.js";
 import { Prisma } from "../../generated/prisma/client.js";
-import type { StatusAndamento } from "../../generated/prisma/enums.js";
+import {
+  TipoNotificacao,
+  type StatusAndamento,
+} from "../../generated/prisma/enums.js";
 import { prisma } from "../../lib/prisma.js";
+import { notificacaoRepository } from "../notificacoes/notificacao.repository.js";
 
 const MAX_TENTATIVAS_TRANSACAO = 3;
 
@@ -33,7 +37,14 @@ export const parteRepository = {
   buscarTarefa(idTarefa: string) {
     return prisma.tarefa.findUnique({
       where: { id: idTarefa },
-      select: { id: true, idGrupo: true, idUser: true, valorTotal: true },
+      select: {
+        id: true,
+        idGrupo: true,
+        idUser: true,
+        nome: true,
+        dataFinal: true,
+        valorTotal: true,
+      },
     });
   },
 
@@ -143,7 +154,23 @@ export const parteRepository = {
         valor: true,
         status: true,
         user: { select: { id: true, name: true, image: true } },
+        tarefa: { select: { nome: true, idGrupo: true } },
       },
+    }).then(async (parte) => {
+      await notificacaoRepository.criarNaTransacao(tx, [
+        {
+          idUser: parte.idUser,
+          tipo: TipoNotificacao.COBRANCA_CRIADA,
+          titulo: "Nova cobrança",
+          mensagem: `Você recebeu uma cobrança de ${Number(parte.valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} na tarefa "${parte.tarefa.nome}".`,
+          idGrupo: parte.tarefa.idGrupo,
+          idTarefa: parte.idTarefa,
+          idParte: parte.id,
+          chaveEvento: `cobranca-criada:${parte.id}`,
+        },
+      ]);
+      const { tarefa: _tarefa, ...resposta } = parte;
+      return resposta;
     });
   },
 

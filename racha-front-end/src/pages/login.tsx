@@ -2,17 +2,14 @@ import { typography as T } from "../lib/typography";
 import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft,
   ArrowRight,
+  CheckCircle2,
   Eye,
   EyeOff,
   Lock,
   Mail,
   PieChart,
-  ShieldCheck,
-  Star,
-  TrendingUp,
-  User,
+  Quote,
 } from "lucide-react";
 import { useAuth } from "../auth/auth-context";
 import { ApiError } from "../lib/api";
@@ -24,86 +21,74 @@ import { ApiError } from "../lib/api";
    esta tela não interfira nas demais páginas do projeto.
 ====================================================== */
 
-// Paleta
 const C = {
-  primary: "#865300",
-  primaryContainer: "#f2a541",
+  primary: "#9b4500",
+  primaryContainer: "#ff8c42",
   onPrimary: "#ffffff",
-  onPrimaryContainer: "#663e00",
+  onPrimaryContainer: "#6a2d00",
 
-  secondary: "#386188",
-  secondaryContainer: "#aad3ff",
+  secondaryContainer: "#fc6f5a",
 
-  tertiary: "#8e4e00",
-  tertiaryContainer: "#ff9e3e",
-
-  surface: "#f7f9ff",
   surfaceLowest: "#ffffff",
-  surfaceLow: "#ecf4ff",
-  surfaceContainer: "#e4effc",
-  surfaceHigh: "#dee9f6",
+  surfaceLow: "#eff4ff",
+  surfaceContainer: "#e6eeff",
+  surfaceHighest: "#d9e3f6",
 
-  onSurface: "#121d26",
-  onSurfaceVariant: "#524436",
-
-  outline: "#857464",
-  outlineVariant: "#d7c3b0",
+  onSurface: "#121c2a",
+  onSurfaceVariant: "#564338",
+  outline: "#897266",
 };
-
-// Escala tipográfica
-
 
 // Logo do Google usado no botão de login social
 function IconeGoogle() {
   return (
     <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
       <path
-        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
         fill="#4285F4"
       />
       <path
-        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
         fill="#34A853"
       />
       <path
-        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
         fill="#FBBC05"
       />
       <path
-        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
         fill="#EA4335"
       />
     </svg>
   );
 }
 
-// Selos exibidos no painel lateral
-const FUNCIONALIDADES = [
-  { emoji: "⚡", cor: C.primary, texto: "Divisão com IA" },
-  { emoji: "📱", cor: C.secondary, texto: "Pix Copia e Cola" },
-  { emoji: "✅", cor: C.tertiary, texto: "Confiabilidade coletiva" },
+// Membros exibidos no cartão ilustrativo do painel laranja
+const MEMBROS = [
+  { iniciais: "RM", opacidade: 1 },
+  { iniciais: "LP", opacidade: 0.9 },
+  { iniciais: "CS", opacidade: 0.8 },
+  { iniciais: "FA", opacidade: 0.7 },
 ];
+
+// Partes da barra de divisão (intensidade de cada fatia)
+const FATIAS = [1, 0.8, 0.6, 0.3];
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { signIn } = useAuth();
-  // Controla se a senha está visível
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
-
-  // Destaca visualmente o campo em foco
   const [campoFocado, setCampoFocado] = useState<string | null>(null);
 
-  // Dados do formulário
   const [formulario, setFormulario] = useState({
     email: "",
     senha: "",
     lembrar: false,
   });
 
-  // Altera os dados do formulário
   function handleChange(
     campo: keyof typeof formulario,
     valor: string | boolean
@@ -114,7 +99,6 @@ export default function Login() {
     }));
   }
 
-  // Envia o formulário
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErro("");
@@ -143,566 +127,302 @@ export default function Login() {
   // Estilo compartilhado pelos campos de texto
   function estiloCampo(campo: string) {
     const focado = campoFocado === campo;
-
     return {
       backgroundColor: focado ? C.surfaceLowest : C.surfaceLow,
       color: C.onSurface,
-      boxShadow: focado ? `0 0 0 2px ${C.primaryContainer}` : undefined,
+      boxShadow: focado
+        ? `0 0 0 2px ${C.primaryContainer}, 0 4px 6px -1px rgba(0,0,0,0.08)`
+        : undefined,
     };
   }
 
   return (
     <div
-      className="flex min-h-screen flex-col justify-between font-jakarta"
-      style={{ backgroundColor: C.surface, color: C.onSurface }}
+      className="flex min-h-screen w-full flex-col font-jakarta md:flex-row"
+      style={{ color: C.onSurface }}
     >
-
       {/* =====================================================
-          CABEÇALHO
+          PAINEL ESQUERDO — LARANJA
       ====================================================== */}
 
-      <header
-        className="fixed top-0 z-50 w-full shadow-[0_1px_8px_rgba(0,0,0,0.04)] backdrop-blur-xl"
-        style={{ backgroundColor: `${C.surface}cc` }}
+      <section
+        className="relative flex w-full flex-col justify-between overflow-hidden p-8 text-white sm:p-12 md:w-1/2 lg:p-16"
+        style={{ backgroundColor: C.primaryContainer }}
       >
-        <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-6">
+        {/* Brilhos decorativos */}
+        <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/10 blur-2xl" />
+        <div
+          className="pointer-events-none absolute -bottom-32 -left-20 h-80 w-80 rounded-full blur-3xl"
+          style={{ backgroundColor: `${C.secondaryContainer}33` }}
+        />
 
-          {/* Marca */}
-          <a
-            href="#"
-            className="flex items-center gap-3 transition-opacity hover:opacity-90"
-          >
-            <div
-              className="flex h-9 w-9 items-center justify-center rounded-xl shadow-sm"
-              style={{ backgroundColor: C.primary }}
-            >
-              <PieChart className="h-5 w-5" style={{ color: C.onPrimary }} />
-            </div>
-            <div className="flex flex-col">
-              <span className={`${T.headlineSm} leading-none tracking-tight`}>
-                Racha<span style={{ color: C.primary }}>+</span>
-              </span>
-              <span
-                className="hidden text-ui-caption leading-tight tracking-[0.04em] sm:inline-block"
-                style={{ color: C.onSurfaceVariant }}
-              >
-                Você combina. O Racha+ organiza.
-              </span>
-            </div>
-          </a>
-
-          {/* Navegação */}
-          <nav className="flex items-center gap-4">
-            <a
-              href="#"
-              className={`${T.labelLg} flex items-center gap-1 rounded-lg px-3 py-2 transition-colors hover:bg-[#ecf4ff] hover:text-[#121d26]`}
-              style={{ color: C.onSurfaceVariant }}
-            >
-              <ArrowLeft className="h-[18px] w-[18px]" />
-              Voltar à Landing Page
-            </a>
-            <Link
-              to="/cadastro"
-              className={`${T.labelLg} rounded-lg px-3 py-2 transition-colors hover:bg-[#ecf4ff] hover:text-[#121d26]`}
-              style={{ color: C.onSurfaceVariant }}
-            >
-              Criar Conta
-            </Link>
-          </nav>
-
-          {/* Ações */}
-          <div className="flex items-center gap-3">
-            <Link
-              to="/cadastro"
-              className={`${T.labelLg} hidden items-center justify-center rounded-xl px-5 py-2 transition-all hover:brightness-95 md:inline-flex`}
-              style={{
-                backgroundColor: C.primaryContainer,
-                color: C.onPrimaryContainer,
-              }}
-            >
-              Começar grátis
-            </Link>
-            <div
-              className="flex h-8 w-8 items-center justify-center rounded-full"
-              style={{ backgroundColor: C.primary }}
-            >
-              <User
-                className="h-[18px] w-[18px]"
-                style={{ color: C.onPrimary }}
-              />
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* =====================================================
-          CONTEÚDO PRINCIPAL
-      ====================================================== */}
-
-      <main
-        className="flex w-full flex-1 flex-col justify-center pt-16"
-        style={{ backgroundColor: C.surface }}
-      >
-        <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-[1280px] items-center justify-center px-6 py-8 lg:py-12">
+        {/* Marca */}
+        <Link to="/" className="relative z-10 flex items-center gap-3">
           <div
-            className="grid w-full max-w-[1080px] grid-cols-1 overflow-hidden rounded-xl shadow-xl lg:grid-cols-12"
+            className="flex h-10 w-10 items-center justify-center rounded-xl shadow-md"
             style={{ backgroundColor: C.surfaceLowest }}
           >
+            <PieChart
+              className="h-6 w-6"
+              style={{ color: C.primaryContainer }}
+              fill="currentColor"
+            />
+          </div>
+          <span className={`${T.headlineMd} font-extrabold tracking-tight`}>
+            Racha<span className="opacity-90">+</span>
+          </span>
+        </Link>
 
-            {/* ---------------------------------------------
-                COLUNA ESQUERDA — FORMULÁRIO
-            ---------------------------------------------- */}
+        {/* Chamada principal */}
+        <div className="relative z-10 my-auto max-w-lg py-10">
+          <span
+            className={`${T.labelSm} mb-6 inline-flex items-center rounded-full bg-white/20 px-3 py-1 uppercase tracking-wider backdrop-blur-sm`}
+          >
+            Divisão inteligente de despesas
+          </span>
+          <h1 className="mb-6 text-[2.25rem] font-extrabold leading-tight tracking-tight lg:text-[3rem]">
+            Organize qualquer grupo em minutos.
+          </h1>
+          <p className="mb-10 max-w-md text-lg leading-relaxed text-white/90">
+            O jeito mais fácil e transparente de dividir contas e organizar
+            tarefas coletivas sem atritos ou planilhas confusas.
+          </p>
 
-            <div className="flex flex-col justify-between p-8 sm:p-10 lg:col-span-7 lg:p-12">
-              <div>
-
-                {/* Título */}
-                <div className="mb-6">
-                  <span
-                    className={`${T.labelSm} mb-3 inline-flex items-center gap-2 rounded-full px-3 py-1`}
-                    style={{
-                      backgroundColor: C.surfaceContainer,
-                      color: C.secondary,
-                    }}
-                  >
-                    <span
-                      className="h-1.5 w-1.5 animate-pulse rounded-full"
-                      style={{ backgroundColor: C.primaryContainer }}
-                    />
-                    Acesso Seguro
-                  </span>
-                  <h1 className={T.headlineLg}>Bem-vindo de volta!</h1>
-                  <p
-                    className={`${T.bodyMd} mt-1`}
-                    style={{ color: C.onSurfaceVariant }}
-                  >
-                    Acesse seus grupos, contas divididas e compromissos
-                    combinados.
-                  </p>
-                </div>
-
-                {/* Login social */}
-                <button
-                  type="button"
-                  disabled
-                  title="Login com Google ainda não está configurado."
-                  className={`${T.labelMd} mb-6 flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-xl px-4 py-3 opacity-60 shadow-sm`}
-                  style={{
-                    backgroundColor: C.surfaceLow,
-                    color: C.onSurface,
-                  }}
-                >
-                  <IconeGoogle />
-                  <span>Google</span>
-                </button>
-
-                {/* Divisor */}
-                <div className="relative my-6 flex items-center justify-center">
-                  <div
-                    className="h-px w-full"
-                    style={{ backgroundColor: C.surfaceHigh }}
-                  />
-                  <span
-                    className={`${T.labelSm} absolute px-3 uppercase`}
-                    style={{
-                      backgroundColor: C.surfaceLowest,
-                      color: C.onSurfaceVariant,
-                    }}
-                  >
-                    ou entre com seu e-mail
-                  </span>
-                </div>
-
-                {erro && (
-                  <p
-                    role="alert"
-                    className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800"
-                  >
-                    {erro}
-                  </p>
-                )}
-
-                {/* Formulário */}
-                <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-
-                  {/* E-mail */}
-                  <div>
-                    <label htmlFor="email" className={`${T.labelMd} mb-1.5 block`}>
-                      E-mail
-                    </label>
-                    <div className="relative flex items-center">
-                      <Mail
-                        className="pointer-events-none absolute left-3.5 h-5 w-5"
-                        style={{ color: C.onSurfaceVariant }}
-                      />
-                      <input
-                        id="email"
-                        type="email"
-                        required
-                        value={formulario.email}
-                        onChange={(event) =>
-                          handleChange("email", event.target.value)
-                        }
-                        onFocus={() => setCampoFocado("email")}
-                        onBlur={() => setCampoFocado(null)}
-                        placeholder="ex: mariana@email.com"
-                        className={`ui-control ui-control--leading ${`${T.bodyMd} h-11 w-full rounded-lg pl-11 pr-4 transition-all placeholder:text-[#857464] focus:outline-none`}`}
-                        style={estiloCampo("email")}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Senha */}
-                  <div>
-                    <div className="mb-1.5 flex items-center justify-between">
-                      <label htmlFor="senha" className={`${T.labelMd} block`}>
-                        Sua senha
-                      </label>
-                      <a
-                        href="/esqueceu-senha"
-                        className={`${T.labelSm} transition-opacity hover:opacity-70`}
-                        style={{ color: C.primary }}
-                      >
-                        Esqueceu sua senha?
-                      </a>
-                    </div>
-                    <div className="relative flex items-center">
-                      <Lock
-                        className="pointer-events-none absolute left-3.5 h-5 w-5"
-                        style={{ color: C.onSurfaceVariant }}
-                      />
-                      <input
-                        id="senha"
-                        type={mostrarSenha ? "text" : "password"}
-                        required
-                        minLength={8}
-                        value={formulario.senha}
-                        onChange={(event) =>
-                          handleChange("senha", event.target.value)
-                        }
-                        onFocus={() => setCampoFocado("senha")}
-                        onBlur={() => setCampoFocado(null)}
-                        placeholder="••••••••"
-                        className={`ui-control ui-control--leading ui-control--trailing ${`${T.bodyMd} h-11 w-full rounded-lg pl-11 pr-11 transition-all placeholder:text-[#857464] focus:outline-none`}`}
-                        style={estiloCampo("senha")}
-                      />
-                      <button
-                        type="button"
-                        aria-label="Exibir ou ocultar senha"
-                        onClick={() => setMostrarSenha((atual) => !atual)}
-                        className="absolute right-3 flex cursor-pointer items-center justify-center p-1 transition-opacity hover:opacity-70"
-                        style={{ color: C.onSurfaceVariant }}
-                      >
-                        {mostrarSenha ? (
-                          <EyeOff className="h-5 w-5" />
-                        ) : (
-                          <Eye className="h-5 w-5" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Lembrar de mim */}
-                  <div className="mt-1 flex items-center gap-2.5">
-                    <input
-                      id="lembrar"
-                      type="checkbox"
-                      checked={formulario.lembrar}
-                      onChange={(event) =>
-                        handleChange("lembrar", event.target.checked)
-                      }
-                      className="h-4 w-4 cursor-pointer rounded"
-                      style={{ accentColor: C.primaryContainer }}
-                    />
-                    <label
-                      htmlFor="lembrar"
-                      className={`${T.bodySm} cursor-pointer select-none`}
-                      style={{ color: C.onSurfaceVariant }}
-                    >
-                      Manter sessão neste dispositivo
-                    </label>
-                  </div>
-
-                  {/* Botão principal */}
-                  <button
-                    type="submit"
-                    disabled={enviando}
-                    className={`ui-button ui-button--md ${`${T.labelLg} mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 shadow-md transition-all hover:shadow-lg hover:brightness-95`}`}
-                    style={{
-                      backgroundColor: C.primaryContainer,
-                      color: C.onPrimary,
-                    }}
-                  >
-                    <span>{enviando ? "Entrando..." : "Entrar na minha conta"}</span>
-                    <ArrowRight className="h-[18px] w-[18px]" />
-                  </button>
-                </form>
-              </div>
-
-              {/* Rodapé do formulário */}
-              <div className="mt-8 flex flex-col gap-4 pt-6">
-                <div
-                  className={`${T.bodySm} text-center`}
-                  style={{ color: C.onSurfaceVariant }}
-                >
-                  Ainda não tem uma conta no Racha+?
-                  <Link
-                    to="/cadastro"
-                    className="ml-1 font-semibold transition-opacity hover:opacity-70"
-                    style={{ color: C.primary }}
-                  >
-                    Cadastre-se gratuitamente
-                  </Link>
-                </div>
-                <div
-                  className={`${T.labelSm} flex items-center justify-center gap-2 rounded-lg px-3 py-2 normal-case`}
-                  style={{
-                    backgroundColor: C.surfaceLow,
-                    color: C.onSurfaceVariant,
-                  }}
-                >
-                  <ShieldCheck
-                    className="h-4 w-4 shrink-0"
-                    style={{ color: C.secondary }}
-                  />
-                  <span>
-                    Ambiente seguro com criptografia de ponta a ponta e
-                    conciliação Pix protegida.
-                  </span>
-                </div>
-              </div>
+          {/* Cartão ilustrativo */}
+          <div className="w-full rounded-2xl bg-white/10 p-6 shadow-sm backdrop-blur-md">
+            <div
+              className={`${T.labelSm} mb-3 flex items-center justify-between text-white/90`}
+            >
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-white" />
+                Aluguel da República
+              </span>
+              <span className={`${T.labelMd} text-white`}>R$ 3.450 / 4</span>
             </div>
 
-            {/* ---------------------------------------------
-                COLUNA DIREITA — PROVA SOCIAL
-            ---------------------------------------------- */}
+            <div className="mb-5 flex h-2.5 w-full gap-1 overflow-hidden rounded-full bg-white/20">
+              {FATIAS.map((opacidade, indice) => (
+                <div
+                  key={indice}
+                  className="h-full w-1/4 rounded-full bg-white"
+                  style={{ opacity: opacidade }}
+                />
+              ))}
+            </div>
 
-            <div
-              className="relative flex flex-col justify-between overflow-hidden p-8 sm:p-10 lg:col-span-5"
-              style={{ backgroundColor: C.surfaceLow }}
-            >
-
-              {/* Brilhos decorativos */}
-              <div
-                className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full blur-3xl"
-                style={{ backgroundColor: `${C.primaryContainer}1a` }}
-              />
-              <div
-                className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full blur-3xl"
-                style={{ backgroundColor: `${C.secondaryContainer}33` }}
-              />
-
-              <div className="relative z-10">
-
-                {/* Chamada institucional */}
-                <div className="mb-6">
-                  <span
-                    className={`${T.labelSm} mb-3 inline-block rounded px-3 py-1 uppercase`}
+            <div className="flex items-center justify-between pt-2">
+              <div className="flex -space-x-2">
+                {MEMBROS.map((membro) => (
+                  <div
+                    key={membro.iniciais}
+                    className={`${T.labelSm} flex h-8 w-8 items-center justify-center rounded-full font-bold shadow-sm`}
                     style={{
-                      backgroundColor: C.surfaceHigh,
-                      color: C.secondary,
+                      backgroundColor: `rgba(255,255,255,${membro.opacidade})`,
+                      color: C.primaryContainer,
                     }}
                   >
-                    Racha+ Coletivo
-                  </span>
-                  <h2 className={`${T.headlineLg} leading-snug`}>
-                    Você combina.
-                    <br />
-                    <span className="font-bold" style={{ color: C.primary }}>
-                      O Racha+ organiza.
-                    </span>
-                  </h2>
-                  <p
-                    className={`${T.bodyMd} mt-2`}
-                    style={{ color: C.onSurfaceVariant }}
-                  >
-                    Controle automático de contas em grupo, despesas divididas e
-                    tarefas compartilhadas sem constrangimentos.
-                  </p>
-                </div>
-
-                {/* Selos */}
-                <div className="mb-8 flex flex-wrap gap-2">
-                  {FUNCIONALIDADES.map((funcionalidade) => (
-                    <span
-                      key={funcionalidade.texto}
-                      className={`${T.labelSm} inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 shadow-sm`}
-                      style={{
-                        backgroundColor: C.surfaceLowest,
-                        color: C.onSurface,
-                      }}
-                    >
-                      <span style={{ color: funcionalidade.cor }}>
-                        {funcionalidade.emoji}
-                      </span>
-                      {funcionalidade.texto}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Depoimento */}
-                <div
-                  className="mb-6 rounded-xl p-5 shadow-sm transition-transform duration-200 hover:-translate-y-0.5"
-                  style={{ backgroundColor: C.surfaceLowest }}
-                >
-                  <div className="mb-3 flex items-center gap-3">
-                    <img
-                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrQsGV169WMYsh8I6JGggrw6gJXiLa1Wd36wm5Vf_iQmAus2-d0TEXhJBj_1ZWmbGg_8Sp2fIPxJCL_IUtwP3wtCsjhtNCdJs7SoqNJEhpJw3UnCKy3dCw3-IdLXT9nxwPyTU_K_At6lbzlgHyjw44bI4jlTfuBStvtSczzuXpRTuHeG1zErYwEOFr7_k8Df2U5AnnUGC0wZB4i5ST8NcF2X-2X9sZahqGh8GKkOC8z31TQp6meDBN"
-                      alt="Foto de Mariana Silva"
-                      className="h-10 w-10 rounded-full object-cover"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className={`${T.labelMd} truncate`}>
-                        Mariana Silva
-                      </div>
-                      <div
-                        className={`${T.labelSm} truncate`}
-                        style={{ color: C.onSurfaceVariant }}
-                      >
-                        República Pinheiros &amp; Viagens
-                      </div>
-                    </div>
-                    <div
-                      className="flex"
-                      style={{ color: C.primaryContainer }}
-                      aria-label="Avaliação: 5 de 5 estrelas"
-                    >
-                      {Array.from({ length: 5 }).map((_, indice) => (
-                        <Star
-                          key={indice}
-                          className="h-[18px] w-[18px] fill-current"
-                        />
-                      ))}
-                    </div>
+                    {membro.iniciais}
                   </div>
-                  <p className={`${T.bodySm} italic`}>
-                    "Nunca mais precisei cobrar ninguém no WhatsApp. O Racha+
-                    avisa quem tem que pagar e quem cumpriu a tarefa sem gerar
-                    clima ruim."
-                  </p>
-                </div>
+                ))}
               </div>
-
-              {/* Métricas */}
-              <div
-                className="relative z-10 rounded-xl p-5 shadow-sm"
-                style={{ backgroundColor: C.surfaceLowest }}
-              >
-                <div
-                  className={`${T.labelSm} mb-3 flex items-center justify-between uppercase`}
-                  style={{ color: C.onSurfaceVariant }}
-                >
-                  <span>Métricas da plataforma</span>
-                  <span
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: C.secondary }}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div
-                    className="rounded-lg p-3"
-                    style={{ backgroundColor: C.surfaceLow }}
-                  >
-                    <div
-                      className={`${T.headlineMd} font-bold`}
-                      style={{ color: C.primary }}
-                    >
-                      R$ 480k+
-                    </div>
-                    <div
-                      className={`${T.labelSm} mt-0.5`}
-                      style={{ color: C.onSurfaceVariant }}
-                    >
-                      divididos sem atritos
-                    </div>
-                  </div>
-                  <div
-                    className="rounded-lg p-3"
-                    style={{ backgroundColor: C.surfaceLow }}
-                  >
-                    <div
-                      className={`${T.headlineMd} font-bold`}
-                      style={{ color: C.secondary }}
-                    >
-                      98.4%
-                    </div>
-                    <div
-                      className={`${T.labelSm} mt-0.5`}
-                      style={{ color: C.onSurfaceVariant }}
-                    >
-                      pagos e cumpridos no prazo
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tendência */}
-                <div
-                  className={`${T.labelSm} mt-3 flex items-center justify-between pt-2`}
-                  style={{ color: C.onSurfaceVariant }}
-                >
-                  <span
-                    className="flex items-center gap-1"
-                    style={{ color: C.tertiary }}
-                  >
-                    <TrendingUp className="h-4 w-4" />
-                    +14% novos grupos este mês
-                  </span>
-                  <svg
-                    className="h-6 w-20"
-                    fill="none"
-                    viewBox="0 0 100 24"
-                    style={{ color: C.primary }}
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M0 20 L20 16 L40 18 L60 8 L80 12 L100 2"
-                      stroke="currentColor"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                </div>
+              <div className={`${T.labelSm} flex items-center gap-1.5`}>
+                <CheckCircle2 className="h-4 w-4" />
+                Tudo equilibrado
               </div>
             </div>
           </div>
         </div>
-      </main>
+
+        {/* Depoimento */}
+        <div className="relative z-10 flex items-start gap-3 pt-6">
+          <Quote className="mt-0.5 h-5 w-5 shrink-0 text-white/70" />
+          <p className={`${T.bodyMd} italic text-white/95`}>
+            “Nunca mais tivemos discussão sobre dinheiro na nossa república.”
+            <span
+              className={`${T.labelSm} mt-1 block not-italic text-white/80`}
+            >
+              — Rodrigo M., Morador • República Vila Madalena
+            </span>
+          </p>
+        </div>
+      </section>
 
       {/* =====================================================
-          RODAPÉ
+          PAINEL DIREITO — FORMULÁRIO
       ====================================================== */}
 
-      <footer className="w-full py-6" style={{ backgroundColor: C.surfaceLow }}>
-        <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-4 px-6 text-center sm:flex-row sm:text-left">
-          <div className="flex flex-col items-center gap-2 sm:flex-row sm:gap-4">
-            <span className={T.bodySm} style={{ color: C.onSurfaceVariant }}>
-              © 2024 Racha+. Todos os direitos reservados.
-            </span>
-            <span
-              className={`${T.bodySm} hidden sm:inline`}
-              style={{ color: C.outlineVariant }}
+      <section
+        className="flex w-full items-center justify-center px-6 py-12 sm:px-12 md:w-1/2 lg:px-20"
+        style={{ backgroundColor: C.surfaceLowest }}
+      >
+        <div className="flex w-full max-w-[440px] flex-col">
+          {/* Cabeçalho */}
+          <div className="mb-8">
+            <h2 className={`${T.headlineLg} font-bold`}>Acesse sua conta</h2>
+            <p className={`${T.bodyMd} mt-2`} style={{ color: C.onSurfaceVariant }}>
+              Bem-vindo de volta! Insira seus dados para continuar.
+            </p>
+          </div>
+
+          {erro && (
+            <p
+              role="alert"
+              className="mb-5 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800"
             >
-              •
-            </span>
-            <span className={T.bodySm} style={{ color: C.onSurfaceVariant }}>
-              Gestão inteligente de despesas conjuntas.
-            </span>
-          </div>
-          <div className="flex items-center gap-6">
-            {["Termos de Uso", "Privacidade", "Suporte"].map((item) => (
-              <a
-                key={item}
-                href="#"
-                className={`${T.bodySm} transition-opacity hover:opacity-70`}
-                style={{ color: C.onSurfaceVariant }}
+              {erro}
+            </p>
+          )}
+
+          <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
+            {/* E-mail */}
+            <div className="flex flex-col gap-2">
+              <label htmlFor="login-email" className={T.labelMd}>
+                E-mail
+              </label>
+              <div className="relative flex items-center">
+                <Mail
+                  className="pointer-events-none absolute left-4 h-5 w-5"
+                  style={{ color: C.outline }}
+                />
+                <input
+                  id="login-email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={formulario.email}
+                  onChange={(event) => handleChange("email", event.target.value)}
+                  onFocus={() => setCampoFocado("email")}
+                  onBlur={() => setCampoFocado(null)}
+                  placeholder="seu.email@exemplo.com"
+                  className={`${T.bodyMd} w-full rounded-lg py-3.5 pl-12 pr-4 outline-none transition-all duration-200 placeholder:text-[#897266]`}
+                  style={estiloCampo("email")}
+                />
+              </div>
+            </div>
+
+            {/* Senha */}
+            <div className="flex flex-col gap-2">
+              <label htmlFor="login-password" className={T.labelMd}>
+                Senha
+              </label>
+              <div className="relative flex items-center">
+                <Lock
+                  className="pointer-events-none absolute left-4 h-5 w-5"
+                  style={{ color: C.outline }}
+                />
+                <input
+                  id="login-password"
+                  type={mostrarSenha ? "text" : "password"}
+                  required
+                  minLength={8}
+                  autoComplete="current-password"
+                  value={formulario.senha}
+                  onChange={(event) => handleChange("senha", event.target.value)}
+                  onFocus={() => setCampoFocado("senha")}
+                  onBlur={() => setCampoFocado(null)}
+                  placeholder="••••••••••••"
+                  className={`${T.bodyMd} w-full rounded-lg py-3.5 pl-12 pr-12 outline-none transition-all duration-200 placeholder:text-[#897266]`}
+                  style={estiloCampo("senha")}
+                />
+                <button
+                  type="button"
+                  aria-label="Alternar visibilidade da senha"
+                  onClick={() => setMostrarSenha((atual) => !atual)}
+                  className="absolute right-3.5 flex cursor-pointer items-center justify-center rounded p-1 transition-colors hover:text-[#121c2a]"
+                  style={{ color: C.outline }}
+                >
+                  {mostrarSenha ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Lembrar de mim / Esqueci minha senha */}
+            <div className="flex items-center justify-between pt-1">
+              <label className="group flex cursor-pointer select-none items-center gap-2.5">
+                <input
+                  id="remember-me"
+                  type="checkbox"
+                  checked={formulario.lembrar}
+                  onChange={(event) =>
+                    handleChange("lembrar", event.target.checked)
+                  }
+                  className="h-4 w-4 cursor-pointer rounded"
+                  style={{ accentColor: C.primaryContainer }}
+                />
+                <span className={`${T.bodySm} transition-colors group-hover:text-[#9b4500]`}>
+                  Lembrar de mim
+                </span>
+              </label>
+              <Link
+                to="/esqueceu-senha"
+                className={`${T.labelSm} transition-colors hover:text-[#6a2d00] focus:underline`}
+                style={{ color: C.primary }}
               >
-                {item}
-              </a>
-            ))}
-          </div>
+                Esqueci minha senha
+              </Link>
+            </div>
+
+            {/* Botão principal */}
+            <button
+              type="submit"
+              disabled={enviando}
+              className={`${T.labelLg} mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#ff8c42] px-6 py-3.5 shadow-sm transition-all duration-200 hover:bg-[#9b4500] hover:shadow-lg active:scale-[0.98] disabled:cursor-wait disabled:opacity-80`}
+              style={{ color: C.onPrimary }}
+            >
+              <span>{enviando ? "Entrando..." : "Entrar"}</span>
+              <ArrowRight className="h-[18px] w-[18px]" />
+            </button>
+
+            {/* Divisor */}
+            <div className="relative my-6 flex items-center justify-center">
+              <div
+                className="h-px w-full"
+                style={{ backgroundColor: C.surfaceHighest }}
+              />
+              <span
+                className={`${T.labelSm} absolute px-4 font-medium uppercase tracking-wider`}
+                style={{
+                  backgroundColor: C.surfaceLowest,
+                  color: C.onSurfaceVariant,
+                }}
+              >
+                ou continue com
+              </span>
+            </div>
+
+            {/* Login social (ainda não configurado) */}
+            <button
+              type="button"
+              disabled
+              title="Login com Google ainda não está configurado."
+              className={`${T.labelMd} flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-lg px-6 py-3.5 opacity-60 shadow-sm`}
+              style={{ backgroundColor: C.surfaceLow, color: C.onSurface }}
+            >
+              <IconeGoogle />
+              <span>Continuar com o Google</span>
+            </button>
+          </form>
+
+          {/* Cadastro */}
+          <p
+            className={`${T.bodySm} mt-8 text-center`}
+            style={{ color: C.onSurfaceVariant }}
+          >
+            Ainda não tem uma conta?
+            <Link
+              to="/cadastro"
+              className={`${T.labelSm} ml-1 font-bold transition-colors hover:text-[#6a2d00] focus:underline`}
+              style={{ color: C.primary }}
+            >
+              Cadastre-se gratuitamente
+            </Link>
+          </p>
         </div>
-      </footer>
+      </section>
     </div>
   );
 }

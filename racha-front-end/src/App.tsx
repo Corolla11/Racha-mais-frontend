@@ -23,6 +23,8 @@ import Assinatura from "./pages/assinatura";
 import Convite from "./pages/convite";
 import RedefinirSenha from "./pages/redefinir-senha";
 import EscolherCriacao from "./pages/escolher-criacao";
+import ConfirmarGrupo from "./pages/confirmar-grupo";
+import VerificarEmail from "./pages/verificar-email";
 
 function App() {
   return (
@@ -32,6 +34,7 @@ function App() {
           <Route path="/apresentacao" element={<Home />} />
           <Route path="/convite/:token" element={<Convite />} />
           <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+          <Route path="/verificar-email" element={<VerificarEmail />} />
           <Route element={<PublicOnlyRoute />}>
             <Route path="/" element={<Login />} />
             <Route path="/login" element={<Login />} />
@@ -42,8 +45,10 @@ function App() {
             <Route path="/home" element={<Home />} />
             <Route path="/perfil" element={<Perfil />} />
             <Route path="/grupo" element={<Grupo />} />
+            <Route path="/grupo/:idGrupo" element={<Grupo />} />
             <Route path="/criar-grupo" element={<EscolherCriacao />} />
             <Route path="/criar-grupo/manual" element={<CriarGrupo />} />
+            <Route path="/criar-grupo/confirmar" element={<ConfirmarGrupo />} />
             <Route path="/assinatura" element={<Assinatura />} />
             <Route path="/gerenciar-assinatura" element={<Assinatura manage />} />
             <Route path="/meus-grupos" element={<MeusGrupos />} />
