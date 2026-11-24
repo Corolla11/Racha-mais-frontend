@@ -1,18 +1,6 @@
 
-import { useEffect, useState } from "react";
-import {
-  ArrowLeftRight,
-  CalendarDays,
-  Check,
-  CheckCircle2,
-  Clock3,
-  FileText,
-  Trash2,
-  Upload,
-  Users,
-  Wallet,
-  X,
-} from "lucide-react";
+import { useEffect, useState, type ChangeEvent, type ReactNode } from "react";
+import Icon from "../components/icon";
 
 // ======================================================
 // TIPOS
@@ -69,6 +57,29 @@ function obterIniciais(nome: string) {
     .map((parte) => parte.charAt(0))
     .join("")
     .toUpperCase();
+}
+
+function nomeCurto(nome: string) {
+  const partes = nome.trim().split(/\s+/);
+  return partes.length > 1 ? `${partes[0]} ${partes[partes.length - 1].charAt(0)}.` : partes[0];
+}
+
+// ======================================================
+// ESTILOS REUTILIZÁVEIS
+// ======================================================
+
+const estiloInput =
+  "w-full bg-surface-container-low text-on-surface font-body-md text-body-md rounded-lg px-space-md py-3 placeholder:text-outline focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary-container transition-all";
+
+const estiloLabel = "font-label-md text-label-md text-on-surface";
+
+function TituloSecao({ children, extra }: { children: ReactNode; extra?: ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <span className="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold">{children}</span>
+      {extra}
+    </div>
+  );
 }
 
 // ======================================================
@@ -152,19 +163,22 @@ export default function EditarTarefa({
       (participante) => participante.selecionado
     );
 
-  const responsavel =
-    formulario.participantes.find(
-      (participante) =>
-        participante.id === formulario.responsavelId
-    );
-
   const quantidadeParticipantes =
     participantesSelecionados.length;
+
+  const todosSelecionados =
+    quantidadeParticipantes === formulario.participantes.length;
 
   const valorPorPessoa =
     quantidadeParticipantes > 0
       ? formulario.valorTotal / quantidadeParticipantes
       : 0;
+
+  const statusAtual = formulario.concluida
+    ? { texto: "Concluída", classe: "bg-emerald-100 text-emerald-800", ponto: "bg-emerald-500" }
+    : formulario.emAndamento
+    ? { texto: "Em andamento", classe: "bg-blue-100 text-blue-900", ponto: "bg-blue-500" }
+    : { texto: "Em aberto", classe: "bg-tertiary-fixed text-on-tertiary-fixed", ponto: "bg-tertiary-container" };
 
   // ======================================================
   // ALTERAR CAMPOS
@@ -205,28 +219,13 @@ export default function EditarTarefa({
     );
   }
 
-  // ======================================================
-  // TROCAR RESPONSÁVEL
-  // ======================================================
-
-  function trocarResponsavel() {
-    if (participantesSelecionados.length === 0) {
-      return;
-    }
-
-    const indiceAtual =
-      participantesSelecionados.findIndex(
-        (participante) =>
-          participante.id === formulario.responsavelId
-      );
-
-    const proximoIndice =
-      (indiceAtual + 1) %
-      participantesSelecionados.length;
-
+  function selecionarTodos() {
     atualizarCampo(
-      "responsavelId",
-      participantesSelecionados[proximoIndice].id
+      "participantes",
+      formulario.participantes.map((participante) => ({
+        ...participante,
+        selecionado: !todosSelecionados,
+      }))
     );
   }
 
@@ -235,7 +234,7 @@ export default function EditarTarefa({
   // ======================================================
 
   function selecionarComprovante(
-    event: React.ChangeEvent<HTMLInputElement>
+    event: ChangeEvent<HTMLInputElement>
   ) {
     const arquivo = event.target.files?.[0];
 
@@ -303,490 +302,304 @@ export default function EditarTarefa({
   }
 
   // ======================================================
-  // ESTILOS REUTILIZÁVEIS
-  // ======================================================
-
-  const estiloInput =
-    "w-full rounded-xl border border-transparent bg-[#F0F4FF] px-4 py-3 text-sm text-[#172033] outline-none transition focus:border-[#F97316] focus:bg-white";
-
-  const estiloLabel =
-    "mb-2 block text-sm font-semibold text-[#253047]";
-
-  // ======================================================
   // JSX
   // ======================================================
 
   return (
-    <div className="fixed inset-0 z-[100] h-[100dvh] w-full overflow-hidden">
-      {/* ================================================
-          FUNDO ÚNICO
-
-          O fundo cobre os painéis anteriores visualmente.
-          Não cria outra área de rolagem.
-      ================================================= */}
-
+    <div>
+      {/* FUNDO — cobre a tela abaixo do header */}
       <div
-        className="absolute inset-0 bg-[#172033]/65"
+        className="fixed inset-0 top-16 z-40 bg-inverse-surface/40 backdrop-blur-[3px]"
         onClick={onClose}
       />
 
-      {/* ================================================
-          PAINEL LATERAL
-
-          Uma única estrutura com:
-          - Cabeçalho fixo
-          - Conteúdo rolável
-          - Rodapé fixo
-      ================================================= */}
-
+      {/* PAINEL LATERAL: cabeçalho fixo, conteúdo rolável e rodapé fixo */}
       <aside
         role="dialog"
         aria-modal="true"
         aria-labelledby="editar-tarefa-titulo"
-        className="
-          absolute
-          inset-y-0
-          right-0
-          flex
-          h-full
-          w-full
-          max-w-[560px]
-          flex-col
-          overflow-hidden
-          bg-white
-          text-[#172033]
-          shadow-2xl
-        "
+        className="fixed top-16 right-0 bottom-0 z-50 w-full max-w-[580px] flex flex-col overflow-hidden bg-surface-container-lowest text-on-surface font-body-md text-body-md shadow-[-8px_0_30px_rgba(18,28,42,0.12)]"
       >
-        {/* ============================================
-            CABEÇALHO FIXO
-        ============================================ */}
-
-        <header className="z-10 shrink-0 border-b border-[#EDF0F6] bg-white px-6 pb-5 pt-6 sm:px-7">
-          <div className="mb-4 flex items-center justify-between">
-            <span className="max-w-[80%] truncate rounded-full bg-[#FFF0E7] px-3 py-1.5 text-xs font-semibold text-[#C65B19]">
-              {nomeGrupo}
+        {/* CABEÇALHO */}
+        <header className="px-space-lg pt-space-lg pb-space-md shrink-0 flex items-start justify-between gap-space-md bg-surface-container-lowest shadow-[0_1px_4px_rgba(0,0,0,0.03)] z-10">
+          <div className="flex flex-col gap-space-xs min-w-0">
+            <span className="inline-flex items-center gap-space-xs px-space-sm py-1 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm self-start max-w-full">
+              <Icon name="beach_access" size={14}/>
+              <span className="truncate">{nomeGrupo}</span>
             </span>
-
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Fechar edição"
-              className="
-                flex
-                h-9
-                w-9
-                items-center
-                justify-center
-                rounded-lg
-                text-gray-500
-                transition
-                hover:bg-gray-100
-                hover:text-gray-800
-              "
-            >
-              <X size={19} />
-            </button>
+            <div className="flex flex-wrap items-center gap-space-xs">
+              <h2
+                id="editar-tarefa-titulo"
+                className="font-headline-lg text-headline-lg text-on-surface tracking-tight"
+              >
+                {modo === "criar" ? "Novo Item" : "Editar Tarefa"}
+              </h2>
+              {modo === "editar" && (
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-label-sm text-label-sm ${statusAtual.classe}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${statusAtual.ponto}`}/>
+                  {statusAtual.texto}
+                </span>
+              )}
+            </div>
+            <p className="font-body-sm text-body-sm text-on-surface-variant">
+              {modo === "criar"
+                ? "Crie uma tarefa com responsável e, se houver custo, vincule a despesa ao rateio."
+                : "Atualize os dados, os participantes e o rateio entre amigos."}
+            </p>
           </div>
 
-          <h2
-            id="editar-tarefa-titulo"
-            className="text-ui-dialog-title font-bold tracking-tight"
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fechar edição"
+            className="w-10 h-10 shrink-0 rounded-full bg-surface-container-low hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-colors"
           >
-            {modo === "criar" ? "Criar tarefa" : "Editar tarefa"}
-          </h2>
-
-          <p className="mt-1 text-sm leading-5 text-gray-500">
-            Atualize as informações e os participantes
-            desta tarefa.
-          </p>
+            <Icon name="close" size={22}/>
+          </button>
         </header>
 
-        {/* ============================================
-            CONTEÚDO
+        {/* CONTEÚDO — única área com rolagem */}
+        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-space-lg py-space-lg flex flex-col gap-space-xl">
+          {/* 1. INFORMAÇÕES BÁSICAS */}
+          <section className="flex flex-col gap-space-md">
+            <TituloSecao
+              extra={
+                <span className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
+                  <Icon name="info" size={15} className="text-tertiary-container"/> Campos obrigatórios *
+                </span>
+              }
+            >
+              1. Informações Básicas
+            </TituloSecao>
 
-            ÚNICA ÁREA COM SCROLL
-        ============================================ */}
-
-        <div
-          className="
-            min-h-0
-            flex-1
-            overflow-x-hidden
-            overflow-y-auto
-            overscroll-contain
-            px-6
-            py-6
-            sm:px-7
-          "
-        >
-          <div className="space-y-7">
-            {/* ========================================
-                INFORMAÇÕES PRINCIPAIS
-            ======================================== */}
-
-            <section className="space-y-5">
-              <div>
-                <label
-                  htmlFor="editar-titulo"
-                  className={estiloLabel}
-                >
-                  Título da Tarefa{" "}
-                  <span className="text-red-500">*</span>
-                </label>
-
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="editar-titulo" className={`${estiloLabel} flex items-center justify-between`}>
+                <span>Nome do item <span className="text-secondary">*</span></span>
+                <span className="font-body-sm text-label-sm text-on-surface-variant">Identificação clara</span>
+              </label>
+              <div className="relative">
                 <input
                   id="editar-titulo"
                   type="text"
                   value={formulario.titulo}
+                  placeholder="Ex: Aluguel da van, Carvão e gelo..."
                   onChange={(event) =>
                     atualizarCampo(
                       "titulo",
                       event.target.value
                     )
                   }
-                  className={`ui-control ${estiloInput}`}
+                  className={`${estiloInput} pr-10`}
                 />
+                <Icon name="edit" size={20} className="absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none"/>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="editar-descricao" className={`${estiloLabel} flex items-center justify-between`}>
+                <span>Descrição e Notas Adicionais</span>
+                <span className="font-body-sm text-label-sm text-on-surface-variant">Opcional</span>
+              </label>
+              <textarea
+                id="editar-descricao"
+                rows={3}
+                value={formulario.descricao}
+                placeholder="Detalhes, combinados e observações para o grupo"
+                onChange={(event) =>
+                  atualizarCampo(
+                    "descricao",
+                    event.target.value
+                  )
+                }
+                className={`${estiloInput} resize-none font-body-sm text-body-sm py-2.5`}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="editar-data" className={estiloLabel}>
+                  Data limite <span className="text-secondary">*</span>
+                </label>
+                <div className="relative">
+                  <Icon name="calendar_today" size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none"/>
+                  <input
+                    id="editar-data"
+                    type="date"
+                    value={formulario.dataLimite}
+                    onChange={(event) =>
+                      atualizarCampo(
+                        "dataLimite",
+                        event.target.value
+                      )
+                    }
+                    className={`${estiloInput} pl-10 font-body-sm text-body-sm`}
+                  />
+                </div>
               </div>
 
-              <div>
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <label
-                    htmlFor="editar-descricao"
-                    className="text-ui-label font-semibold text-[#253047]"
-                  >
-                    Descrição e Notas Adicionais
-                  </label>
-
-                  <span className="text-xs text-gray-400">
-                    Opcional
-                  </span>
-                </div>
-
-                <textarea
-                  id="editar-descricao"
-                  rows={4}
-                  value={formulario.descricao}
-                  onChange={(event) =>
-                    atualizarCampo(
-                      "descricao",
-                      event.target.value
-                    )
-                  }
-                  className={`ui-control ${`${estiloInput} resize-none leading-6`}`}
-                />
-              </div>
-
-              {/* DATA E HORÁRIO */}
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label
-                    htmlFor="editar-data"
-                    className={estiloLabel}
-                  >
-                    Data limite
-                  </label>
-
-                  <div className="relative">
-                    <CalendarDays
-                      size={17}
-                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
-                    />
-
-                    <input
-                      id="editar-data"
-                      type="date"
-                      value={formulario.dataLimite}
-                      onChange={(event) =>
-                        atualizarCampo(
-                          "dataLimite",
-                          event.target.value
-                        )
-                      }
-                      className={`ui-control ui-control--leading ${`${estiloInput} pl-10`}`}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="editar-horario"
-                    className={estiloLabel}
-                  >
-                    Horário previsto
-                  </label>
-
-                  <div className="relative">
-                    <Clock3
-                      size={17}
-                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
-                    />
-
-                    <input
-                      id="editar-horario"
-                      type="time"
-                      value={formulario.horario}
-                      onChange={(event) =>
-                        atualizarCampo(
-                          "horario",
-                          event.target.value
-                        )
-                      }
-                      className={`ui-control ui-control--leading ${`${estiloInput} pl-10`}`}
-                    />
-                  </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="editar-horario" className={estiloLabel}>
+                  Horário estimado
+                </label>
+                <div className="relative">
+                  <Icon name="schedule" size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none"/>
+                  <input
+                    id="editar-horario"
+                    type="time"
+                    value={formulario.horario}
+                    onChange={(event) =>
+                      atualizarCampo(
+                        "horario",
+                        event.target.value
+                      )
+                    }
+                    className={`${estiloInput} pl-10 font-body-sm text-body-sm`}
+                  />
                 </div>
               </div>
-            </section>
+            </div>
+          </section>
 
-            {/* DIVISÓRIA */}
+          <div className="h-px w-full bg-surface-container shrink-0"/>
 
-            <div className="h-px bg-[#EDF0F6]" />
+          {/* 2. RESPONSÁVEIS & DIVISÃO */}
+          <section className="flex flex-col gap-space-md">
+            <TituloSecao
+              extra={
+                <span className="font-label-sm text-label-sm text-on-tertiary-fixed-variant font-semibold bg-tertiary-fixed px-2 py-0.5 rounded">Racha Igualitário</span>
+              }
+            >
+              2. Responsáveis &amp; Divisão
+            </TituloSecao>
 
-            {/* ========================================
-                RESPONSÁVEL E PARTICIPANTES
-            ======================================== */}
-
-            <section className="space-y-5">
-              {/* RESPONSÁVEL */}
-
-              <div>
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-bold">
-                    Responsável Principal
-                  </h3>
-
-                  <span className="text-xs text-gray-400">
-                    Encarregado da execução
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-3 rounded-xl bg-[#F0F4FF] p-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#F97316] text-xs font-bold text-white">
-                    {responsavel
-                      ? obterIniciais(responsavel.nome)
-                      : "?"}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold">
-                      {responsavel?.nome ??
-                        "Sem responsável"}
-                    </p>
-
-                    <p className="truncate text-xs text-gray-500">
-                      {responsavel?.email ??
-                        "Participante do grupo"}
-                    </p>
-                  </div>
-
-                  <span className="hidden rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-[#F97316] sm:inline-flex">
-                    Ativa
-                  </span>
-
+            {/* PARTICIPANTES */}
+            <div className="flex flex-col gap-space-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className={estiloLabel} id="editar-participantes-rotulo">Participantes que usufruem do item</span>
+                <span className="font-label-sm text-label-sm text-primary font-semibold">
+                  {quantidadeParticipantes} de {formulario.participantes.length} selecionados
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-space-xs pt-1" role="group" aria-labelledby="editar-participantes-rotulo">
+                <button
+                  type="button"
+                  onClick={selecionarTodos}
+                  className="px-space-md py-1.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm hover:bg-surface-container-high transition-colors flex items-center gap-1"
+                >
+                  <Icon name="done_all" size={14}/>
+                  {todosSelecionados ? "Desmarcar todos" : `Todos (${formulario.participantes.length})`}
+                </button>
+                {formulario.participantes.map((participante) => (
                   <button
+                    key={participante.id}
                     type="button"
-                    onClick={trocarResponsavel}
-                    title="Trocar responsável"
-                    className="
-                      flex
-                      h-9
-                      w-9
-                      shrink-0
-                      items-center
-                      justify-center
-                      rounded-lg
-                      transition
-                      hover:bg-white
-                    "
+                    onClick={() => alternarParticipante(participante.id)}
+                    aria-pressed={participante.selecionado}
+                    className={`px-space-md py-1.5 rounded-full font-label-sm text-label-sm flex items-center gap-1 transition-colors ${
+                      participante.selecionado
+                        ? "bg-inverse-surface text-inverse-on-surface"
+                        : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container"
+                    }`}
                   >
-                    <ArrowLeftRight size={17} />
+                    {participante.selecionado ? (
+                      <>
+                        <span>{participante.nome}</span>
+                        <Icon name="check" size={14}/>
+                      </>
+                    ) : (
+                      <span>+ {participante.nome}</span>
+                    )}
                   </button>
-                </div>
+                ))}
               </div>
+            </div>
 
-              {/* PARTICIPANTES */}
-
-              <div>
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="text-sm font-bold">
-                    Participantes Envolvidos
-                  </h3>
-
-                  <span className="text-xs font-semibold text-[#C65B19]">
-                    {quantidadeParticipantes} selecionados
-                    de {formulario.participantes.length}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {formulario.participantes.map(
-                    (participante) => (
+            {/* RESPONSÁVEL */}
+            <div className="flex flex-col gap-space-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className={estiloLabel} id="editar-responsavel-rotulo">Responsável pela tarefa</span>
+                <span className="font-label-sm text-label-sm text-on-surface-variant">Encarregado da execução</span>
+              </div>
+              {participantesSelecionados.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-space-xs" role="radiogroup" aria-labelledby="editar-responsavel-rotulo">
+                  {participantesSelecionados.map((participante) => {
+                    const ativo = participante.id === formulario.responsavelId;
+                    return (
                       <button
                         key={participante.id}
                         type="button"
-                        onClick={() =>
-                          alternarParticipante(
-                            participante.id
-                          )
-                        }
-                        aria-pressed={
-                          participante.selecionado
-                        }
-                        className={`ui-button ui-button--md ${`
-                          flex
-                          min-w-0
-                          items-center
-                          gap-2
-                          rounded-xl
-                          border
-                          p-2.5
-                          text-left
-                          transition
-                          ${
-                            participante.selecionado
-                              ? "border-[#FFDCC7] bg-[#FFF3EA]"
-                              : "border-transparent bg-[#F0F4FF]"
-                          }
-                        `}`}
+                        role="radio"
+                        aria-checked={ativo}
+                        onClick={() => atualizarCampo("responsavelId", participante.id)}
+                        className={`p-space-sm rounded-lg flex items-center gap-space-xs transition-colors text-left ${
+                          ativo
+                            ? "bg-primary-fixed/40 text-on-primary-fixed ring-[1.5px] ring-primary-container"
+                            : "bg-surface-container-low hover:bg-surface-container-high text-on-surface"
+                        }`}
                       >
-                        <div
-                          className={`
-                            flex
-                            h-9
-                            w-9
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-full
-                            text-xs
-                            font-bold
-                            ${
-                              participante.selecionado
-                                ? "bg-[#F97316] text-white"
-                                : "bg-[#DDE6F8] text-[#53647E]"
-                            }
-                          `}
-                        >
-                          {obterIniciais(
-                            participante.nome
-                          )}
+                        <div className={`w-7 h-7 shrink-0 rounded-full flex items-center justify-center font-label-sm text-label-sm font-bold ${ativo ? "bg-primary-container text-on-primary" : "bg-surface-container-highest text-on-surface"}`}>
+                          {obterIniciais(participante.nome)}
                         </div>
-
-                        <span className="min-w-0 flex-1 truncate text-xs font-medium">
-                          {participante.nome}
-                        </span>
-
-                        {participante.selecionado ? (
-                          <CheckCircle2
-                            size={17}
-                            className="shrink-0 text-[#F97316]"
-                          />
-                        ) : (
-                          <span className="h-[17px] w-[17px] shrink-0 rounded-full border border-gray-300" />
-                        )}
+                        <div className="flex flex-col min-w-0">
+                          <span className={`font-label-sm text-label-sm truncate ${ativo ? "font-bold" : ""}`}>{nomeCurto(participante.nome)}</span>
+                          <span className="text-[10px] text-on-surface-variant truncate">{participante.email ?? (ativo ? "Responsável" : "Membro")}</span>
+                        </div>
                       </button>
-                    )
-                  )}
+                    );
+                  })}
                 </div>
-              </div>
-            </section>
+              ) : (
+                <p className="p-space-sm rounded-lg bg-surface-container-low font-body-sm text-body-sm text-on-surface-variant">
+                  Selecione participantes para definir o responsável.
+                </p>
+              )}
+            </div>
+          </section>
 
-            {/* DIVISÓRIA */}
+          <div className="h-px w-full bg-surface-container shrink-0"/>
 
-            <div className="h-px bg-[#EDF0F6]" />
+          {/* 3. DESPESA */}
+          <section className="flex flex-col gap-space-md">
+            <TituloSecao>3. Despesa &amp; Comprovantes</TituloSecao>
 
-            {/* ========================================
-                DESPESAS FINANCEIRAS
-            ======================================== */}
-
-            <section className="rounded-2xl bg-[#F0F4FF] p-4 sm:p-5">
-              {/* CABEÇALHO DA DESPESA */}
-
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#FFE1CF] text-[#C65B19]">
-                  <Wallet size={20} />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-bold">
-                    Vincular Despesas Financeiras
-                  </h3>
-
-                  <p className="mt-0.5 text-xs leading-4 text-gray-500">
-                    Divida os custos entre os
-                    participantes selecionados.
-                  </p>
-                </div>
-
+            <div className="p-space-md rounded-xl bg-surface-container-low flex flex-col gap-space-md">
+              <div className="flex items-start gap-space-sm">
                 <button
                   type="button"
                   role="switch"
                   aria-label="Vincular despesas"
-                  aria-checked={
-                    formulario.possuiDespesa
-                  }
+                  aria-checked={formulario.possuiDespesa}
                   onClick={() =>
                     atualizarCampo(
                       "possuiDespesa",
                       !formulario.possuiDespesa
                     )
                   }
-                  className={`
-                    relative
-                    h-6
-                    w-11
-                    shrink-0
-                    rounded-full
-                    transition
-                    ${
-                      formulario.possuiDespesa
-                        ? "bg-[#F97316]"
-                        : "bg-gray-300"
-                    }
-                  `}
+                  className={`mt-0.5 w-5 h-5 shrink-0 rounded-md flex items-center justify-center transition-all ${formulario.possuiDespesa ? "bg-primary-container" : "bg-surface-container-highest"}`}
                 >
-                  <span
-                    className={`
-                      absolute
-                      top-1
-                      h-4
-                      w-4
-                      rounded-full
-                      bg-white
-                      shadow-sm
-                      transition-all
-                      ${
-                        formulario.possuiDespesa
-                          ? "left-6"
-                          : "left-1"
-                      }
-                    `}
-                  />
+                  <Icon name="check" size={16} className={`text-on-primary transition-opacity ${formulario.possuiDespesa ? "opacity-100" : "opacity-0"}`}/>
                 </button>
+                <div className="flex flex-col">
+                  <span className="font-label-md text-label-md text-on-surface font-semibold">
+                    Este item gerou ou vai gerar uma despesa
+                  </span>
+                  <span className="font-body-sm text-label-sm text-on-surface-variant">
+                    Habilita rateio financeiro automático entre os {quantidadeParticipantes} membros vinculados
+                  </span>
+                </div>
               </div>
 
-              {/* CONTEÚDO FINANCEIRO */}
-
               {formulario.possuiDespesa && (
-                <div className="mt-5 space-y-4 rounded-xl bg-white p-4">
-                  {/* VALOR E PAGADOR */}
-
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                      <label
-                        htmlFor="editar-valor"
-                        className={estiloLabel}
-                      >
-                        Valor Total Pago
+                <div className="flex flex-col gap-space-md pt-space-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
+                    <div className="flex flex-col gap-space-xs">
+                      <label htmlFor="editar-valor" className="font-label-sm text-label-sm text-on-surface-variant font-medium">
+                        Valor total previsto
                       </label>
-
-                      <div className="flex items-center rounded-xl bg-[#F0F4FF] px-3">
-                        <span className="text-sm text-gray-500">
+                      <div className="flex items-center gap-space-xs">
+                        <span className="px-space-md py-space-sm rounded-lg bg-surface-container-highest text-on-surface font-label-md text-label-md shrink-0">
                           R$
                         </span>
-
                         <input
                           id="editar-valor"
                           type="number"
@@ -804,156 +617,131 @@ export default function EditarTarefa({
                               )
                             )
                           }
-                          className="ui-control w-full min-w-0 bg-transparent px-2 py-3 text-lg font-bold outline-none"
+                          className="w-full min-w-0 bg-surface-container-lowest text-on-surface font-headline-sm text-headline-sm font-bold rounded-lg px-space-md py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-container"
                         />
                       </div>
                     </div>
 
-                    <div>
-                      <label
-                        htmlFor="editar-pagador"
-                        className={estiloLabel}
-                      >
-                        Quem realizou o pagamento
+                    <div className="flex flex-col gap-space-xs">
+                      <label htmlFor="editar-pagador" className="font-label-sm text-label-sm text-on-surface-variant font-medium">
+                        Quem pagou ou vai comprar?
                       </label>
-
-                      <select
-                        id="editar-pagador"
-                        value={formulario.pagadorId}
-                        onChange={(event) =>
-                          atualizarCampo(
-                            "pagadorId",
-                            event.target.value
-                          )
-                        }
-                        className={`ui-control ${estiloInput}`}
-                      >
-                        {formulario.participantes.map(
-                          (participante) => (
-                            <option
-                              key={participante.id}
-                              value={participante.id}
-                            >
-                              {participante.nome}
-                            </option>
-                          )
-                        )}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* RATEIO */}
-
-                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#E5EDFF] p-3">
-                    <div className="flex items-center gap-2 text-xs">
-                      <Users
-                        size={17}
-                        className="text-[#F97316]"
-                      />
-
-                      <span>
-                        Rateio igualitário (
-                        {quantidadeParticipantes} pessoas)
-                      </span>
-                    </div>
-
-                    <div className="text-xs">
-                      <span className="text-gray-500">
-                        Por pessoa:{" "}
-                      </span>
-
-                      <strong className="text-[#F97316]">
-                        {formatarMoeda(valorPorPessoa)}
-                      </strong>
-                    </div>
-                  </div>
-
-                  {/* COMPROVANTE */}
-
-                  <div>
-                    <label className={estiloLabel}>
-                      Comprovante Fiscal / Recibo
-                    </label>
-
-                    {formulario.comprovante ? (
-                      <div className="flex items-center gap-3 rounded-xl bg-[#F0F4FF] p-3">
-                        <div className="rounded-lg bg-[#FFE1CF] p-2 text-[#F97316]">
-                          <FileText size={18} />
-                        </div>
-
-                        <p className="min-w-0 flex-1 truncate text-xs font-semibold">
-                          {formulario.comprovante}
-                        </p>
-
-                        <label className="cursor-pointer rounded-lg bg-white px-3 py-2 text-ui-label font-semibold transition hover:bg-gray-50">
-                          Alterar
-
-                          <input
-                            type="file"
-                            accept=".pdf,.png,.jpg,.jpeg"
-                            className="hidden"
-                            onChange={
-                              selecionarComprovante
-                            }
-                          />
-                        </label>
-
-                        <button
-                          type="button"
-                          title="Remover comprovante"
-                          onClick={() =>
+                      <div className="relative">
+                        <select
+                          id="editar-pagador"
+                          value={formulario.pagadorId}
+                          onChange={(event) =>
                             atualizarCampo(
-                              "comprovante",
-                              ""
+                              "pagadorId",
+                              event.target.value
                             )
                           }
-                          className="text-red-500 transition hover:text-red-700"
+                          className="w-full appearance-none bg-surface-container-lowest text-on-surface font-label-md text-label-md rounded-lg pl-space-md pr-9 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-container cursor-pointer"
                         >
-                          <Trash2 size={17} />
-                        </button>
+                          {formulario.participantes.map(
+                            (participante) => (
+                              <option
+                                key={participante.id}
+                                value={participante.id}
+                              >
+                                {participante.nome}
+                              </option>
+                            )
+                          )}
+                        </select>
+                        <Icon name="unfold_more" size={18} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none"/>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-space-sm rounded-lg bg-surface-container-lowest flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-space-xs">
+                      <Icon name="pie_chart" size={20} className="text-primary"/>
+                      <span className="font-body-sm text-body-sm text-on-surface">Divisão calculada:</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-label-md text-label-md text-primary font-bold">{formatarMoeda(valorPorPessoa)}</span>
+                      <span className="font-label-sm text-label-sm text-on-surface-variant"> / pessoa ({quantidadeParticipantes} pessoas)</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-space-xs">
+                    <span className="font-label-sm text-label-sm text-on-surface-variant font-medium">
+                      Comprovante ou Nota Fiscal (Opcional)
+                    </span>
+                    {formulario.comprovante ? (
+                      <div className="flex items-center justify-between gap-space-sm p-space-sm bg-surface-container-lowest rounded-lg">
+                        <div className="flex items-center gap-space-sm min-w-0">
+                          <div className="w-10 h-10 shrink-0 rounded bg-surface-container-highest flex items-center justify-center text-on-surface-variant">
+                            <Icon name="description" size={20}/>
+                          </div>
+                          <span className="font-label-sm text-label-sm text-on-surface truncate">{formulario.comprovante}</span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container-high font-label-sm text-label-sm text-on-surface transition-colors">
+                            Alterar
+                            <input
+                              type="file"
+                              accept=".pdf,.png,.jpg,.jpeg"
+                              className="hidden"
+                              onChange={selecionarComprovante}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            title="Remover comprovante"
+                            aria-label="Remover comprovante"
+                            onClick={() =>
+                              atualizarCampo(
+                                "comprovante",
+                                ""
+                              )
+                            }
+                            className="p-1.5 text-error hover:bg-error-container/30 rounded transition-colors"
+                          >
+                            <Icon name="delete" size={18}/>
+                          </button>
+                        </div>
                       </div>
                     ) : (
-                      <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 bg-[#F8FAFF] p-4 text-ui-label text-gray-500 transition hover:bg-[#F0F4FF]">
-                        <Upload size={17} />
-
-                        Adicionar comprovante
-
+                      <label className="p-space-md rounded-lg bg-surface-container-lowest border-dashed border-2 border-surface-container-highest hover:bg-surface-container-high transition-colors cursor-pointer flex items-center justify-center gap-space-sm group">
+                        <div className="w-8 h-8 rounded-full bg-surface-container-low group-hover:bg-surface-container flex items-center justify-center text-on-surface-variant">
+                          <Icon name="receipt_long" size={18}/>
+                        </div>
+                        <div className="text-left">
+                          <span className="font-label-sm text-label-sm text-on-surface font-semibold block">Anexar cupom fiscal, foto ou PDF</span>
+                          <span className="font-body-sm text-[11px] text-on-surface-variant block">Formatos aceitos: JPG, PNG ou PDF</span>
+                        </div>
                         <input
                           type="file"
                           accept=".pdf,.png,.jpg,.jpeg"
                           className="hidden"
-                          onChange={
-                            selecionarComprovante
-                          }
+                          onChange={selecionarComprovante}
                         />
                       </label>
                     )}
                   </div>
                 </div>
               )}
-            </section>
+            </div>
+          </section>
 
-            {/* ========================================
-                STATUS
-            ======================================== */}
+          <div className="h-px w-full bg-surface-container shrink-0"/>
 
-            <section className="flex items-center justify-between gap-3 rounded-xl border border-[#EDF0F6] p-4">
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-[#F0F4FF] p-2 text-[#F97316]">
-                  <CheckCircle2 size={19} />
-                </div>
+          {/* 4. STATUS & RECORRÊNCIA */}
+          <section className="flex flex-col gap-space-md">
+            <TituloSecao>4. Status &amp; Recorrência</TituloSecao>
 
-                <div>
-                  <h3 className="text-sm font-semibold">
-                    Status da Tarefa
-                  </h3>
-
-                  <p className="mt-0.5 text-xs text-gray-500">
-                    Marcar tarefa como concluída
-                  </p>
-                </div>
-              </div>
-
+            <label className="flex items-center justify-between gap-space-sm p-space-md rounded-lg bg-surface-container-low hover:bg-surface-container/70 cursor-pointer transition-colors">
+              <span className="flex items-center gap-space-sm">
+                <span className="w-9 h-9 rounded-lg bg-surface-container-lowest flex items-center justify-center text-primary-container shrink-0">
+                  <Icon name="check_circle" size={20}/>
+                </span>
+                <span className="flex flex-col">
+                  <span className="font-label-md text-label-md text-on-surface">Status da Tarefa</span>
+                  <span className="font-body-sm text-body-sm text-on-surface-variant">Marcar tarefa como concluída</span>
+                </span>
+              </span>
               <input
                 type="checkbox"
                 checked={formulario.concluida}
@@ -963,49 +751,62 @@ export default function EditarTarefa({
                     event.target.checked
                   )
                 }
-                className="h-5 w-5 shrink-0 accent-[#F97316]"
+                className="w-5 h-5 shrink-0 rounded accent-primary-container cursor-pointer"
               />
-            </section>
+            </label>
 
-            <div className="racha-two-col">
-              <label className="racha-label">Execução<select value={formulario.emAndamento ? "andamento" : "planejada"} onChange={event => atualizarCampo("emAndamento", event.target.value === "andamento")} className="ui-control"><option value="planejada">Planejada</option><option value="andamento">Em andamento</option></select></label>
-              <label className="racha-label">Recorrência<select value={formulario.recorrencia ?? "nenhuma"} onChange={event => atualizarCampo("recorrencia", event.target.value as DadosTarefa["recorrencia"])} className="ui-control"><option value="nenhuma">Não repetir</option><option value="semanal">Semanal</option><option value="mensal">Mensal</option></select></label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
+              <label className="flex flex-col gap-1.5">
+                <span className={estiloLabel}>Execução</span>
+                <select
+                  value={formulario.emAndamento ? "andamento" : "planejada"}
+                  onChange={event => atualizarCampo("emAndamento", event.target.value === "andamento")}
+                  className={`${estiloInput} font-body-sm text-body-sm cursor-pointer`}
+                >
+                  <option value="planejada">Planejada</option>
+                  <option value="andamento">Em andamento</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className={estiloLabel}>Recorrência</span>
+                <select
+                  value={formulario.recorrencia ?? "nenhuma"}
+                  onChange={event => atualizarCampo("recorrencia", event.target.value as DadosTarefa["recorrencia"])}
+                  className={`${estiloInput} font-body-sm text-body-sm cursor-pointer`}
+                >
+                  <option value="nenhuma">Não repetir</option>
+                  <option value="semanal">Semanal</option>
+                  <option value="mensal">Mensal</option>
+                </select>
+              </label>
             </div>
-            <p className="racha-muted">A recorrência é uma configuração visual nesta prévia. Concluir a atividade não confirma os pagamentos.</p>
-            {/* ERRO */}
 
-            {erro && (
-              <p
-                role="alert"
-                className="rounded-xl bg-red-50 p-4 text-sm text-red-600"
-              >
-                {erro}
+            <div className="p-space-sm rounded-lg bg-surface-container-low flex items-start gap-space-sm text-on-surface-variant">
+              <Icon name="info" size={18} className="text-tertiary shrink-0"/>
+              <p className="font-body-sm text-body-sm leading-tight">
+                A recorrência é uma configuração visual nesta prévia. Concluir a atividade não confirma os pagamentos.
               </p>
-            )}
-          </div>
+            </div>
+          </section>
+
+          {/* ERRO */}
+          {erro && (
+            <p
+              role="alert"
+              className="flex items-center gap-space-sm rounded-lg bg-error-container p-space-md font-body-sm text-body-sm text-on-error-container"
+            >
+              <Icon name="error_outline" size={18}/>
+              {erro}
+            </p>
+          )}
         </div>
 
-        {/* ============================================
-            RODAPÉ FIXO
-
-            Fica fora da área rolável.
-        ============================================ */}
-
-        <footer className="z-10 flex shrink-0 flex-wrap items-center justify-end gap-3 border-t border-[#EDF0F6] bg-white px-5 py-4 sm:px-7">
+        {/* RODAPÉ FIXO */}
+        <footer className="shrink-0 p-space-md sm:px-space-lg bg-surface-container-lowest shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex flex-wrap items-center justify-end gap-space-md z-10">
           <button
             type="button"
             onClick={onClose}
-            className="ui-button ui-button--md
-              rounded-xl
-              bg-[#E5EDFF]
-              px-5
-              py-3
-              text-sm
-              font-semibold
-              text-[#172033]
-              transition
-              hover:bg-[#D9E5FF]
-            "
+            className="px-5 py-2.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md transition-colors"
           >
             Cancelar
           </button>
@@ -1013,24 +814,10 @@ export default function EditarTarefa({
           <button
             type="button"
             onClick={salvarAlteracoes}
-            className="ui-button ui-button--md
-              flex
-              items-center
-              justify-center
-              gap-2
-              rounded-xl
-              bg-[#F97316]
-              px-5
-              py-3
-              text-sm
-              font-semibold
-              text-white
-              transition
-              hover:bg-[#EA580C]
-            "
+            className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md hover:bg-primary transition-all shadow-[0_8px_20px_-4px_rgba(255,140,66,0.35)] active:scale-[0.98]"
           >
-            <Check size={17} />
-            {modo === "criar" ? "Criar tarefa" : "Salvar alterações"}
+            <Icon name={modo === "criar" ? "add_task" : "check_circle"} size={18}/>
+            {modo === "criar" ? "Salvar Item" : "Atualizar Tarefa"}
           </button>
         </footer>
       </aside>

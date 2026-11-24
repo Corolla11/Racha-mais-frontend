@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type ProxyOptions } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
@@ -12,6 +12,8 @@ const BACKEND_ROUTES = [
   '/health',
   '/notificacoes',
   '/pagamentos',
+  '/planos',
+  '/assinaturas',
   '/ia',
 ]
 
@@ -20,11 +22,17 @@ export default defineConfig(({ mode }) => {
   const backendTarget =
     env.VITE_BACKEND_PROXY_TARGET ?? 'http://localhost:3000'
 
+  // Rotas como /tarefas/:id/partes existem no front e na API. Navegação do
+  // navegador (Accept: text/html) fica com o SPA; fetch/XHR vai para o backend.
+  const api = (): ProxyOptions => ({
+    target: backendTarget,
+    changeOrigin: true,
+    bypass: (req) =>
+      req.headers.accept?.includes('text/html') ? '/index.html' : undefined,
+  })
+
   const proxy = Object.fromEntries(
-    BACKEND_ROUTES.map((route) => [
-      route,
-      { target: backendTarget, changeOrigin: true },
-    ]),
+    BACKEND_ROUTES.map((route) => [route, api()]),
   )
 
   return {
@@ -33,40 +41,7 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
     ],
     server: {
-      proxy: {
-        '/api/auth': {
-          target: backendTarget,
-          changeOrigin: true,
-        },
-        '/grupos': {
-          target: backendTarget,
-          changeOrigin: true,
-        },
-        '/tarefas': {
-          target: backendTarget,
-          changeOrigin: true,
-        },
-        '/partes': {
-          target: backendTarget,
-          changeOrigin: true,
-        },
-        '/notificacoes': {
-          target: backendTarget,
-          changeOrigin: true,
-        },
-        '/planos': {
-          target: backendTarget,
-          changeOrigin: true,
-        },
-        '/assinaturas': {
-          target: backendTarget,
-          changeOrigin: true,
-        },
-        '/ia': {
-          target: backendTarget,
-          changeOrigin: true,
-        },
-      },
+      proxy,
     },
   }
 })

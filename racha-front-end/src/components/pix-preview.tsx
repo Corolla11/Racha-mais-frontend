@@ -8,9 +8,9 @@ export default function PixPreview({ size = 152 }: { size?: number }) {
       if (!inFinder && !inLogo && ((x * 17 + y * 13 + x * y * 3) % 11 < 5)) cells.push(<rect key={`${x}-${y}`} x={x} y={y} width="1" height="1"/>);
     }
   }
-  return <svg className="racha-qr-preview" role="img" aria-label="QR Code ilustrativo, sem validade para pagamento" width={size} height={size} viewBox="-2 -2 29 29" fill="#172131">
-    <rect x="-2" y="-2" width="29" height="29" fill="white"/>
-    {[[0, 0], [18, 0], [0, 18]].map(([x, y]) => <g key={`${x}-${y}`}><rect x={x} y={y} width="7" height="7"/><rect x={x + 1} y={y + 1} width="5" height="5" fill="white"/><rect x={x + 2} y={y + 2} width="3" height="3"/></g>)}
-    {cells}<rect x="10" y="10" width="5" height="5" rx="1" fill="#ff873d"/><path d="M11.4 12.5h2.2m-1.1-1.1v2.2" stroke="white" strokeWidth=".7"/>
+  return <svg className="mx-auto block h-auto max-w-full rounded-lg bg-surface-container-lowest text-on-surface" role="img" aria-label="QR Code ilustrativo, sem validade para pagamento" width={size} height={size} viewBox="-2 -2 29 29" fill="currentColor">
+    <rect x="-2" y="-2" width="29" height="29" className="fill-surface-container-lowest"/>
+    {[[0, 0], [18, 0], [0, 18]].map(([x, y]) => <g key={`${x}-${y}`}><rect x={x} y={y} width="7" height="7" rx="1.2"/><rect x={x + 1} y={y + 1} width="5" height="5" rx=".8" className="fill-surface-container-lowest"/><rect x={x + 2} y={y + 2} width="3" height="3" rx=".6" className="fill-primary-container"/></g>)}
+    {cells}<rect x="10" y="10" width="5" height="5" rx="1" className="fill-primary-container"/><path d="M11.4 12.5h2.2m-1.1-1.1v2.2" stroke="white" strokeWidth=".7"/>
   </svg>;
 }

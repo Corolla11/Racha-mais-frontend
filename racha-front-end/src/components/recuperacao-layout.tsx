@@ -1,10 +1,19 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { CR } from "../lib/recuperacao-tokens";
-import { Headset, LockKeyhole, PieChart, RotateCcwKey, Shield, ShieldCheck, Star, Zap } from "lucide-react";
+import Icon from "./icon";
 
 const ETAPAS = ["Solicitar", "Confirmado", "Nova Senha"];
 
+const DESTAQUES = [
+  { icone: "bolt", titulo: "Sem Complicação", texto: "Link instantâneo enviado ao seu e-mail" },
+  { icone: "security", titulo: "Criptografia Forte", texto: "Seus dados e saldos nunca são expostos" },
+];
+
+/**
+ * Estrutura das telas de recuperação de senha — tela
+ * "2.1 Recuperação de Senha" do Stitch: painel de marca à
+ * esquerda e área de trabalho com as etapas à direita.
+ */
 export default function RecuperacaoLayout({
   etapa,
   children,
@@ -13,73 +22,56 @@ export default function RecuperacaoLayout({
   children: ReactNode;
 }) {
   return (
-    <main
-      className="grid min-h-screen w-full grid-cols-1 font-jakarta lg:grid-cols-12"
-      style={{ backgroundColor: CR.surfaceLowest, color: CR.onSurface }}
-    >
-      {/* =====================================================
-          PAINEL ESQUERDO
-      ====================================================== */}
-
-      <aside
-        className="relative flex flex-col justify-between overflow-hidden p-8 text-white lg:col-span-5 lg:p-14"
-        style={{
-          background: `linear-gradient(to bottom right, ${CR.primaryContainer}, ${CR.primary}, ${CR.onPrimaryFixedVariant})`,
-        }}
-      >
-        <div className="pointer-events-none absolute -left-24 -top-24 h-80 w-80 rounded-full bg-white/10 blur-3xl" />
-        <div
-          className="pointer-events-none absolute -right-20 bottom-10 h-96 w-96 rounded-full blur-3xl"
-          style={{ backgroundColor: `${CR.tertiaryContainer}33` }}
-        />
+    <main className="w-full min-h-screen grid grid-cols-1 lg:grid-cols-12 bg-surface-container-lowest font-body-md text-on-surface antialiased">
+      {/* PAINEL ESQUERDO — marca e confiança */}
+      <aside className="lg:col-span-5 bg-gradient-to-br from-primary-container via-primary to-on-primary-fixed-variant p-8 lg:p-14 flex flex-col justify-between relative overflow-hidden text-on-primary">
+        <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-white/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 -right-20 w-96 h-96 rounded-full bg-tertiary-container/20 blur-3xl pointer-events-none" />
 
         {/* Marca */}
         <div className="relative z-10 flex items-center justify-between gap-4">
-          <Link to="/login" className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/20 shadow-sm backdrop-blur-md">
-              <PieChart className="h-6 w-6" strokeWidth={2.5} />
+          <Link to="/login" className="flex items-center gap-3" aria-label="Racha+, voltar para o login">
+            <span className="w-11 h-11 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-sm">
+              <Icon name="pie_chart" size={24} className="text-white font-bold" />
             </span>
             <span className="flex flex-col">
-              <span className="text-xl font-semibold leading-none tracking-tight">
-                Racha<span style={{ color: CR.tertiaryFixed }}>+</span>
+              <span className="font-display text-headline-sm text-white tracking-tight leading-none">
+                Racha<span className="text-tertiary-fixed">+</span>
               </span>
-              <span className="mt-0.5 text-[10px] uppercase tracking-widest text-white/80">
+              <span className="font-label-sm text-white/80 uppercase tracking-widest text-[10px] mt-0.5">
                 Finanças Compartilhadas
               </span>
             </span>
           </Link>
-          <span className="hidden items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] backdrop-blur-md sm:flex">
-            <ShieldCheck className="h-3.5 w-3.5" style={{ color: CR.tertiaryFixed }} />
-            Conexão protegida
+          <span className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-white font-label-sm text-[11px]">
+            <Icon name="verified_user" size={14} className="text-tertiary-fixed" />
+            Proteção SSL 256-bit
           </span>
         </div>
 
-        {/* Chamada */}
-        <div className="relative z-10 my-12 flex flex-col gap-6 lg:my-0">
-          <span className="inline-flex items-center gap-2 self-start rounded-full bg-white/20 px-3.5 py-1.5 text-xs font-medium backdrop-blur-md">
-            <RotateCcwKey className="h-3.5 w-3.5" style={{ color: CR.tertiaryFixed }} />
+        {/* Narrativa central */}
+        <div className="relative z-10 my-12 lg:my-0 flex flex-col space-y-6">
+          <span className="inline-flex items-center gap-2 self-start px-3.5 py-1.5 rounded-full bg-white/20 backdrop-blur-md text-white font-label-md text-xs font-medium">
+            <Icon name="lock_reset" size={14} className="text-tertiary-fixed" />
             Recuperação Segura de Acesso
           </span>
-          <h1 className="text-[2.25rem] font-bold leading-tight tracking-tight lg:text-[2rem]">
+          <h1 className="font-display text-display-mobile lg:text-headline-lg text-white font-bold leading-tight tracking-tight">
             Recupere seu acesso e volte a rachar sem estresse.
           </h1>
-          <p className="max-w-md text-sm leading-relaxed text-white/90">
+          <p className="font-body-md text-white/90 text-sm leading-relaxed max-w-md">
             Esqueceu sua senha? Acontece! Em poucos passos você redefine sua
             credencial e mantém seus grupos, churrascos, viagens e despesas
             domésticas 100% equilibrados.
           </p>
-          <div className="grid grid-cols-1 gap-3 pt-2 sm:grid-cols-2">
-            {[
-              { icone: Zap, titulo: "Sem Complicação", texto: "Link instantâneo enviado ao seu e-mail" },
-              { icone: Shield, titulo: "Criptografia Forte", texto: "Seus dados e saldos nunca são expostos" },
-            ].map(({ icone: Icone, titulo, texto }) => (
-              <div key={titulo} className="flex items-start gap-3 rounded-xl bg-white/10 p-3.5 backdrop-blur-md">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/20">
-                  <Icone className="h-4 w-4" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            {DESTAQUES.map(({ icone, titulo, texto }) => (
+              <div key={titulo} className="p-3.5 rounded-xl bg-white/10 backdrop-blur-md flex items-start gap-3">
+                <span className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+                  <Icon name={icone} size={16} className="text-white" />
                 </span>
                 <span>
-                  <span className="block text-xs font-semibold">{titulo}</span>
-                  <span className="block text-[11px] text-white/70">{texto}</span>
+                  <span className="block font-label-md text-white text-xs font-semibold">{titulo}</span>
+                  <span className="block font-body-sm text-white/70 text-[11px]">{texto}</span>
                 </span>
               </div>
             ))}
@@ -87,90 +79,78 @@ export default function RecuperacaoLayout({
         </div>
 
         {/* Depoimento */}
-        <figure className="relative z-10 flex flex-col gap-3 rounded-2xl bg-white/10 p-5 shadow-sm backdrop-blur-lg">
-          <div className="flex items-center gap-1" style={{ color: CR.tertiaryFixed }} aria-label="Avaliação 4,9 de 5">
+        <figure className="relative z-10 p-5 rounded-2xl bg-white/10 backdrop-blur-lg shadow-sm flex flex-col gap-3">
+          <div className="flex items-center gap-1 text-tertiary-fixed" role="img" aria-label="Avaliação 4,9 de 5">
             {Array.from({ length: 5 }, (_, i) => (
-              <Star key={i} className="h-3.5 w-3.5" fill="currentColor" />
+              <Icon key={i} name="star" size={14} filled />
             ))}
-            <span className="ml-1.5 text-xs font-bold text-white/90">4.9/5</span>
+            <span className="font-label-sm text-xs text-white/90 ml-1.5 font-bold">4.9/5</span>
           </div>
-          <blockquote className="text-xs italic leading-relaxed text-white/90">
-            “Troquei de telefone, esqueci a senha e em menos de 2 minutos já
+          <blockquote className="font-body-sm text-white/90 text-xs italic leading-relaxed">
+            “Troquei de telefone, esqueci a chave e em menos de 2 minutos já
             estava conferindo o fechamento do aluguel do apê. O fluxo é limpo e
             direto ao ponto!”
           </blockquote>
           <figcaption className="flex items-center gap-3 pt-1">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/25 text-[11px] font-bold">
+            <span className="w-8 h-8 rounded-full shrink-0 bg-white/25 flex items-center justify-center font-label-sm text-[11px] font-bold text-white" aria-hidden="true">
               CD
             </span>
             <span>
-              <span className="block text-xs font-semibold leading-none">Camila Duarte</span>
-              <span className="block text-[10px] text-white/70">Organiza 4 grupos no Racha+</span>
+              <span className="block font-label-md text-white text-xs font-semibold leading-none">Camila Duarte</span>
+              <span className="block font-body-sm text-white/70 text-[10px]">Organiza 4 grupos no Racha+</span>
             </span>
           </figcaption>
         </figure>
       </aside>
 
-      {/* =====================================================
-          PAINEL DIREITO
-      ====================================================== */}
-
-      <section className="flex flex-col justify-between p-6 sm:p-10 lg:col-span-7 lg:p-14">
-        <ol
-          aria-label="Etapas da recuperação"
-          className="flex max-w-full items-center gap-1.5 self-start overflow-x-auto rounded-xl p-1 pb-1"
-          style={{ backgroundColor: CR.surfaceLow }}
-        >
-          {ETAPAS.map((nome, indice) => {
-            const numero = indice + 1;
-            const atual = numero === etapa;
-            return (
-              <li
-                key={nome}
-                aria-current={atual ? "step" : undefined}
-                className={`flex shrink-0 items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold ${
-                  atual ? "bg-white shadow-sm" : ""
-                }`}
-                style={{ color: atual ? CR.primaryContainer : CR.onSurfaceVariant }}
-              >
-                <span
-                  className="flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold"
-                  style={
-                    atual
-                      ? { backgroundColor: CR.primaryContainer, color: "#fff" }
-                      : { backgroundColor: CR.surfaceHighest, color: CR.onSurfaceVariant }
-                  }
+      {/* PAINEL DIREITO — etapas */}
+      <section className="lg:col-span-7 bg-surface-container-lowest p-6 sm:p-10 lg:p-14 flex flex-col justify-between">
+        <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6">
+          <ol
+            aria-label="Etapas da recuperação"
+            className="flex items-center gap-1.5 p-1 rounded-xl bg-surface-container-low max-w-full overflow-x-auto self-start"
+          >
+            {ETAPAS.map((nome, indice) => {
+              const numero = indice + 1;
+              const atual = numero === etapa;
+              return (
+                <li
+                  key={nome}
+                  aria-current={atual ? "step" : undefined}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-label-md font-semibold transition-all duration-200 flex items-center gap-1 shrink-0 ${
+                    atual ? "bg-surface-container-lowest text-primary-container shadow-sm" : "text-on-surface-variant"
+                  }`}
                 >
-                  {numero}
-                </span>
-                {nome}
-              </li>
-            );
-          })}
-        </ol>
+                  <span
+                    className={`w-4 h-4 rounded-full text-[10px] flex items-center justify-center font-bold ${
+                      atual ? "bg-primary-container text-white" : "bg-surface-container-highest text-on-surface-variant"
+                    }`}
+                  >
+                    {numero}
+                  </span>
+                  {nome}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
 
-        <div className="mx-auto my-auto w-full max-w-md py-10">{children}</div>
+        <div className="w-full max-w-md mx-auto my-auto py-4">{children}</div>
 
-        <footer
-          className="flex flex-col items-center justify-between gap-3 text-xs sm:flex-row"
-          style={{ color: CR.onSurfaceVariant }}
-        >
+        <footer className="pt-6 flex flex-col sm:flex-row items-center justify-between text-on-surface-variant font-label-sm text-xs gap-3">
           <span className="flex items-center gap-2">
-            <Headset className="h-4 w-4" style={{ color: CR.primaryContainer }} />
+            <Icon name="support_agent" size={16} className="text-primary-container" />
             <span>
               Dúvidas?{" "}
-              <a
-                href="mailto:suporte@plusracha.com.br"
-                className="font-semibold hover:underline"
-                style={{ color: CR.primary }}
-              >
+              <a className="font-semibold text-primary hover:underline" href="mailto:suporte@plusracha.com.br">
                 Fale com o suporte
               </a>
             </span>
           </span>
-          <span className="flex items-center gap-2">
-            <LockKeyhole className="h-3.5 w-3.5" />
-            Termos de Uso • Privacidade
+          <span className="flex items-center gap-4">
+            <Link className="hover:text-on-surface transition-colors" to="/faq">Termos de Uso</Link>
+            <span aria-hidden="true">•</span>
+            <Link className="hover:text-on-surface transition-colors" to="/faq">Privacidade</Link>
           </span>
         </footer>
       </section>
@@ -186,33 +166,25 @@ export function BannerErro({
 }: {
   titulo: string;
   descricao: string;
-  onFechar: () => void;
+  onFechar?: () => void;
 }) {
   return (
-    <div
-      role="alert"
-      className="flex items-start gap-3 rounded-xl p-4"
-      style={{ backgroundColor: `${CR.errorContainer}99`, color: CR.onErrorContainer }}
-    >
-      <span
-        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-        style={{ backgroundColor: CR.error }}
-        aria-hidden="true"
-      >
-        !
-      </span>
+    <div role="alert" className="p-4 rounded-xl bg-error-container/60 text-on-error-container flex items-start gap-3">
+      <Icon name="error" size={20} className="text-error shrink-0" />
       <div className="flex-1">
-        <p className="text-xs font-bold">{titulo}</p>
-        <p className="mt-0.5 text-xs opacity-90">{descricao}</p>
+        <p className="font-label-md text-xs font-bold text-on-error-container">{titulo}</p>
+        <p className="font-body-sm text-xs text-on-error-container/90 mt-0.5">{descricao}</p>
       </div>
-      <button
-        type="button"
-        aria-label="Fechar aviso"
-        onClick={onFechar}
-        className="cursor-pointer text-sm opacity-70 hover:opacity-100"
-      >
-        ✕
-      </button>
+      {onFechar && (
+        <button
+          type="button"
+          aria-label="Fechar aviso"
+          onClick={onFechar}
+          className="text-on-error-container/70 hover:text-on-error-container cursor-pointer flex"
+        >
+          <Icon name="close" size={16} />
+        </button>
+      )}
     </div>
   );
 }

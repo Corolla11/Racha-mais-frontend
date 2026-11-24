@@ -1,25 +1,150 @@
 @import "tailwindcss";
 @import "./styles/design-tokens.css";
 
+/* =====================================================
+   Tema do redesign (Stitch — "Racha+ App de Rateio").
+   Os nomes seguem exatamente os tokens usados nas telas
+   do Stitch, para que o markup possa ser portado 1:1:
+   bg-primary-container, text-on-surface-variant,
+   p-space-lg, font-headline-sm text-headline-sm etc.
+====================================================== */
 @theme {
-  --color-primary: #F2A541;
-  --color-secondary: #0B3D62;
-  --color-tertiary: #C97208;
+  /* Cores */
+  --color-primary: #9b4500;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #ff8c42;
+  --color-on-primary-container: #6a2d00;
+  --color-primary-fixed: #ffdbc9;
+  --color-primary-fixed-dim: #ffb68d;
+  --color-on-primary-fixed: #331200;
+  --color-on-primary-fixed-variant: #763300;
+  --color-inverse-primary: #ffb68d;
+  --color-surface-tint: #9b4500;
+
+  --color-secondary: #ab3425;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #fc6f5a;
+  --color-on-secondary-container: #6d0300;
+  --color-secondary-fixed: #ffdad4;
+  --color-secondary-fixed-dim: #ffb4a8;
+  --color-on-secondary-fixed: #410100;
+  --color-on-secondary-fixed-variant: #8a1c10;
+
+  --color-tertiary: #855300;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #ed9800;
+  --color-on-tertiary-container: #5b3700;
+  --color-tertiary-fixed: #ffddb8;
+  --color-tertiary-fixed-dim: #ffb95f;
+  --color-on-tertiary-fixed: #2a1700;
+  --color-on-tertiary-fixed-variant: #653e00;
+
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  --color-background: #f8f9ff;
+  --color-on-background: #121c2a;
+  --color-surface: #f8f9ff;
+  --color-surface-bright: #f8f9ff;
+  --color-surface-dim: #d0dbed;
+  --color-surface-variant: #d9e3f6;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #eff4ff;
+  --color-surface-container: #e6eeff;
+  --color-surface-container-high: #dee9fc;
+  --color-surface-container-highest: #d9e3f6;
+  --color-on-surface: #121c2a;
+  --color-on-surface-variant: #564338;
+  --color-inverse-surface: #27313f;
+  --color-inverse-on-surface: #eaf1ff;
+  --color-outline: #897266;
+  --color-outline-variant: #ddc1b3;
+
+  /* Espaçamentos nomeados */
+  --spacing-space-xs: 0.25rem;
+  --spacing-space-sm: 0.5rem;
+  --spacing-space-md: 1rem;
+  --spacing-space-lg: 1.5rem;
+  --spacing-space-xl: 2.5rem;
+  --spacing-gutter: 1.5rem;
+  --spacing-gutter-mobile: 1rem;
+  --spacing-margin: 2rem;
+  --spacing-margin-mobile: 1rem;
+
+  /* Fontes */
+  --font-sans: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+  --font-jakarta: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+  --font-display: "Plus Jakarta Sans", sans-serif;
+  --font-display-mobile: "Plus Jakarta Sans", sans-serif;
+  --font-headline-lg: "Plus Jakarta Sans", sans-serif;
+  --font-headline-lg-mobile: "Plus Jakarta Sans", sans-serif;
+  --font-headline-md: "Plus Jakarta Sans", sans-serif;
+  --font-headline-sm: "Plus Jakarta Sans", sans-serif;
+  --font-body-lg: "Plus Jakarta Sans", sans-serif;
+  --font-body-md: "Plus Jakarta Sans", sans-serif;
+  --font-body-sm: "Plus Jakarta Sans", sans-serif;
+  --font-label-lg: "Plus Jakarta Sans", sans-serif;
+  --font-label-md: "Plus Jakarta Sans", sans-serif;
+  --font-label-sm: "Plus Jakarta Sans", sans-serif;
+  --font-numeric-stat: "Plus Jakarta Sans", sans-serif;
+
+  /* Tipografia */
+  --text-display: 48px;
+  --text-display--line-height: 56px;
+  --text-display--letter-spacing: -0.03em;
+  --text-display--font-weight: 800;
+  --text-display-mobile: 36px;
+  --text-display-mobile--line-height: 44px;
+  --text-display-mobile--letter-spacing: -0.02em;
+  --text-display-mobile--font-weight: 800;
+  --text-headline-lg: 32px;
+  --text-headline-lg--line-height: 40px;
+  --text-headline-lg--letter-spacing: -0.02em;
+  --text-headline-lg--font-weight: 700;
+  --text-headline-lg-mobile: 26px;
+  --text-headline-lg-mobile--line-height: 34px;
+  --text-headline-lg-mobile--letter-spacing: -0.015em;
+  --text-headline-lg-mobile--font-weight: 700;
+  --text-headline-md: 24px;
+  --text-headline-md--line-height: 32px;
+  --text-headline-md--letter-spacing: -0.015em;
+  --text-headline-md--font-weight: 600;
+  --text-headline-sm: 20px;
+  --text-headline-sm--line-height: 28px;
+  --text-headline-sm--letter-spacing: -0.01em;
+  --text-headline-sm--font-weight: 600;
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 28px;
+  --text-body-lg--font-weight: 400;
+  --text-body-md: 16px;
+  --text-body-md--line-height: 24px;
+  --text-body-md--font-weight: 400;
+  --text-body-sm: 14px;
+  --text-body-sm--line-height: 20px;
+  --text-body-sm--font-weight: 400;
+  --text-label-lg: 16px;
+  --text-label-lg--line-height: 24px;
+  --text-label-lg--font-weight: 600;
+  --text-label-md: 14px;
+  --text-label-md--line-height: 20px;
+  --text-label-md--letter-spacing: 0.005em;
+  --text-label-md--font-weight: 600;
+  --text-label-sm: 12px;
+  --text-label-sm--line-height: 16px;
+  --text-label-sm--letter-spacing: 0.01em;
+  --text-label-sm--font-weight: 500;
+  --text-numeric-stat: 28px;
+  --text-numeric-stat--line-height: 36px;
+  --text-numeric-stat--letter-spacing: -0.02em;
+  --text-numeric-stat--font-weight: 700;
+
+  /* Tokens legados (telas antigas ainda podem usar) */
   --color-neutral: #9AA5B1;
-
-  --color-background: #EEF4FC;
-  --color-surface: #FFFFFF;
   --color-input: #F5F7FB;
-
   --color-text-primary: #071D33;
   --color-text-secondary: #596A7B;
-
-  --font-jakarta: var(--ui-font-family);
-  --font-sans: var(--ui-font-family);
-  --radius-lg: var(--ui-control-radius);
-  --radius-xl: var(--ui-card-radius);
-  --radius-2xl: var(--ui-card-radius);
-
   --text-ui-meta: var(--ui-font-meta);
   --text-ui-meta--line-height: var(--ui-line-body);
   --text-ui-caption: var(--ui-font-caption);
@@ -43,7 +168,34 @@
 }
 
 @layer base {
-  h1 { font-size:var(--ui-font-page-title); line-height:var(--ui-line-heading); font-weight:700; }
-  h2 { font-size:var(--ui-font-section-title); line-height:var(--ui-line-heading); font-weight:600; }
-  h3 { font-size:var(--ui-font-card-title); line-height:var(--ui-line-heading); font-weight:600; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--color-surface);
+    color: var(--color-on-surface);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+  }
+}
+
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: "liga";
+  font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+.material-symbols-outlined.is-filled {
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
 }

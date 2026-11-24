@@ -1,83 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  AlarmClock,
-  ArrowLeftRight,
-  ArrowRight,
-  BadgeCheck,
-  Banknote,
-  Bell,
-  BellRing,
-  ChartColumn,
-  CheckCheck,
-  CheckCircle2,
-  CircleAlert,
-  CircleCheckBig,
-  ClipboardList,
-  Clock,
-  Copy,
-  ExternalLink,
-  FolderArchive,
-  HandCoins,
-  Inbox,
-  Info,
-  Lightbulb,
-  ListTodo,
-  Mail,
-  MessageCircle,
-  PartyPopper,
-  QrCode,
-  RadioTower,
-  Receipt,
-  ReceiptText,
-  Send,
-  Settings2,
-  Shield,
-  ShieldAlert,
-  SlidersHorizontal,
-  UserPlus,
-  X,
-  type LucideIcon,
-} from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import AppShell from "../components/app-shell";
+import Icon from "../components/icon";
 import { futureModules } from "../lib/endpoints";
-
-/* =====================================================
-   TOKENS DO DESIGN
-
-   Ficam aqui dentro (e não no tema do Tailwind) para que
-   esta tela não interfira nas demais páginas do projeto.
-====================================================== */
-
-const C = {
-  primary: "#9b4500",
-  primaryContainer: "#ff8c42",
-  primaryFixed: "#ffdbc9",
-  primaryFixedDim: "#ffb68d",
-  onPrimaryFixed: "#331200",
-
-  secondary: "#ab3425",
-  secondaryFixed: "#ffdad4",
-
-  tertiary: "#855300",
-  tertiaryContainer: "#ed9800",
-  tertiaryFixed: "#ffddb8",
-  onTertiaryFixed: "#2a1700",
-
-  errorContainer: "#ffdad6",
-  onErrorContainer: "#93000a",
-
-  surfaceLowest: "#ffffff",
-  surfaceLow: "#eff4ff",
-  surfaceContainer: "#e6eeff",
-  surfaceHigh: "#dee9fc",
-  surfaceHighest: "#d9e3f6",
-
-  onSurface: "#121c2a",
-  onSurfaceVariant: "#564338",
-  inverseSurface: "#27313f",
-  inverseOnSurface: "#eaf1ff",
-};
 
 /* =====================================================
    DADOS DEMONSTRATIVOS
@@ -100,30 +25,31 @@ interface Notificacao {
   categoria: Categoria;
   lida: boolean;
   tom: Tom;
-  icone: LucideIcon;
+  /** Nome do ícone do Material Symbols. */
+  icone: string;
+  /** "Rótulo — Assunto": o rótulo aparece em caixa alta na cor do tom. */
   titulo: string;
   selo: string;
-  corSelo: { fundo: string; texto: string };
+  /** Classes de fundo/texto do selo. */
+  corSelo: string;
   descricao: ReactNode;
   quando: string;
+  /** Valor movimentado (pagamentos), usado no resumo da barra de filtros. */
+  valor?: number;
   acao?: Acao;
   resolvida?: string;
 }
 
-const TONS: Record<Tom, { borda: string; fundoIcone: string; corIcone: string }> = {
-  primary: { borda: C.primaryContainer, fundoIcone: `${C.primaryFixedDim}66`, corIcone: C.primary },
-  tertiary: { borda: C.tertiaryContainer, fundoIcone: C.tertiaryFixed, corIcone: C.tertiary },
-  secondary: { borda: C.secondary, fundoIcone: C.secondaryFixed, corIcone: C.secondary },
+const TONS: Record<Tom, { barra: string; icone: string; rotulo: string }> = {
+  primary: { barra: "bg-primary-container", icone: "bg-primary-fixed text-primary", rotulo: "text-primary" },
+  tertiary: { barra: "bg-tertiary-container", icone: "bg-tertiary-fixed text-on-tertiary-container", rotulo: "text-tertiary" },
+  secondary: { barra: "bg-secondary-container", icone: "bg-secondary-fixed/40 text-secondary", rotulo: "text-secondary" },
 };
 
-const SELO_NEUTRO = { fundo: C.surfaceContainer, texto: C.onSurfaceVariant };
-const SELO_ALERTA = { fundo: C.errorContainer, texto: C.onErrorContainer };
+const SELO_NEUTRO = "bg-surface-container text-on-surface";
+const SELO_ALERTA = "bg-error-container text-on-error-container";
 
-const destaque = (texto: string) => (
-  <strong className="font-semibold" style={{ color: C.onSurface }}>
-    {texto}
-  </strong>
-);
+const destaque = (texto: string) => <strong className="font-semibold text-on-surface">{texto}</strong>;
 
 const NOTIFICACOES_INICIAIS: Notificacao[] = [
   {
@@ -132,18 +58,19 @@ const NOTIFICACOES_INICIAIS: Notificacao[] = [
     categoria: "payments",
     lida: false,
     tom: "primary",
-    icone: QrCode,
+    icone: "qr_code_2",
     titulo: "Pagamento Informado — Viagem Florianópolis",
     selo: "Pix Pendente",
-    corSelo: { fundo: C.surfaceHigh, texto: C.onSurfaceVariant },
+    corSelo: "bg-surface-container-high text-on-surface-variant",
     descricao: (
       <>
         {destaque("Mariana S.")} informou o pagamento de{" "}
-        <span className="font-semibold" style={{ color: C.primary }}>R$ 112,50</span>{" "}
-        referente à tarefa {destaque("“Comprar bebidas, gelo e carvão”")}.
+        <span className="font-semibold text-primary">R$ 112,50</span> referente à tarefa{" "}
+        {destaque("“Comprar bebidas, gelo e carvão”")}.
       </>
     ),
     quando: "Há 15 minutos",
+    valor: 112.5,
     acao: { tipo: "comprovante" },
   },
   {
@@ -152,15 +79,14 @@ const NOTIFICACOES_INICIAIS: Notificacao[] = [
     categoria: "invites",
     lida: false,
     tom: "tertiary",
-    icone: PartyPopper,
+    icone: "celebration",
     titulo: "Novo Convite — Churrasco de Aniversário do Leo",
     selo: "Grupo Privado",
-    corSelo: { fundo: C.tertiaryFixed, texto: C.onTertiaryFixed },
+    corSelo: "bg-tertiary-fixed text-on-tertiary-fixed",
     descricao: (
       <>
         {destaque("Leo M.")} convidou você para integrar o rateio coletivo com{" "}
-        {destaque("8 participantes confirmados")}. Cota estimada: R$ 65,00 por
-        pessoa.
+        {destaque("8 participantes confirmados")}. Cota estimada: R$ 65,00 por pessoa.
       </>
     ),
     quando: "Há 1 hora",
@@ -172,16 +98,14 @@ const NOTIFICACOES_INICIAIS: Notificacao[] = [
     categoria: "tasks",
     lida: false,
     tom: "secondary",
-    icone: AlarmClock,
+    icone: "alarm",
     titulo: "Lembrete de Prazo — Alugar carro 7 lugares",
     selo: "Vence amanhã",
     corSelo: SELO_ALERTA,
     descricao: (
       <>
-        O prazo da tarefa atribuída a você no grupo{" "}
-        {destaque("“Viagem Florianópolis”")} encerra amanhã às{" "}
-        {destaque("11:30")}. Após a reserva, anexe o comprovante com o valor
-        total estimado.
+        O prazo da tarefa atribuída a você no grupo {destaque("“Viagem Florianópolis”")} encerra amanhã às{" "}
+        {destaque("11:30")}. Após a reserva, anexe o comprovante com o valor total estimado.
       </>
     ),
     quando: "Há 3 horas",
@@ -192,19 +116,20 @@ const NOTIFICACOES_INICIAIS: Notificacao[] = [
     secao: "Ontem",
     categoria: "payments",
     lida: false,
-    tom: "primary",
-    icone: HandCoins,
+    tom: "secondary",
+    icone: "payments",
     titulo: "Cota Pendente — Apê 302 República",
     selo: "Cobrança",
     corSelo: SELO_ALERTA,
     descricao: (
       <>
         {destaque("Lucas M.")} solicitou o acerto da sua cota de{" "}
-        <strong className="text-base font-bold" style={{ color: C.onSurface }}>R$ 85,00</strong>{" "}
+        <strong className="font-headline-sm text-headline-sm font-extrabold tracking-tight text-on-surface">R$ 85,00</strong>{" "}
         referente ao fechamento da fatura {destaque("“Internet Fibra 600MB”")}.
       </>
     ),
     quando: "Ontem às 18:40",
+    valor: 85,
     acao: { tipo: "pix" },
   },
   {
@@ -213,18 +138,18 @@ const NOTIFICACOES_INICIAIS: Notificacao[] = [
     categoria: "payments",
     lida: true,
     tom: "primary",
-    icone: CheckCircle2,
+    icone: "check_circle",
     titulo: "Pagamento Confirmado!",
     selo: "Liquidado",
     corSelo: SELO_NEUTRO,
     descricao: (
       <>
-        {destaque("Rodrigo M.")} confirmou o recebimento do seu pagamento de{" "}
-        {destaque("R$ 70,00")} na tarefa <span className="italic">“Passagens de Balsa”</span>.
-        Seu saldo no grupo agora está zerado.
+        {destaque("Rodrigo M.")} confirmou o recebimento do seu pagamento de {destaque("R$ 70,00")} na tarefa{" "}
+        <span className="italic">“Passagens de Balsa”</span>. Seu saldo no grupo agora está zerado.
       </>
     ),
     quando: "Ontem às 14:15",
+    valor: 70,
   },
   {
     id: 6,
@@ -232,15 +157,14 @@ const NOTIFICACOES_INICIAIS: Notificacao[] = [
     categoria: "tasks",
     lida: true,
     tom: "primary",
-    icone: CircleCheckBig,
+    icone: "task_alt",
     titulo: "Tarefa Finalizada",
     selo: "Concluído",
     corSelo: SELO_NEUTRO,
     descricao: (
       <>
-        {destaque("Carla T.")} marcou {destaque("“Check-in na casa do Airbnb”")}{" "}
-        como concluída no grupo {destaque("Viagem Florianópolis")}. As
-        instruções de entrada estão no chat do grupo.
+        {destaque("Carla T.")} marcou {destaque("“Check-in na casa do Airbnb”")} como concluída no grupo{" "}
+        {destaque("Viagem Florianópolis")}. As instruções de entrada estão no chat do grupo.
       </>
     ),
     quando: "Ontem às 10:20",
@@ -251,15 +175,14 @@ const NOTIFICACOES_INICIAIS: Notificacao[] = [
     categoria: "system",
     lida: true,
     tom: "primary",
-    icone: FolderArchive,
+    icone: "inventory_2",
     titulo: "Grupo Encerrado — Viagem Serra da Canastra",
     selo: "100% Liquidado",
     corSelo: SELO_NEUTRO,
     descricao: (
       <>
-        O grupo foi liquidado com total conformidade entre todos os 6 membros
-        e movido para o arquivo de histórico. O balanço final de R$ 2.450,00
-        está fechado.
+        O grupo foi liquidado com total conformidade entre todos os 6 membros e movido para o arquivo de
+        histórico. O balanço final de R$ 2.450,00 está fechado.
       </>
     ),
     quando: "Terça, 21 Mai",
@@ -271,15 +194,14 @@ const NOTIFICACOES_INICIAIS: Notificacao[] = [
     categoria: "system",
     lida: true,
     tom: "primary",
-    icone: ShieldAlert,
+    icone: "security",
     titulo: "Segurança da Conta",
     selo: "Dispositivo",
     corSelo: SELO_NEUTRO,
     descricao: (
       <>
-        Novo acesso autenticado detectado utilizando navegador{" "}
-        {destaque("Chrome no macOS")} em {destaque("Florianópolis, SC")} (IP
-        177.136.**.**). Se você não reconhece esta sessão, revogue
+        Novo acesso autenticado detectado utilizando navegador {destaque("Chrome no macOS")} em{" "}
+        {destaque("Florianópolis, SC")} (IP 177.136.**.**). Se você não reconhece esta sessão, revogue
         imediatamente o acesso nas configurações.
       </>
     ),
@@ -287,23 +209,40 @@ const NOTIFICACOES_INICIAIS: Notificacao[] = [
   },
 ];
 
-const FILTROS: { id: Categoria | "all"; nome: string; icone: LucideIcon }[] = [
-  { id: "all", nome: "Todas", icone: Inbox },
-  { id: "invites", nome: "Convites de Grupos", icone: UserPlus },
-  { id: "payments", nome: "Pagamentos & Pix", icone: Banknote },
-  { id: "tasks", nome: "Tarefas & Prazos", icone: ListTodo },
-  { id: "system", nome: "Avisos do Sistema", icone: Shield },
+const FILTROS: { id: Categoria | "all"; nome: string }[] = [
+  { id: "all", nome: "Todas" },
+  { id: "invites", nome: "Convites" },
+  { id: "payments", nome: "Cobranças & Pix" },
+  { id: "tasks", nome: "Tarefas" },
+  { id: "system", nome: "Sistema" },
 ];
 
 const SECOES: Secao[] = ["Hoje", "Ontem", "Esta Semana"];
+const NOME_SECAO: Record<Secao, string> = { Hoje: "Hoje", Ontem: "Ontem", "Esta Semana": "Esta semana" };
 
 const CODIGO_PIX =
   "00020126580014br.gov.bcb.pix0136lucas.moura@racha.app520400005303986540585.005802BR5913Lucas Moura6009SAO PAULO62070503***6304E5F6";
 
-function dataPorExtenso(diasAtras: number) {
+const moeda = (valor: number) => valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+function diasAtras(dias: number) {
   const data = new Date();
-  data.setDate(data.getDate() - diasAtras);
-  return data.toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" });
+  data.setDate(data.getDate() - dias);
+  return data;
+}
+
+function dataCurta(data: Date) {
+  return data.toLocaleDateString("pt-BR", { day: "numeric", month: "long" });
+}
+
+// "22 de outubro" para Hoje/Ontem e "16 — 20 de outubro" para Esta semana
+function dataDaSecao(indice: number) {
+  if (indice < 2) return dataCurta(diasAtras(indice));
+  const inicio = diasAtras(6);
+  const fim = diasAtras(2);
+  return inicio.getMonth() === fim.getMonth()
+    ? `${inicio.getDate()} — ${dataCurta(fim)}`
+    : `${dataCurta(inicio)} — ${dataCurta(fim)}`;
 }
 
 type Modal = "comprovante" | "pix" | "tarefa" | "configuracoes" | null;
@@ -339,6 +278,7 @@ export default function Notificacoes() {
   }, [modal]);
 
   const naoLidas = notificacoes.filter((n) => !n.lida).length;
+  const movimentado = notificacoes.reduce((total, n) => total + (n.valor ?? 0), 0);
 
   const contagem = useMemo(() => {
     const total: Record<string, { total: number; naoLidas: number }> = {};
@@ -358,9 +298,7 @@ export default function Notificacoes() {
     if (mudancas.lida) {
       futureModules.notificacoes.marcarLida(id).catch(() => {});
     }
-    setNotificacoes((anteriores) =>
-      anteriores.map((n) => (n.id === id ? { ...n, ...mudancas } : n)),
-    );
+    setNotificacoes((anteriores) => anteriores.map((n) => (n.id === id ? { ...n, ...mudancas } : n)));
   }
 
   function marcarTodasComoLidas() {
@@ -406,138 +344,138 @@ export default function Notificacoes() {
   }
 
   return (
-    <AppShell title="Notificações & Avisos">
-      <div className="flex w-full flex-col font-jakarta" style={{ color: C.onSurface }}>
-        {/* =====================================================
-            CABEÇALHO
-        ====================================================== */}
+    <AppShell title="Notificações & Avisos" bare>
+      <div className="flex w-full flex-col">
+        <div className="mx-auto w-full max-w-5xl space-y-space-lg px-gutter-mobile py-space-md sm:px-gutter sm:py-space-xl">
+          {/* 1. Breadcrumbs */}
+          <nav aria-label="Breadcrumb" className="flex items-center gap-space-xs font-label-sm text-label-sm text-on-surface-variant">
+            <Link to="/meus-grupos" className="flex items-center gap-1 transition-colors hover:text-primary">
+              <Icon name="home" size={16} />
+              <span>Início</span>
+            </Link>
+            <Icon name="chevron_right" size={14} className="text-outline-variant" />
+            <span className="font-semibold text-on-surface">Notificações &amp; Alertas</span>
+          </nav>
 
-        <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <div className="flex items-center gap-2">
-            <div
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl shadow-sm"
-              style={{ backgroundColor: C.primaryFixed, color: C.primary }}
-            >
-              <BellRing className="h-7 w-7" fill="currentColor" />
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-[1.75rem] font-bold leading-tight tracking-tight sm:text-[2rem]">
-                  Notificações e Avisos
+          {/* 2. Cabeçalho da Central */}
+          <div className="flex flex-col justify-between gap-space-md lg:flex-row lg:items-center">
+            <div className="space-y-space-xs">
+              <div className="flex flex-wrap items-center gap-space-sm">
+                <h1 className="font-headline-lg text-headline-lg font-extrabold tracking-tight text-on-surface">
+                  Central de Notificações
                 </h1>
                 {naoLidas > 0 && (
-                  <span
-                    className="rounded-full px-2.5 py-0.5 text-xs font-bold text-white shadow-sm"
-                    style={{ backgroundColor: C.secondary }}
-                  >
-                    {naoLidas} não {naoLidas === 1 ? "lida" : "lidas"}
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary-container px-2.5 py-0.5 font-label-sm text-label-sm font-bold text-on-primary shadow-sm">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+                    {naoLidas} {naoLidas === 1 ? "nova" : "novas"}
                   </span>
                 )}
               </div>
-              <p className="text-sm" style={{ color: C.onSurfaceVariant }}>
-                Acompanhe confirmações Pix, convites de grupos, pendências de
-                tarefas e atualizações em tempo real.
+              <p className="max-w-2xl font-body-md text-body-md text-on-surface-variant">
+                Fique por dentro das movimentações de rachas, convites de grupos, cobranças Pix e tarefas em andamento.
               </p>
             </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={marcarTodasComoLidas}
-              disabled={naoLidas === 0}
-              className="flex cursor-pointer items-center gap-1 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold shadow-sm transition-all hover:bg-[#e6eeff] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <CheckCheck className="h-[18px] w-[18px]" style={{ color: C.primary }} />
-              Marcar todas como lidas
-            </button>
-            <button
-              type="button"
-              onClick={() => setModal("configuracoes")}
-              className="flex cursor-pointer items-center gap-1 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold shadow-sm transition-all hover:bg-[#e6eeff] active:scale-[0.98]"
-            >
-              <SlidersHorizontal className="h-[18px] w-[18px]" style={{ color: C.onSurfaceVariant }} />
-              Configurar alertas
-            </button>
-          </div>
-        </div>
-
-        {/* =====================================================
-            FILTROS
-        ====================================================== */}
-
-        <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-2">
-          {FILTROS.map((item) => {
-            const Icone = item.icone;
-            const ativo = filtro === item.id;
-            const dados = contagem[item.id];
-            return (
+            <div className="flex shrink-0 items-center gap-space-sm self-start lg:self-center">
               <button
-                key={item.id}
                 type="button"
-                aria-pressed={ativo}
-                onClick={() => setFiltro(item.id)}
-                className={`flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold shadow-sm transition-all ${
-                  ativo ? "" : "bg-white hover:bg-[#e6eeff] hover:text-[#121c2a]"
-                }`}
-                style={
-                  ativo
-                    ? { backgroundColor: C.primaryContainer, color: "#fff" }
-                    : { color: C.onSurfaceVariant }
-                }
+                onClick={marcarTodasComoLidas}
+                disabled={naoLidas === 0}
+                className="inline-flex items-center gap-2 rounded-lg bg-surface-container-lowest px-3.5 py-2 font-label-md text-label-md text-on-surface shadow-sm transition-all hover:bg-surface-container-high active:scale-95 disabled:pointer-events-none disabled:opacity-70"
               >
-                <Icone className="h-[18px] w-[18px]" />
-                <span>
-                  {item.nome} ({dados.total})
-                </span>
-                {item.id !== "all" && dados.naoLidas > 0 && (
-                  <span
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: ativo ? "#fff" : C.secondary }}
-                  />
+                {naoLidas === 0 ? (
+                  <>
+                    <Icon name="check" size={18} className="text-tertiary" />
+                    <span>Todas marcadas</span>
+                  </>
+                ) : (
+                  <>
+                    <Icon name="done_all" size={18} className="text-primary" />
+                    <span>Marcar todas como lidas</span>
+                  </>
                 )}
               </button>
-            );
-          })}
-        </div>
+              <button
+                type="button"
+                onClick={() => setModal("configuracoes")}
+                aria-label="Configurar alertas"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-surface-container-lowest p-2 font-label-md text-label-md text-on-surface-variant shadow-sm transition-all hover:bg-surface-container-high hover:text-on-surface sm:px-3.5 sm:py-2"
+              >
+                <Icon name="tune" size={20} />
+                <span className="hidden sm:inline">Configurar</span>
+              </button>
+            </div>
+          </div>
 
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-          {/* =====================================================
-              FEED
-          ====================================================== */}
+          {/* 3. Filtros rápidos & resumo */}
+          <div className="flex flex-col justify-between gap-space-md rounded-xl bg-surface-container-lowest p-1.5 shadow-sm sm:flex-row sm:items-center">
+            <div className="flex items-center gap-1 overflow-x-auto px-0.5 py-0.5">
+              {FILTROS.map((item) => {
+                const ativo = filtro === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    aria-pressed={ativo}
+                    onClick={() => setFiltro(item.id)}
+                    className={`shrink-0 rounded-lg px-3.5 py-1.5 font-label-md text-label-md transition-all ${
+                      ativo
+                        ? "bg-inverse-surface font-semibold text-inverse-on-surface"
+                        : "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
+                    }`}
+                  >
+                    {item.nome} <span className="ml-1 text-label-sm opacity-70">({contagem[item.id].total})</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="hidden shrink-0 items-center gap-space-sm pr-3 font-label-sm text-label-sm text-on-surface-variant lg:flex">
+              <div className="flex items-center gap-1 text-on-surface">
+                <Icon name="trending_up" size={16} className="text-primary" />
+                <span className="font-semibold">Resumo:</span>
+                <span>{moeda(movimentado)} movimentados</span>
+              </div>
+              <span className="h-1 w-1 rounded-full bg-outline-variant" />
+              <span className="flex items-center gap-1">
+                <Icon name="sync" size={14} />
+                Sincronizado há instantes
+              </span>
+            </div>
+          </div>
 
-          <div className="flex flex-col gap-10 lg:col-span-8">
+          {/* 4. Feed cronológico */}
+          <div className="space-y-space-xl">
             {SECOES.map((secao, indice) => {
               const itens = visiveis.filter((n) => n.secao === secao);
               if (itens.length === 0) return null;
               const novas = itens.filter((n) => !n.lida).length;
               return (
-                <section key={secao} className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between px-1">
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-base font-bold">{secao}</h2>
+                <section key={secao} className="space-y-space-md">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-space-sm">
+                      <h2 className="font-headline-sm text-headline-sm font-bold tracking-tight text-on-surface">
+                        {NOME_SECAO[secao]}
+                      </h2>
                       <span
-                        className="rounded-full px-2 py-0.5 text-xs font-semibold"
-                        style={
-                          novas > 0
-                            ? { backgroundColor: C.primaryFixed, color: C.onPrimaryFixed }
-                            : { backgroundColor: C.surfaceHighest, color: C.onSurfaceVariant }
-                        }
+                        className={`rounded-full px-2 py-0.5 font-label-sm text-label-sm text-on-surface-variant ${
+                          novas > 0 ? "bg-surface-container-high font-semibold" : "bg-surface-container"
+                        }`}
                       >
                         {novas > 0
-                          ? `${novas} ${novas === 1 ? "nova" : "novas"}`
-                          : `${itens.length} ${itens.length === 1 ? "registro" : "registros"}`}
+                          ? `${novas} ${novas === 1 ? "pendente" : "pendentes"}`
+                          : `${itens.length} ${itens.length === 1 ? "alerta" : "alertas"}`}
                       </span>
                     </div>
-                    <span className="text-xs font-medium" style={{ color: C.onSurfaceVariant }}>
-                      {indice < 2 ? dataPorExtenso(indice) : "Anteriores"}
+                    <span className="hidden font-label-sm text-label-sm text-on-surface-variant sm:block">
+                      {dataDaSecao(indice)}
                     </span>
                   </div>
-                  <div className="flex flex-col gap-3">
+                  <div className="space-y-space-sm">
                     {itens.map((n) => (
                       <CartaoNotificacao
                         key={n.id}
                         notificacao={n}
                         onAbrir={() => !n.lida && atualizar(n.id, { lida: true })}
+                        onAlternarLida={() => atualizar(n.id, { lida: !n.lida })}
                       >
                         <AcoesNotificacao
                           notificacao={n}
@@ -546,9 +484,7 @@ export default function Notificacoes() {
                           onConvite={responderConvite}
                           onTarefa={() => setModal("tarefa")}
                           onPix={() => setModal("pix")}
-                          onRelatorio={() =>
-                            setAviso("O relatório final ficará disponível no histórico do grupo.")
-                          }
+                          onRelatorio={() => setAviso("O relatório final ficará disponível no histórico do grupo.")}
                         />
                       </CartaoNotificacao>
                     ))}
@@ -558,137 +494,29 @@ export default function Notificacoes() {
             })}
 
             {visiveis.length === 0 && (
-              <p
-                className="rounded-xl bg-white p-8 text-center text-sm shadow-sm"
-                style={{ color: C.onSurfaceVariant }}
-              >
-                Nenhuma notificação nesta categoria.
-              </p>
+              <div className="flex flex-col items-center gap-space-sm rounded-xl bg-surface-container-lowest p-space-xl text-center shadow-sm">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-container text-on-surface-variant">
+                  <Icon name="notifications_off" size={24} />
+                </div>
+                <p className="font-body-sm text-body-sm text-on-surface-variant">Nenhuma notificação nesta categoria.</p>
+              </div>
             )}
           </div>
 
-          {/* =====================================================
-              LATERAL
-          ====================================================== */}
-
-          <aside className="flex flex-col gap-6 lg:col-span-4">
-            {/* Canais ativos */}
-            <div className="flex flex-col gap-4 rounded-xl bg-white p-6 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="flex h-8 w-8 items-center justify-center rounded-lg"
-                    style={{ backgroundColor: C.primaryFixed, color: C.primary }}
-                  >
-                    <RadioTower className="h-5 w-5" />
-                  </div>
-                  <h3 className="text-lg font-semibold">Canais Ativos</h3>
-                </div>
-                <span
-                  className="h-2.5 w-2.5 rounded-full"
-                  style={{
-                    backgroundColor: Object.values(canais).some(Boolean)
-                      ? C.primaryContainer
-                      : C.surfaceHighest,
-                  }}
-                />
-              </div>
-              <p className="text-sm" style={{ color: C.onSurfaceVariant }}>
-                Configure os canais integrados para não perder prazos de
-                fechamento e repasses.
-              </p>
-              <ListaCanais canais={canais} onAlternar={alternarCanal} />
-              <button
-                type="button"
-                onClick={() => setModal("configuracoes")}
-                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all hover:bg-[#dee9fc]"
-                style={{ backgroundColor: C.surfaceContainer }}
-              >
-                <Settings2 className="h-[18px] w-[18px]" />
-                Gerenciar canais
-              </button>
+          {/* 5. Rodapé da lista */}
+          <div className="flex flex-col items-center justify-center space-y-space-sm pb-space-lg pt-space-md text-center">
+            <div className="inline-flex items-center gap-2 font-body-sm text-body-sm text-on-surface-variant">
+              <Icon name="history" size={18} />
+              <span>Exibindo notificações dos últimos 30 dias</span>
             </div>
-
-            {/* Pendências rápidas */}
-            <div className="flex flex-col gap-4 rounded-xl bg-white p-6 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="flex h-8 w-8 items-center justify-center rounded-lg"
-                    style={{ backgroundColor: C.secondaryFixed, color: C.secondary }}
-                  >
-                    <ClipboardList className="h-5 w-5" />
-                  </div>
-                  <h3 className="text-lg font-semibold">Pendências Rápidas</h3>
-                </div>
-                <span className="text-xs font-bold" style={{ color: C.secondary }}>
-                  Ação urgente
-                </span>
-              </div>
-              <div className="flex flex-col gap-2.5">
-                <Pendencia
-                  numero={notificacoes.filter((n) => n.categoria === "invites" && !n.resolvida).length}
-                  titulo="Convites de grupo"
-                  detalhe="Aguardando sua resposta"
-                  fundo={C.tertiaryFixed}
-                  cor={C.tertiary}
-                  onAbrir={() => setFiltro("invites")}
-                />
-                <Pendencia
-                  numero={notificacoes.find((n) => n.id === 1)?.resolvida ? 0 : 1}
-                  titulo="Comprovante de pagamento"
-                  detalhe="Aguardando conferência"
-                  fundo={C.primaryFixed}
-                  cor={C.primary}
-                  onAbrir={() => setModal("comprovante")}
-                />
-                <Pendencia
-                  numero={1}
-                  titulo="Tarefa com prazo"
-                  detalhe="Expira nas próximas 24h"
-                  fundo={C.secondaryFixed}
-                  cor={C.secondary}
-                  onAbrir={() => setModal("tarefa")}
-                />
-              </div>
-            </div>
-
-            {/* Dica */}
-            <div
-              className="relative flex flex-col gap-3 overflow-hidden rounded-xl p-6 shadow-sm"
-              style={{
-                background: `linear-gradient(to bottom right, ${C.primaryFixed}, ${C.surfaceLow}, ${C.surfaceContainer})`,
-              }}
+            <button
+              type="button"
+              onClick={() => setAviso("Não há notificações mais antigas no seu histórico.")}
+              className="rounded-lg bg-surface-container-low px-4 py-2 font-label-md text-label-md text-on-surface shadow-sm transition-all hover:bg-surface-container active:scale-95"
             >
-              <div className="flex items-center gap-2">
-                <div
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-white"
-                  style={{ backgroundColor: C.primaryContainer }}
-                >
-                  <Lightbulb className="h-4 w-4" />
-                </div>
-                <span className="text-[11px] font-bold uppercase tracking-wider">Dica Racha+</span>
-              </div>
-              <p className="text-base font-medium leading-relaxed">
-                Ative as notificações do WhatsApp para receber o código Copia e
-                Cola do Pix assim que um amigo ratear uma despesa.
-              </p>
-              <button
-                type="button"
-                onClick={() => navigate("/faq")}
-                className="relative z-10 inline-flex w-fit cursor-pointer items-center gap-1 text-sm font-semibold transition-colors hover:text-[#ff8c42]"
-                style={{ color: C.primary }}
-              >
-                Como funciona a integração
-                <ArrowRight className="h-4 w-4" />
-              </button>
-              <QrCode
-                className="pointer-events-none absolute -bottom-2 -right-2 h-12 w-12 select-none"
-                style={{ color: `${C.primaryFixedDim}66` }}
-                aria-hidden="true"
-              />
-            </div>
-          </aside>
+              Carregar histórico mais antigo
+            </button>
+          </div>
         </div>
       </div>
 
@@ -697,51 +525,52 @@ export default function Notificacoes() {
       ====================================================== */}
 
       {modal === "comprovante" && (
-        <JanelaModal titulo="Comprovante de Pagamento" icone={Receipt} onFechar={() => setModal(null)}>
-          <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm">
+        <JanelaModal titulo="Comprovante de Pagamento" icone="receipt_long" onFechar={() => setModal(null)}>
+          <div className="flex flex-col gap-3 rounded-xl bg-surface-container-low p-space-md">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase" style={{ color: C.onSurfaceVariant }}>
+              <span className="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">
                 Instituição Bancária
               </span>
-              <span className="text-sm font-bold" style={{ color: C.primary }}>Banco Inter S.A.</span>
+              <span className="font-label-md text-label-md font-bold text-primary">Banco Inter S.A.</span>
             </div>
-            <div className="h-px" style={{ backgroundColor: C.surfaceContainer }} />
+            <div className="h-px bg-surface-container" />
             <div className="flex flex-col">
-              <span className="text-xs" style={{ color: C.onSurfaceVariant }}>Valor transferido via Pix</span>
-              <span className="text-[1.75rem] font-bold">R$ 112,50</span>
+              <span className="font-label-sm text-label-sm text-on-surface-variant">Valor transferido via Pix</span>
+              <span className="font-numeric-stat text-numeric-stat text-on-surface">R$ 112,50</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <span className="block text-xs" style={{ color: C.onSurfaceVariant }}>Pagador</span>
-                <span className="text-sm font-semibold">Mariana Silva</span>
+                <span className="block font-label-sm text-label-sm text-on-surface-variant">Pagador</span>
+                <span className="font-label-md text-label-md text-on-surface">Mariana Silva</span>
               </div>
               <div>
-                <span className="block text-xs" style={{ color: C.onSurfaceVariant }}>Destinatário</span>
-                <span className="text-sm font-semibold">Você</span>
+                <span className="block font-label-sm text-label-sm text-on-surface-variant">Destinatário</span>
+                <span className="font-label-md text-label-md text-on-surface">Você</span>
               </div>
             </div>
-            <div className="flex flex-col gap-0.5 rounded-lg p-2.5" style={{ backgroundColor: C.surfaceLow }}>
-              <span className="text-xs" style={{ color: C.onSurfaceVariant }}>Referente ao rateio:</span>
-              <span className="text-sm font-medium">“Comprar bebidas, gelo e carvão”</span>
-              <span className="text-xs" style={{ color: C.primary }}>Grupo: Viagem Florianópolis</span>
+            <div className="flex flex-col gap-0.5 rounded-lg bg-surface-container-lowest p-2.5">
+              <span className="font-label-sm text-label-sm text-on-surface-variant">Referente ao rateio:</span>
+              <span className="font-body-sm text-body-sm font-medium text-on-surface">“Comprar bebidas, gelo e carvão”</span>
+              <span className="font-label-sm text-label-sm text-primary">Grupo: Viagem Florianópolis</span>
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-1 text-xs" style={{ color: C.onSurfaceVariant }}>
+            <div className="flex flex-wrap items-center justify-between gap-1 font-label-sm text-label-sm text-on-surface-variant">
               <span>ID Pix: E00416968202405241420x992</span>
               <span>24/05 • 14:18</span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-space-sm">
             {notificacoes.find((n) => n.id === 1)?.resolvida ? (
-              <p className="flex-1 text-sm font-semibold" style={{ color: C.tertiary }}>
+              <p className="flex flex-1 items-center gap-1.5 font-label-md text-label-md text-tertiary">
+                <Icon name="check_circle" size={18} filled />
                 Pagamento já confirmado.
               </p>
             ) : (
               <button
                 type="button"
                 onClick={confirmarRecebimento}
-                className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#ff8c42] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#9b4500]"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary-container px-4 py-2.5 font-label-md text-label-md text-on-primary shadow-sm transition-all hover:bg-primary active:scale-95"
               >
-                <BadgeCheck className="h-[18px] w-[18px]" />
+                <Icon name="verified" size={18} />
                 Confirmar e Liquidar
               </button>
             )}
@@ -751,43 +580,40 @@ export default function Notificacoes() {
       )}
 
       {modal === "pix" && (
-        <JanelaModal titulo="Pagar Cota via Pix" icone={QrCode} onFechar={() => setModal(null)}>
+        <JanelaModal titulo="Pagar Cota via Pix" icone="qr_code_2" onFechar={() => setModal(null)}>
           <div className="text-center">
-            <span className="text-xs" style={{ color: C.onSurfaceVariant }}>
+            <span className="font-body-sm text-body-sm text-on-surface-variant">
               Você está pagando para {destaque("Lucas M.")}
             </span>
-            <div className="mt-1 text-[2.5rem] font-extrabold leading-tight" style={{ color: C.primary }}>
-              R$ 85,00
-            </div>
-            <span className="text-xs" style={{ color: C.onSurfaceVariant }}>
+            <div className="mt-1 font-display text-display-mobile text-primary">R$ 85,00</div>
+            <span className="font-label-sm text-label-sm text-on-surface-variant">
               Grupo: Apê 302 República • Internet Fibra
             </span>
           </div>
-          <div className="mx-auto flex flex-col items-center rounded-xl bg-white p-4 shadow-inner">
-            <QrCode className="h-44 w-44" strokeWidth={1.2} aria-hidden="true" />
-            <span className="mt-2 text-xs" style={{ color: C.onSurfaceVariant }}>
+          <div className="mx-auto flex flex-col items-center rounded-xl bg-surface-container-low p-space-md">
+            <Icon name="qr_code_2" size={176} className="text-on-surface" />
+            <span className="mt-2 font-label-sm text-label-sm text-on-surface-variant">
               Aponte a câmera do app do seu banco
             </span>
           </div>
           <div className="flex flex-col gap-2">
-            <label htmlFor="codigo-pix" className="text-left text-xs font-semibold">
+            <label htmlFor="codigo-pix" className="text-left font-label-sm text-label-sm font-semibold text-on-surface">
               Pix Copia e Cola:
             </label>
-            <div className="flex items-center gap-2 rounded-lg p-2" style={{ backgroundColor: C.surfaceLow }}>
+            <div className="flex items-center gap-2 rounded-lg bg-surface-container-low p-2">
               <input
                 id="codigo-pix"
                 readOnly
                 value={CODIGO_PIX}
                 onFocus={(event) => event.target.select()}
-                className="w-full truncate bg-transparent text-xs outline-none"
-                style={{ color: C.onSurfaceVariant }}
+                className="w-full truncate bg-transparent font-label-sm text-label-sm text-on-surface-variant outline-none"
               />
               <button
                 type="button"
                 onClick={copiarPix}
-                className="flex shrink-0 cursor-pointer items-center gap-1 rounded-lg bg-[#ff8c42] px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-[#9b4500]"
+                className="flex shrink-0 items-center gap-1 rounded-lg bg-primary-container px-3 py-1.5 font-label-sm text-label-sm font-semibold text-on-primary transition-all hover:bg-primary"
               >
-                <Copy className="h-4 w-4" />
+                <Icon name="content_copy" size={16} />
                 Copiar
               </button>
             </div>
@@ -795,37 +621,34 @@ export default function Notificacoes() {
           <button
             type="button"
             onClick={notificarPagamento}
-            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all hover:bg-[#e6eeff]"
-            style={{ backgroundColor: C.surfaceHighest }}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-surface-container-high px-4 py-2.5 font-label-md text-label-md text-on-surface transition-all hover:bg-surface-container-highest"
           >
-            <Send className="h-[18px] w-[18px]" />
+            <Icon name="send" size={18} />
             Já fiz o Pix • Notificar Lucas
           </button>
         </JanelaModal>
       )}
 
       {modal === "tarefa" && (
-        <JanelaModal titulo="Alugar carro 7 lugares" icone={AlarmClock} onFechar={() => setModal(null)}>
-          <div className="flex flex-col gap-2 rounded-lg p-4" style={{ backgroundColor: C.surfaceLow }}>
-            <p className="text-sm">
-              <span style={{ color: C.onSurfaceVariant }}>Grupo: </span>
-              <strong>Viagem Florianópolis</strong>
+        <JanelaModal titulo="Alugar carro 7 lugares" icone="alarm" onFechar={() => setModal(null)}>
+          <div className="flex flex-col gap-2 rounded-lg bg-surface-container-low p-space-md font-body-sm text-body-sm">
+            <p>
+              <span className="text-on-surface-variant">Grupo: </span>
+              <strong className="text-on-surface">Viagem Florianópolis</strong>
             </p>
-            <p className="text-sm">
-              <span style={{ color: C.onSurfaceVariant }}>Prazo: </span>
-              <strong>Amanhã às 11:30</strong>
+            <p>
+              <span className="text-on-surface-variant">Prazo: </span>
+              <strong className="text-on-surface">Amanhã às 11:30</strong>
             </p>
-            <p className="text-sm" style={{ color: C.onSurfaceVariant }}>
-              Após a reserva, anexe o comprovante com o valor total estimado.
-            </p>
+            <p className="text-on-surface-variant">Após a reserva, anexe o comprovante com o valor total estimado.</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-space-sm">
             <button
               type="button"
               onClick={() => navigate("/grupo")}
-              className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#ff8c42] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#9b4500]"
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary-container px-4 py-2.5 font-label-md text-label-md text-on-primary shadow-sm transition-all hover:bg-primary active:scale-95"
             >
-              <ExternalLink className="h-[18px] w-[18px]" />
+              <Icon name="open_in_new" size={18} />
               Abrir no grupo
             </button>
             <BotaoSecundario onClick={() => setModal(null)}>Fechar</BotaoSecundario>
@@ -834,10 +657,9 @@ export default function Notificacoes() {
       )}
 
       {modal === "configuracoes" && (
-        <JanelaModal titulo="Configurar alertas" icone={SlidersHorizontal} onFechar={() => setModal(null)}>
-          <p className="text-sm" style={{ color: C.onSurfaceVariant }}>
-            Escolha por onde quer receber cobranças, confirmações de Pix e
-            lembretes de prazo.
+        <JanelaModal titulo="Configurar alertas" icone="tune" onFechar={() => setModal(null)}>
+          <p className="font-body-sm text-body-sm text-on-surface-variant">
+            Escolha por onde quer receber cobranças, confirmações de Pix e lembretes de prazo.
           </p>
           <ListaCanais canais={canais} onAlternar={alternarCanal} />
           <div className="flex justify-end">
@@ -847,7 +669,7 @@ export default function Notificacoes() {
                 setModal(null);
                 setAviso("Preferências de alerta atualizadas.");
               }}
-              className="cursor-pointer rounded-lg bg-[#ff8c42] px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#9b4500]"
+              className="rounded-lg bg-primary-container px-6 py-2.5 font-label-md text-label-md text-on-primary shadow-sm transition-all hover:bg-primary active:scale-95"
             >
               Concluir
             </button>
@@ -859,10 +681,9 @@ export default function Notificacoes() {
       {aviso && (
         <div
           role="status"
-          className="fixed bottom-6 right-6 z-[110] flex items-center gap-2 rounded-xl px-4 py-2 font-jakarta text-sm font-semibold shadow-xl"
-          style={{ backgroundColor: C.inverseSurface, color: C.inverseOnSurface }}
+          className="fixed bottom-6 right-6 z-[110] flex items-center gap-2 rounded-xl bg-inverse-surface px-4 py-2.5 font-label-md text-label-md text-inverse-on-surface shadow-xl"
         >
-          <CheckCircle2 className="h-[18px] w-[18px]" style={{ color: C.tertiaryFixed }} />
+          <Icon name="check_circle" size={18} filled className="text-tertiary-fixed" />
           {aviso}
         </div>
       )}
@@ -877,66 +698,109 @@ export default function Notificacoes() {
 function CartaoNotificacao({
   notificacao: n,
   onAbrir,
+  onAlternarLida,
   children,
 }: {
   notificacao: Notificacao;
   onAbrir: () => void;
+  onAlternarLida: () => void;
   children: ReactNode;
 }) {
+  const [menu, setMenu] = useState(false);
   const tom = TONS[n.tom];
-  const Icone = n.icone;
+  const separador = n.titulo.indexOf(" — ");
+  const rotulo = separador === -1 ? null : n.titulo.slice(0, separador);
+  const assunto = separador === -1 ? n.titulo : n.titulo.slice(separador + 3);
+  const corIcone = n.lida
+    ? `bg-surface-container-high ${n.icone === "check_circle" ? "text-primary" : "text-on-surface-variant"}`
+    : tom.icone;
+
   return (
     <article
       onClick={onAbrir}
-      className={`relative flex flex-col items-start gap-4 rounded-xl bg-white p-4 shadow-sm transition-all duration-200 hover:bg-[#eff4ff] sm:flex-row ${
-        n.lida ? "opacity-90 hover:opacity-100" : "border-l-4"
-      }`}
-      style={n.lida ? undefined : { borderLeftColor: tom.borda }}
+      className="group relative rounded-xl bg-surface-container-lowest p-space-md shadow-sm transition-all duration-200 hover:shadow-md sm:p-space-lg"
     >
-      <div className="relative shrink-0">
-        <div
-          className="flex h-12 w-12 items-center justify-center rounded-xl"
-          style={
-            n.lida
-              ? { backgroundColor: C.surfaceHigh, color: n.icone === CheckCircle2 ? C.primary : C.onSurfaceVariant }
-              : { backgroundColor: tom.fundoIcone, color: tom.corIcone }
-          }
-        >
-          <Icone className="h-6 w-6" />
-        </div>
-        {!n.lida && (
-          <span
-            className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full ring-2 ring-white"
-            style={{ backgroundColor: tom.borda }}
-            aria-label="Não lida"
-          />
-        )}
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <div className="flex flex-col items-start justify-between gap-1 sm:flex-row sm:gap-2">
-          <div>
+      {!n.lida && (
+        <>
+          <div className={`absolute bottom-3 left-0 top-3 w-1 rounded-r-full ${tom.barra}`} />
+          <span className="sr-only">Não lida.</span>
+        </>
+      )}
+      <div className="flex flex-col items-start justify-between gap-space-md sm:flex-row">
+        <div className="flex min-w-0 items-start gap-space-md">
+          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full shadow-sm ${corIcone}`}>
+            <Icon name={n.icone} size={24} />
+          </div>
+          <div className="min-w-0 space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-[17px] font-semibold leading-snug">{n.titulo}</h3>
-              <span
-                className="rounded-full px-2 py-0.5 text-xs font-semibold"
-                style={{ backgroundColor: n.corSelo.fundo, color: n.corSelo.texto }}
-              >
-                {n.selo}
+              {rotulo && (
+                <>
+                  <span className={`font-label-sm text-label-sm font-bold uppercase tracking-wider ${n.lida ? "text-on-surface-variant" : tom.rotulo}`}>
+                    {rotulo}
+                  </span>
+                  <span className="text-body-sm text-on-surface-variant">•</span>
+                </>
+              )}
+              <h3 className="font-label-md text-label-md font-bold text-on-surface">{assunto}</h3>
+            </div>
+            <p className="font-body-sm text-body-sm text-on-surface-variant">{n.descricao}</p>
+            <div className="flex flex-wrap items-center gap-space-xs font-label-sm text-label-sm text-on-surface-variant">
+              <span className={`rounded-full px-2 py-0.5 font-medium ${n.corSelo}`}>{n.selo}</span>
+              <span>•</span>
+              <span className="flex items-center gap-1 text-on-surface-variant/80">
+                <Icon name="schedule" size={14} />
+                {n.quando}
               </span>
             </div>
-            <p className="mt-1 text-base" style={{ color: C.onSurfaceVariant }}>
-              {n.descricao}
-            </p>
+            {children}
           </div>
-          <span
-            className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-medium"
-            style={{ color: C.onSurfaceVariant }}
-          >
-            <Clock className="h-3.5 w-3.5" />
-            {n.quando}
-          </span>
         </div>
-        {children}
+        <div className="relative self-start sm:self-center">
+          <button
+            type="button"
+            title="Mais opções"
+            aria-label="Mais opções"
+            aria-haspopup="menu"
+            aria-expanded={menu}
+            onClick={(event) => {
+              event.stopPropagation();
+              setMenu(!menu);
+            }}
+            className="rounded-lg p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+          >
+            <Icon name="more_vert" size={20} />
+          </button>
+          {menu && (
+            <>
+              <div
+                className="fixed inset-0 z-10"
+                aria-hidden="true"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setMenu(false);
+                }}
+              />
+              <div
+                role="menu"
+                className="absolute right-0 top-full z-20 mt-1 w-56 overflow-hidden rounded-xl bg-surface-container-lowest p-1 shadow-lg ring-1 ring-surface-container"
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setMenu(false);
+                    onAlternarLida();
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left font-label-md text-label-md text-on-surface transition-colors hover:bg-surface-container-low"
+                >
+                  <Icon name={n.lida ? "mark_email_unread" : "drafts"} size={18} className="text-on-surface-variant" />
+                  {n.lida ? "Marcar como não lida" : "Marcar como lida"}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </article>
   );
@@ -962,8 +826,8 @@ function AcoesNotificacao({
   if (!n.acao) return null;
 
   const resolvida = n.resolvida && (
-    <span className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: C.tertiary }}>
-      <CheckCircle2 className="h-4 w-4" />
+    <span className="flex items-center gap-1.5 font-label-sm text-label-sm font-semibold text-tertiary">
+      <Icon name="check_circle" size={16} filled />
       {n.resolvida}
     </span>
   );
@@ -971,20 +835,20 @@ function AcoesNotificacao({
   switch (n.acao.tipo) {
     case "comprovante":
       return (
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <BotaoSecundario onClick={onComprovante} icone={ReceiptText}>
-              Ver Comprovante
-            </BotaoSecundario>
+        <div className="flex flex-wrap items-center justify-between gap-space-sm pt-2">
+          <div className="flex flex-wrap items-center gap-space-sm">
             {!n.resolvida && (
-              <BotaoPrimario onClick={onConfirmar} icone={CheckCircle2}>
+              <BotaoPrimario onClick={onConfirmar} icone="check">
                 Confirmar Recebimento
               </BotaoPrimario>
             )}
+            <BotaoTexto onClick={onComprovante} icone="visibility">
+              Ver Comprovante
+            </BotaoTexto>
           </div>
           {resolvida || (
-            <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: C.onSurfaceVariant }}>
-              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: C.primaryContainer }} />
+            <span className="flex items-center gap-1.5 font-label-sm text-label-sm text-on-surface-variant">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary-container" />
               Aguardando sua conferência
             </span>
           )}
@@ -993,94 +857,101 @@ function AcoesNotificacao({
     case "convite":
       return (
         <>
-          <div className="flex flex-wrap items-center gap-3 py-1">
+          <div className="flex flex-wrap items-center gap-3 pt-1">
             <div className="flex -space-x-2">
               {[
-                { t: "LM", f: C.primaryFixed, c: C.primary },
-                { t: "AB", f: C.surfaceHigh, c: C.onSurface },
-                { t: "GS", f: C.tertiaryFixed, c: C.tertiary },
-                { t: "+5", f: C.surfaceHighest, c: C.onSurfaceVariant },
+                { t: "LM", c: "bg-primary-fixed text-on-primary-fixed" },
+                { t: "AB", c: "bg-secondary-fixed text-on-secondary-fixed" },
+                { t: "GS", c: "bg-tertiary-fixed text-on-tertiary-fixed" },
+                { t: "+5", c: "bg-surface-container-highest text-on-surface" },
               ].map((a) => (
                 <span
                   key={a.t}
-                  className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ring-2 ring-white"
-                  style={{ backgroundColor: a.f, color: a.c }}
+                  className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold ring-2 ring-surface-container-lowest ${a.c}`}
                 >
                   {a.t}
                 </span>
               ))}
             </div>
-            <span className="text-xs font-medium" style={{ color: C.onSurfaceVariant }}>
+            <span className="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant">
+              <Icon name="event" size={14} />
               Data do evento: 08/06 no Espaço Gourmet
             </span>
           </div>
-          {resolvida || (
-            <div className="flex items-center gap-2 pt-1">
-              <BotaoPrimario onClick={() => onConvite(true)} icone={UserPlus}>
+          {resolvida ? (
+            <div className="pt-2">{resolvida}</div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-space-sm pt-2">
+              <BotaoPrimario onClick={() => onConvite(true)} icone="check">
                 Aceitar Convite
               </BotaoPrimario>
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onConvite(false);
-                }}
-                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition-all hover:bg-[#ffdad6] hover:text-[#ba1a1a] active:scale-95"
-                style={{ backgroundColor: C.surfaceContainer, color: C.onSurfaceVariant }}
-              >
-                <X className="h-[18px] w-[18px]" />
-                Recusar
-              </button>
+              <BotaoSecundario onClick={() => onConvite(false)}>Recusar</BotaoSecundario>
             </div>
           )}
         </>
       );
     case "tarefa":
       return (
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-          <BotaoSecundario onClick={onTarefa} icone={ExternalLink}>
-            Ver Tarefa
-          </BotaoSecundario>
-          <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: C.secondary }}>
-            <CircleAlert className="h-4 w-4" />
+        <div className="flex flex-wrap items-center justify-between gap-space-sm pt-2">
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onTarefa();
+            }}
+            className="inline-flex items-center gap-1.5 font-label-md text-label-md font-semibold text-on-surface transition-colors hover:text-primary"
+          >
+            <span>Detalhes da Tarefa</span>
+            <Icon name="arrow_forward" size={16} />
+          </button>
+          <span className="flex items-center gap-1 font-label-sm text-label-sm font-semibold text-secondary">
+            <Icon name="event_upcoming" size={14} />
             Restam 21h para expirar
           </span>
         </div>
       );
     case "pix":
       return (
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+        <div className="flex flex-wrap items-center justify-between gap-space-sm pt-2">
           {resolvida || (
-            <BotaoPrimario onClick={onPix} icone={ArrowLeftRight}>
-              Pagar com Pix
-            </BotaoPrimario>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onPix();
+              }}
+              className="flex items-center gap-1.5 rounded-lg bg-surface-container-high px-4 py-2 font-label-md text-label-md font-bold text-on-surface shadow-sm transition-all hover:bg-surface-container-highest active:scale-95"
+            >
+              <Icon name="qr_code_2" size={18} className="text-primary" />
+              <span>Pagar via Pix</span>
+            </button>
           )}
-          <span className="flex items-center gap-1 text-xs font-medium" style={{ color: C.onSurfaceVariant }}>
-            <Info className="h-4 w-4" style={{ color: C.tertiary }} />
+          <span className="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant">
+            <Icon name="info" size={16} className="text-tertiary" />
             Chave Pix cadastrada automaticamente
           </span>
         </div>
       );
     case "relatorio":
       return (
-        <div className="pt-1">
-          <BotaoSecundario onClick={onRelatorio} icone={ChartColumn}>
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onRelatorio();
+            }}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-surface-container px-3.5 py-1.5 font-label-md text-label-md font-semibold text-on-surface transition-all hover:bg-surface-container-high"
+          >
+            <Icon name="bar_chart" size={18} className="text-primary" />
             Ver Relatório Final
-          </BotaoSecundario>
+          </button>
         </div>
       );
   }
 }
 
-function BotaoPrimario({
-  onClick,
-  icone: Icone,
-  children,
-}: {
-  onClick: () => void;
-  icone: LucideIcon;
-  children: ReactNode;
-}) {
+function BotaoPrimario({ onClick, icone, children }: { onClick: () => void; icone: string; children: ReactNode }) {
   return (
     <button
       type="button"
@@ -1088,23 +959,30 @@ function BotaoPrimario({
         event.stopPropagation();
         onClick();
       }}
-      className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#ff8c42] px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#9b4500] active:scale-95"
+      className="flex items-center gap-1.5 rounded-lg bg-primary-container px-4 py-2 font-label-md text-label-md font-semibold text-on-primary shadow-sm transition-all hover:bg-primary active:scale-95"
     >
-      <Icone className="h-[18px] w-[18px]" />
+      <Icon name={icone} size={18} />
+      <span>{children}</span>
+    </button>
+  );
+}
+
+function BotaoSecundario({ onClick, children }: { onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
+      className="rounded-lg bg-surface-container-low px-3.5 py-2 font-label-md text-label-md text-on-surface transition-all hover:bg-surface-container-high active:scale-95"
+    >
       {children}
     </button>
   );
 }
 
-function BotaoSecundario({
-  onClick,
-  icone: Icone,
-  children,
-}: {
-  onClick: () => void;
-  icone?: LucideIcon;
-  children: ReactNode;
-}) {
+function BotaoTexto({ onClick, icone, children }: { onClick: () => void; icone: string; children: ReactNode }) {
   return (
     <button
       type="button"
@@ -1112,11 +990,10 @@ function BotaoSecundario({
         event.stopPropagation();
         onClick();
       }}
-      className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-all hover:bg-[#dee9fc] active:scale-95"
-      style={{ backgroundColor: C.surfaceContainer, color: C.onSurface }}
+      className="inline-flex items-center gap-1.5 font-label-md text-label-md font-semibold text-primary transition-colors hover:text-primary-container"
     >
-      {Icone && <Icone className="h-[18px] w-[18px]" />}
-      {children}
+      <Icon name={icone} size={18} />
+      <span>{children}</span>
     </button>
   );
 }
@@ -1129,26 +1006,24 @@ function ListaCanais({
   onAlternar: (canal: "push" | "whatsapp" | "email") => void;
 }) {
   const itens = [
-    { id: "push" as const, nome: "Push no Navegador", detalhe: "Alertas sonoros & desktop", icone: Bell, cor: C.primary },
-    { id: "whatsapp" as const, nome: "WhatsApp Instantâneo", detalhe: "Cobranças e Pix Copia & Cola", icone: MessageCircle, cor: C.tertiary },
-    { id: "email" as const, nome: "E-mail Diário / Resumo", detalhe: "Consolidação às 19:00", icone: Mail, cor: C.onSurfaceVariant },
+    { id: "push" as const, nome: "Push no Navegador", detalhe: "Alertas sonoros & desktop", icone: "notifications_active", cor: "text-primary" },
+    { id: "whatsapp" as const, nome: "WhatsApp Instantâneo", detalhe: "Cobranças e Pix Copia & Cola", icone: "chat", cor: "text-tertiary" },
+    { id: "email" as const, nome: "E-mail Diário / Resumo", detalhe: "Consolidação às 19:00", icone: "mail", cor: "text-on-surface-variant" },
   ];
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-space-sm">
       {itens.map((item) => {
-        const Icone = item.icone;
         const ligado = canais[item.id];
         return (
           <label
             key={item.id}
-            className="flex cursor-pointer items-center justify-between gap-3 rounded-lg p-2.5 transition-colors hover:bg-[#e6eeff]"
-            style={{ backgroundColor: C.surfaceLow }}
+            className="flex cursor-pointer items-center justify-between gap-3 rounded-lg bg-surface-container-low p-2.5 transition-colors hover:bg-surface-container"
           >
             <span className="flex items-center gap-3">
-              <Icone className="h-[22px] w-[22px] shrink-0" style={{ color: item.cor }} />
+              <Icon name={item.icone} size={22} className={`shrink-0 ${item.cor}`} />
               <span className="flex flex-col">
-                <span className="text-sm font-semibold">{item.nome}</span>
-                <span className="text-xs" style={{ color: C.onSurfaceVariant }}>{item.detalhe}</span>
+                <span className="font-label-md text-label-md text-on-surface">{item.nome}</span>
+                <span className="font-label-sm text-label-sm text-on-surface-variant">{item.detalhe}</span>
               </span>
             </span>
             <input
@@ -1160,8 +1035,9 @@ function ListaCanais({
             />
             <span
               aria-hidden="true"
-              className="relative h-6 w-11 shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#9b4500]"
-              style={{ backgroundColor: ligado ? C.primaryContainer : C.surfaceHighest }}
+              className={`relative h-6 w-11 shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary ${
+                ligado ? "bg-primary-container" : "bg-surface-container-highest"
+              }`}
             >
               <span
                 className={`absolute left-[2px] top-[2px] h-5 w-5 rounded-full bg-white shadow transition-transform ${
@@ -1176,57 +1052,20 @@ function ListaCanais({
   );
 }
 
-function Pendencia({
-  numero,
-  titulo,
-  detalhe,
-  fundo,
-  cor,
-  onAbrir,
-}: {
-  numero: number;
-  titulo: string;
-  detalhe: string;
-  fundo: string;
-  cor: string;
-  onAbrir: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onAbrir}
-      className="flex w-full cursor-pointer items-center gap-3 rounded-lg p-3 text-left transition-all hover:bg-[#e6eeff]"
-      style={{ backgroundColor: C.surfaceLow }}
-    >
-      <span
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold"
-        style={{ backgroundColor: fundo, color: cor }}
-      >
-        {numero}
-      </span>
-      <span className="flex-1">
-        <span className="block text-sm font-semibold">{titulo}</span>
-        <span className="block text-sm" style={{ color: C.onSurfaceVariant }}>{detalhe}</span>
-      </span>
-      <ArrowRight className="h-5 w-5 shrink-0" style={{ color: C.primary }} />
-    </button>
-  );
-}
-
 function JanelaModal({
   titulo,
-  icone: Icone,
+  icone,
   onFechar,
   children,
 }: {
   titulo: string;
-  icone: LucideIcon;
+  icone: string;
   onFechar: () => void;
   children: ReactNode;
 }) {
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-[#27313f66] p-4 font-jakarta backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-inverse-surface/40 p-4 backdrop-blur-sm"
       onClick={(event) => {
         if (event.target === event.currentTarget) onFechar();
       }}
@@ -1235,25 +1074,23 @@ function JanelaModal({
         role="dialog"
         aria-modal="true"
         aria-label={titulo}
-        className="flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
-        style={{ color: C.onSurface }}
+        className="flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-xl bg-surface-container-lowest text-on-surface shadow-2xl"
       >
-        <div className="flex items-center justify-between p-4" style={{ backgroundColor: C.surfaceLow }}>
+        <div className="flex items-center justify-between bg-surface-container-low px-space-lg py-space-md">
           <div className="flex items-center gap-2">
-            <Icone className="h-[22px] w-[22px]" style={{ color: C.primary }} />
-            <span className="text-lg font-semibold">{titulo}</span>
+            <Icon name={icone} size={22} className="text-primary" />
+            <span className="font-headline-sm text-headline-sm text-on-surface">{titulo}</span>
           </div>
           <button
             type="button"
             aria-label="Fechar"
             onClick={onFechar}
-            className="cursor-pointer rounded-lg p-1 transition-colors hover:bg-[#e6eeff]"
-            style={{ color: C.onSurfaceVariant }}
+            className="rounded-lg p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
           >
-            <X className="h-5 w-5" />
+            <Icon name="close" size={20} />
           </button>
         </div>
-        <div className="flex flex-col gap-4 overflow-y-auto p-6">{children}</div>
+        <div className="flex flex-col gap-space-md overflow-y-auto p-space-lg">{children}</div>
       </div>
     </div>
   );
