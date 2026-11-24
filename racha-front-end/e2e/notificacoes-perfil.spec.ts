@@ -67,7 +67,7 @@ test.describe("Fluxos de notificações e perfil", () => {
 
     await expect(page.getByText("Ana Silva")).toBeVisible();
     await expect(
-      page.getByDisplayValue("ana@racha.test").or(page.getByText("ana@racha.test")),
+      page.locator('input[value="ana@racha.test"]').or(page.getByText("ana@racha.test")),
     ).toBeVisible();
   });
 });

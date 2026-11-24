@@ -86,6 +86,12 @@ export default function Login() {
         { replace: true },
       );
     } catch (error) {
+      if (error instanceof ApiError && error.status === 403) {
+        navigate("/verificar-email", {
+          state: { email: formulario.email.trim() },
+        });
+        return;
+      }
       setErro(
         error instanceof ApiError
           ? error.message

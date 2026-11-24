@@ -1,4 +1,5 @@
 import { createAuthClient } from "better-auth/react";
+import { emailOTPClient } from "better-auth/client/plugins";
 
 const baseURL = (
   import.meta.env.VITE_API_BASE_URL ||
@@ -7,4 +8,5 @@ const baseURL = (
 
 export const authClient = createAuthClient({
   baseURL,
+  plugins: [emailOTPClient()],
 });

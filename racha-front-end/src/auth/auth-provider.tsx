@@ -34,11 +34,14 @@ function MockAuthProvider({ children }: { children: ReactNode }) {
       },
       signUp: async (name: string, email: string) => {
         setUser({ ...USUARIO_MOCK, name, email });
+        return { requiresVerification: false };
       },
       signOut: async () => setUser(null),
       changePassword: async () => {},
       requestPasswordReset: async () => {},
       resetPassword: async () => {},
+      sendEmailVerificationOtp: async () => {},
+      verifyEmailOtp: async () => {},
     }),
     [user],
   );
@@ -118,12 +121,7 @@ function RealAuthProvider({ children }: { children: ReactNode }) {
       const { error } = await authClient.signUp.email({ name, email, password });
       if (error) lancarErroAuth(error, "Falha ao criar conta.");
       const usuario = await refreshSession();
-      if (!usuario) {
-        throw new ApiError(
-          "A conta foi criada, mas não foi possível iniciar a sessão. Faça login para continuar.",
-          401,
-        );
-      }
+      return { requiresVerification: !usuario };
     },
     [refreshSession],
   );
@@ -156,6 +154,23 @@ function RealAuthProvider({ children }: { children: ReactNode }) {
     if (error) lancarErroAuth(error, "Não foi possível redefinir a senha.");
   }, []);
 
+  const sendEmailVerificationOtp = useCallback(async (email: string) => {
+    const { error } = await authClient.emailOtp.sendVerificationOtp({
+      email,
+      type: "email-verification",
+    });
+    if (error) lancarErroAuth(error, "Não foi possível enviar o código de verificação.");
+  }, []);
+
+  const verifyEmailOtp = useCallback(
+    async (email: string, otp: string) => {
+      const { error } = await authClient.emailOtp.verifyEmail({ email, otp });
+      if (error) lancarErroAuth(error, "Código de verificação inválido ou expirado.");
+      await refreshSession();
+    },
+    [refreshSession],
+  );
+
   const value = useMemo(
     () => ({
       user,
@@ -168,6 +183,8 @@ function RealAuthProvider({ children }: { children: ReactNode }) {
       changePassword,
       requestPasswordReset,
       resetPassword,
+      sendEmailVerificationOtp,
+      verifyEmailOtp,
     }),
     [
       user,
@@ -180,6 +197,8 @@ function RealAuthProvider({ children }: { children: ReactNode }) {
       changePassword,
       requestPasswordReset,
       resetPassword,
+      sendEmailVerificationOtp,
+      verifyEmailOtp,
     ],
   );
 

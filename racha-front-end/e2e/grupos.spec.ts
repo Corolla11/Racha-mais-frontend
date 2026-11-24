@@ -7,13 +7,20 @@ const GRUPO_MOCK = {
   descricao: "Casa e mercado",
   idDono: USUARIO_PADRAO.id,
   createdAt: "2026-01-10T00:00:00.000Z",
+  membros: [
+    {
+      idUser: USUARIO_PADRAO.id,
+      funcao: "dono",
+      user: USUARIO_PADRAO,
+    },
+  ],
 };
 
 const TAREFA_MOCK = {
   id: "tarefa-1",
   idGrupo: "grupo-1",
   idUser: USUARIO_PADRAO.id,
-  titulo: "Aluguel da casa",
+  nome: "Aluguel da casa",
   valorTotal: 600,
   dataInicio: "2026-02-01T00:00:00.000Z",
   dataFinal: "2026-02-10T00:00:00.000Z",

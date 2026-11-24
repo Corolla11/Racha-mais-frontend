@@ -63,4 +63,35 @@ test.describe("Fluxos de autenticação e rotas públicas", () => {
     await page.goto("/esqueceu-senha");
     await expect(page.getByRole("button", { name: /enviar|recuperar/i })).toBeVisible();
   });
+
+  test("valida código OTP de 6 dígitos em /verificar-email", async ({ page }) => {
+    await mockSessaoAnonima(page);
+
+    await page.route("**/api/auth/email-otp/verify-email", async (route) => {
+      const body = route.request().postDataJSON() as { email?: string; otp?: string };
+      if (body.email === USUARIO_PADRAO.email && body.otp === "123456") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ status: true, user: USUARIO_PADRAO }),
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 400,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "Código inválido" }),
+      });
+    });
+
+    await page.goto(`/verificar-email?email=${encodeURIComponent(USUARIO_PADRAO.email)}`);
+
+    for (let i = 0; i < 6; i++) {
+      await page.getByLabel(`Dígito ${i + 1}`).fill(String(i + 1));
+    }
+
+    await page.getByRole("button", { name: /confirmar e continuar/i }).click();
+
+    await expect(page.getByRole("heading", { name: /e-mail confirmado|verificado/i })).toBeVisible();
+  });
 });

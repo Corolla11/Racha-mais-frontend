@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ClipboardEvent, type FormEvent, type KeyboardEvent } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/auth-context";
+import { ApiError } from "../lib/api";
 import Icon from "../components/icon";
 
 const DESTAQUES = [
@@ -19,7 +20,7 @@ function formatarTempo(segundos: number) {
 
 export default function VerificarEmail() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, sendEmailVerificationOtp, verifyEmailOtp } = useAuth();
   const [parametros] = useSearchParams();
   const estado = useLocation().state as { email?: unknown } | null;
 
@@ -94,9 +95,20 @@ export default function VerificarEmail() {
     focar(Math.min(colado.length, DIGITOS - 1));
   }
 
-  function reenviar() {
-    setRestante(ESPERA_REENVIO);
-    setReenviado(true);
+  async function reenviar() {
+    if (!email) return;
+    setErro("");
+    try {
+      await sendEmailVerificationOtp(email);
+      setRestante(ESPERA_REENVIO);
+      setReenviado(true);
+    } catch (error) {
+      setErro(
+        error instanceof ApiError
+          ? error.message
+          : "Não foi possível reenviar o código.",
+      );
+    }
   }
 
   function salvarEmail() {
@@ -105,11 +117,10 @@ export default function VerificarEmail() {
     setEmail(valor);
     setEditandoEmail(false);
     setCodigo(Array(DIGITOS).fill(""));
-    reenviar();
+    void reenviar();
   }
 
-  // Prévia: o backend ainda não emite nem valida códigos por e-mail
-  function confirmar(event: FormEvent<HTMLFormElement>) {
+  async function confirmar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const vazio = codigo.findIndex((d) => !d);
     if (vazio !== -1) {
@@ -117,8 +128,19 @@ export default function VerificarEmail() {
       focar(vazio);
       return;
     }
+    setErro("");
     setStatus("validando");
-    window.setTimeout(() => setStatus("verificado"), 1200);
+    try {
+      await verifyEmailOtp(email, codigo.join(""));
+      setStatus("verificado");
+    } catch (error) {
+      setStatus("inicial");
+      setErro(
+        error instanceof ApiError
+          ? error.message
+          : "Código inválido ou expirado.",
+      );
+    }
   }
 
   const verificado = status === "verificado";

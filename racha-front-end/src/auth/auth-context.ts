@@ -18,11 +18,13 @@ export type AuthContextValue = {
   sessionError: string | null;
   refreshSession: () => Promise<AuthUser | null>;
   signIn: (email: string, password: string, rememberMe: boolean) => Promise<void>;
-  signUp: (name: string, email: string, password: string) => Promise<void>;
+  signUp: (name: string, email: string, password: string) => Promise<{ requiresVerification: boolean }>;
   signOut: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
   resetPassword: (newPassword: string, token: string) => Promise<void>;
+  sendEmailVerificationOtp: (email: string) => Promise<void>;
+  verifyEmailOtp: (email: string, otp: string) => Promise<void>;
 };
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

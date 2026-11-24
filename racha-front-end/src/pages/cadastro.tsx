@@ -98,12 +98,19 @@ export default function Cadastro() {
 
     setEnviando(true);
     try {
-      await signUp(
+      const { requiresVerification } = await signUp(
         formulario.nome.trim(),
         formulario.email.trim(),
         formulario.senha,
       );
-      navigate("/home", { replace: true });
+      if (requiresVerification) {
+        navigate("/verificar-email", {
+          replace: true,
+          state: { email: formulario.email.trim() },
+        });
+      } else {
+        navigate("/home", { replace: true });
+      }
     } catch (error) {
       setErro(
         error instanceof ApiError
