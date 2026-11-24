@@ -1,4 +1,4 @@
-import { apiRequest } from "./api";
+import { apiRequest } from "./api.ts";
 
 /**
  * Pontos de entrada centralizados para todas as rotas do backend (atuais e futuras).
