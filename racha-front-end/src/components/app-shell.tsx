@@ -1,8 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/auth-context";
-import Link from "./app-link";
-import { previewPath, useAppNavigate } from "../lib/navigation";
 import Aba from "./aba-perfil";
 import Icon from "./icon";
 
@@ -12,8 +10,7 @@ const navigation = [
 ];
 
 function isActive(pathname: string, match: string[]) {
-  const path = pathname.replace(/^\/previa(?=\/)/, "");
-  return match.some(prefix => path === prefix || path.startsWith(`${prefix}/`) || path.startsWith(`${prefix}-`));
+  return match.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`) || pathname.startsWith(`${prefix}-`));
 }
 
 /** Logo do Racha+ usado no header do redesign. */
@@ -58,14 +55,12 @@ export function AppFooter() {
  */
 export default function AppShell({ title, children, bare = false }: { title: string; children: ReactNode; bare?: boolean }) {
   const { pathname } = useLocation();
-  const navigate = useAppNavigate();
-  const preview = pathname.startsWith("/previa") || pathname.startsWith("/revisao");
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(false);
   const [menu, setMenu] = useState(false);
   const [busca, setBusca] = useState("");
   const { user } = useAuth();
-  const demo = preview && !user;
-  const name = user?.name || (demo ? "Rodrigo M." : "Usuário");
+  const name = user?.name || "Usuário";
   const shortName = name.trim().split(/\s+/).slice(0, 2).map((part, index) => index === 0 ? part : `${part[0]}.`).join(" ");
 
   useEffect(() => { document.title = `${title} | Racha+`; }, [title]);
@@ -98,7 +93,7 @@ export default function AppShell({ title, children, bare = false }: { title: str
                 return (
                   <NavLink
                     key={path}
-                    to={previewPath(path, preview)}
+                    to={path}
                     aria-current={active ? "page" : undefined}
                     className={() => active
                       ? "px-space-md py-space-sm transition-colors bg-surface-container-high text-on-surface font-label-md text-label-md font-semibold rounded-lg"
@@ -143,7 +138,7 @@ export default function AppShell({ title, children, bare = false }: { title: str
         {menu && (
           <nav className="md:hidden border-t border-surface-variant bg-surface-container-lowest px-gutter-mobile py-space-sm space-y-1" aria-label="Navegação principal">
             {[...navigation, { path: "/notificacoes", label: "Notificações", match: ["/notificacoes"] }, { path: "/criar-grupo", label: "Novo Grupo", match: [] as string[] }].map(({ path, label, match }) => (
-              <NavLink key={path} to={previewPath(path, preview)} className={`block px-space-md py-space-sm rounded-lg font-label-md text-label-md ${isActive(pathname, match) ? "bg-surface-container-high text-on-surface" : "text-on-surface-variant"}`}>
+              <NavLink key={path} to={path} className={`block px-space-md py-space-sm rounded-lg font-label-md text-label-md ${isActive(pathname, match) ? "bg-surface-container-high text-on-surface" : "text-on-surface-variant"}`}>
                 {label}
               </NavLink>
             ))}

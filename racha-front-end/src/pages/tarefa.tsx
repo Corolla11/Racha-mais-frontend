@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import Icon from "../components/icon";
-import Link from "../components/app-link";
 
 export type StatusTarefa = "pendente" | "andamento" | "concluida";
 export type StatusPagamento = "pago" | "pendente" | "parcial";

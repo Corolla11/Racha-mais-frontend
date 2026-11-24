@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import AppShell from "../components/app-shell";
-import Link from "../components/app-link";
 import Icon from "../components/icon";
-import { useAppNavigate as useNavigate } from "../lib/navigation";
 
 const EMAIL_SUPORTE = "suporte@plusracha.com.br";
 

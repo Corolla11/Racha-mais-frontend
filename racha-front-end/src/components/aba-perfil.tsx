@@ -1,8 +1,6 @@
 ﻿import { useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/auth-context";
-import { useAppNavigate } from "../lib/navigation";
-import Link from "./app-link";
 import Icon from "./icon";
 
 interface ProfileMenuProps {
@@ -13,26 +11,24 @@ interface ProfileMenuProps {
 
 /** TELA 12 — Menu de Perfil (Dropdown Aberto - Redesign Header). */
 export default function Aba({ onClose }: ProfileMenuProps) {
-  const navigate = useAppNavigate();
+  const navigate = useNavigate();
   const { pathname, search } = useLocation();
   const { user, signOut } = useAuth();
   const [erroLogout, setErroLogout] = useState("");
   const [saindo, setSaindo] = useState(false);
   const panel = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
-  const preview = pathname.startsWith("/previa") || pathname.startsWith("/revisao");
-  const demo = preview && !user;
-  const name = user?.name || (demo ? "Rodrigo Mendes de Alencar" : "Usuário");
-  const handle = user?.email || (demo ? "@rodrigo.m" : "Minha conta");
+  const name = user?.name || "Usuário";
+  const handle = user?.email || "Minha conta";
   const activeTab = new URLSearchParams(search).get("aba");
   const inProfile = pathname.endsWith("/perfil");
 
   const items = [
     { label: "Meu Perfil", to: "/perfil", icon: "person", active: inProfile && !activeTab },
     { label: "Chaves Pix & Recebimentos", to: "/perfil?aba=pix", icon: "key", active: inProfile && activeTab === "pix" },
-    { label: "Notificações & Alertas", to: "/notificacoes", icon: "notifications", active: pathname.endsWith("/notificacoes"), badge: demo ? "3 novas" : undefined, badgeClass: "bg-primary-container text-on-primary rounded-full" },
+    { label: "Notificações & Alertas", to: "/notificacoes", icon: "notifications", active: pathname.endsWith("/notificacoes") },
     { label: "Segurança & Privacidade", to: "/perfil?aba=security", icon: "security", active: inProfile && activeTab === "security" },
-    { label: "Planos & Assinaturas", to: "/assinatura", icon: "star", active: pathname.endsWith("/assinatura") || pathname.endsWith("/gerenciar-assinatura"), badge: demo ? "Plano Pro" : undefined, badgeClass: "bg-tertiary-fixed text-on-tertiary-fixed rounded-md uppercase tracking-wide font-extrabold" },
+    { label: "Planos & Assinaturas", to: "/assinatura", icon: "star", active: pathname.endsWith("/assinatura") || pathname.endsWith("/gerenciar-assinatura") },
     { label: "Ajuda & Suporte", to: "/faq", icon: "help_outline", active: pathname.endsWith("/faq") },
   ];
 
@@ -57,7 +53,7 @@ export default function Aba({ onClose }: ProfileMenuProps) {
     setErroLogout("");
     setSaindo(true);
     try {
-      if (!demo) await signOut();
+      await signOut();
       onClose?.();
       navigate("/login", { replace: true });
     } catch {
@@ -87,7 +83,7 @@ export default function Aba({ onClose }: ProfileMenuProps) {
               </Link>
               <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-label-sm text-label-sm font-bold tracking-wide">
                 <Icon name="check_circle" size={14} filled/>
-                <span>{user ? "AUTENTICADO" : demo ? "PRÉVIA" : "VISITANTE"}</span>
+                <span>{user ? "AUTENTICADO" : "VISITANTE"}</span>
               </div>
             </div>
             <div className="space-y-0.5">
@@ -102,24 +98,19 @@ export default function Aba({ onClose }: ProfileMenuProps) {
                   <Icon name="qr_code_2" size={18} className="text-primary"/>
                   <span className="font-label-sm text-label-sm font-bold uppercase tracking-wider text-outline">Chave Pix Principal</span>
                 </div>
-                {demo && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100/80 text-emerald-800 font-label-sm text-label-sm font-bold">
-                    <Icon name="verified" size={12}/>Verificada
-                  </span>
-                )}
               </div>
               <Link to="/perfil?aba=pix" onClick={onClose} className="flex items-center justify-between bg-surface-container-lowest px-space-sm py-1.5 rounded-lg group hover:bg-surface-container-high transition-colors">
-                <span className="font-label-md text-label-md text-on-surface font-semibold font-mono tracking-tight">{demo ? "(11) 98765-4321" : "Gerenciar chave Pix"}</span>
-                <Icon name={demo ? "content_copy" : "chevron_right"} size={18} className="text-outline group-hover:text-primary transition-colors"/>
+                <span className="font-label-md text-label-md text-on-surface font-semibold font-mono tracking-tight">Gerenciar chave Pix</span>
+                <Icon name="chevron_right" size={18} className="text-outline group-hover:text-primary transition-colors"/>
               </Link>
               <div className="grid grid-cols-2 gap-space-sm pt-space-xs">
                 <Link to="/meus-grupos" onClick={onClose} className="bg-surface-container-lowest p-space-xs rounded-lg text-center">
                   <span className="block font-label-sm text-label-sm text-outline">Grupos Ativos</span>
-                  <span className="font-headline-sm text-headline-sm text-on-surface font-extrabold">{demo ? "7" : "—"}</span>
+                  <span className="font-headline-sm text-headline-sm text-on-surface font-extrabold">—</span>
                 </Link>
                 <div className="bg-surface-container-lowest p-space-xs rounded-lg text-center">
                   <span className="block font-label-sm text-label-sm text-outline">Pontualidade</span>
-                  <span className="font-headline-sm text-headline-sm text-emerald-600 font-extrabold">{demo ? "99.4%" : "—"}</span>
+                  <span className="font-headline-sm text-headline-sm text-emerald-600 font-extrabold">—</span>
                 </div>
               </div>
             </div>
@@ -141,7 +132,6 @@ export default function Aba({ onClose }: ProfileMenuProps) {
                   <span className={`font-label-md text-label-md ${item.active ? "font-bold text-on-surface" : "font-medium"}`}>{item.label}</span>
                 </div>
                 <div className="flex items-center gap-space-xs">
-                  {item.badge && <span className={`px-2 py-0.5 font-label-sm text-label-sm font-bold ${item.badgeClass}`}>{item.badge}</span>}
                   <Icon name="chevron_right" size={18} className={`transition-transform group-hover:translate-x-0.5 ${item.active ? "text-primary" : "text-outline"}`}/>
                 </div>
               </Link>

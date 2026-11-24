@@ -1,8 +1,7 @@
 import { useId, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "../auth/auth-context";
 import { SettingsBreadcrumb, SettingsTabs, StatusToast } from "../components/account-panels";
-import Link from "../components/app-link";
 import AppShell from "../components/app-shell";
 import Icon from "../components/icon";
 import Overlay from "../components/overlay";
@@ -35,9 +34,8 @@ function renewalDate(annual: boolean) {
 }
 
 export default function Assinatura({ manage = false }: { manage?: boolean }) {
-  const [params] = useSearchParams();
-  const [annual, setAnnual] = useState(params.get("periodo") === "anual");
-  const [selected, setSelected] = useState<Plan | null>(params.get("checkout") === "pro" ? plans[1] : params.get("checkout") === "proplus" ? plans[2] : null);
+  const [annual, setAnnual] = useState(false);
+  const [selected, setSelected] = useState<Plan | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(() => {
     try { return JSON.parse(sessionStorage.getItem("racha-demo-subscription") ?? "null"); } catch { return null; }
   });

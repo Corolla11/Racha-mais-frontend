@@ -1,7 +1,7 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { money, type Payment, type PaymentStatus } from "../lib/finance";
 import type { DadosTarefa } from "../pages/editar-tarefa";
-import Link from "./app-link";
 import Icon from "./icon";
 
 import { groupCover, type GroupSettings } from "../lib/group-design";

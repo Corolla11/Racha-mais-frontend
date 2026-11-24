@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import AppShell from "../components/app-shell";
 import Icon from "../components/icon";
-import { useAppNavigate as useNavigate } from "../lib/navigation";
 
 const METRICAS = [
   {

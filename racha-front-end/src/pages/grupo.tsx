@@ -1,9 +1,8 @@
 import AppShell from "../components/app-shell";
 import Icon from "../components/icon";
-import Link from "../components/app-link";
 
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../auth/auth-context";
 import { apiRequest } from "../lib/api";
 import { ENDPOINTS } from "../lib/endpoints";
@@ -386,17 +385,16 @@ function ProgressoCircular({ valor, rotulo }: { valor: number; rotulo: string })
   );
 }
 
-export default function Grupo() {
+export default function Grupo({ memberMode: initialMemberMode = false }: { memberMode?: boolean }) {
   const { idGrupo } = useParams<{ idGrupo?: string }>();
   const { user } = useAuth();
   const currentUserId = idGrupo && user?.id ? user.id : USUARIO_ID;
-
+  const [memberMode, setMemberMode] = useState(initialMemberMode);
   const [participantesAtuais, setParticipantesAtuais] =
     useState<ParticipanteTarefa[]>(participantesGrupo);
   const [parteIds, setParteIds] = useState<Record<string, string>>({});
   const [groupName, setGroupName] = useState(nomeGrupo);
   const [closed, setClosed] = useState(false);
-  const [memberMode, setMemberMode] = useState(false);
   const [creating, setCreating] = useState(false);
   const [payments, setPayments] = useState<Record<string, Payment>>({});
   const [taskEvents, setTaskEvents] = useState<Activity[]>([]);
@@ -817,7 +815,7 @@ export default function Grupo() {
           </div>
         )}
 
-        {/* TRILHA E PRÉVIA DE PERMISSÕES */}
+        {/* TRILHA DE NAVEGAÇÃO */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <nav aria-label="Trilha de navegação" className="flex items-center gap-2 font-label-sm text-label-sm text-on-surface-variant min-w-0">
             <Link to="/meus-grupos" className="hover:text-primary transition-colors flex items-center gap-1 shrink-0">
@@ -827,27 +825,12 @@ export default function Grupo() {
             <Icon name="chevron_right" size={14} className="text-outline"/>
             <span className="text-on-surface font-semibold truncate">{groupName}</span>
           </nav>
-          <div className="flex flex-wrap items-center gap-space-sm">
-            {memberMode && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-high/80 text-on-surface-variant font-label-sm text-label-sm shadow-sm">
-                <Icon name="person" size={15} className="text-primary"/>
-                Visão de Membro
-              </span>
-            )}
-            <label className="inline-flex items-center gap-1.5 pl-3 pr-2 py-1 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-sm text-label-sm shadow-sm">
-              <Icon name="visibility" size={15} className="text-primary"/>
-              Prévia de permissões:
-              <select
-                aria-label="Papel na demonstração"
-                value={memberMode ? "member" : "admin"}
-                onChange={event => setMemberMode(event.target.value === "member")}
-                className="bg-transparent font-semibold text-on-surface focus:outline-none cursor-pointer"
-              >
-                <option value="admin">Administrador</option>
-                <option value="member">Membro comum</option>
-              </select>
-            </label>
-          </div>
+          {memberMode && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-high/80 text-on-surface-variant font-label-sm text-label-sm shadow-sm">
+              <Icon name="person" size={15} className="text-primary"/>
+              Visão de Membro
+            </span>
+          )}
         </div>
 
         {memberMode ? (

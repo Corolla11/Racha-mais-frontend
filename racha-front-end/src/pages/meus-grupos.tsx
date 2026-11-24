@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AppShell from "../components/app-shell";
-import Link from "../components/app-link";
 import Icon from "../components/icon";
 import { ApiError, apiRequest } from "../lib/api";
 import { ENDPOINTS } from "../lib/endpoints";
 import { money } from "../lib/finance";
-import { useAppNavigate as useNavigate } from "../lib/navigation";
 import MeusGruposVazio from "./meus-grupos-vazio";
 
 type Categoria = "Viagem" | "Moradia" | "Evento";
@@ -55,49 +53,6 @@ type GrupoApi = {
   descricao: string;
 };
 
-// Dados demonstrativos usados na rota de prévia
-const GRUPOS_DEMO: GrupoCartao[] = [
-  {
-    id: "demo-ubatuba",
-    nome: "Viagem Ubatuba",
-    subtitulo: "Praia Vermelha do Norte",
-    emoji: "🏖️",
-    categoria: "Viagem",
-    status: "Ativo",
-    tom: "primary",
-    participantes: 6,
-    membros: ["R", "M", "F", "L", "P", "B"],
-    financeiro: { total: 2450, suaParte: 380, quitacao: 75, rodape: "8 lançamentos", rodapeIcone: "recibo" },
-    destino: { path: "/grupo" },
-  },
-  {
-    id: "demo-augusta",
-    nome: "República Augusta",
-    subtitulo: "Despesas mensais / Aluguel",
-    emoji: "🏠",
-    categoria: "Moradia",
-    status: "Em dia",
-    tom: "tertiary",
-    participantes: 4,
-    membros: ["M", "T", "L", "B"],
-    financeiro: { total: 3820, suaParte: 955, quitacao: 100, rodape: "Tudo acertado", rodapeIcone: "ok" },
-    destino: { path: "/grupo" },
-  },
-  {
-    id: "demo-churrasco",
-    nome: "Churrasco Fim de Ano",
-    subtitulo: "Sítio dos Manacás",
-    emoji: "🥩",
-    categoria: "Evento",
-    status: "Pendente",
-    tom: "secondary",
-    participantes: 12,
-    membros: ["A", "R", "D", "C", "E", "G", "H", "I", "J", "K", "N", "O"],
-    financeiro: { total: 890, suaParte: 74, quitacao: 40, rodape: "Expira em 3 dias", rodapeIcone: "prazo" },
-    destino: { path: "/grupo" },
-  },
-];
-
 function deApi(grupo: GrupoApi): GrupoCartao {
   return {
     id: grupo.id,
@@ -142,11 +97,10 @@ function formatarPercentual(valor: number) {
 
 export default function MeusGrupos() {
   const navigate = useNavigate();
-  const preview = useLocation().pathname.startsWith("/previa");
   const [searchParams] = useSearchParams();
 
   const [gruposApi, setGruposApi] = useState<GrupoApi[]>([]);
-  const [carregando, setCarregando] = useState(!preview);
+  const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
   const [tentativa, setTentativa] = useState(0);
 
@@ -166,7 +120,6 @@ export default function MeusGrupos() {
   }
 
   useEffect(() => {
-    if (preview) return;
     let ativo = true;
 
     apiRequest<GrupoApi[]>(ENDPOINTS.grupos.base)
@@ -188,7 +141,7 @@ export default function MeusGrupos() {
     return () => {
       ativo = false;
     };
-  }, [tentativa, preview]);
+  }, [tentativa]);
 
   // Esconde o aviso depois de alguns segundos
   useEffect(() => {
@@ -207,10 +160,7 @@ export default function MeusGrupos() {
     return () => window.removeEventListener("keydown", aoPressionar);
   }, [modalAberto]);
 
-  const grupos = useMemo(
-    () => (preview ? GRUPOS_DEMO : gruposApi.map(deApi)),
-    [preview, gruposApi],
-  );
+  const grupos = useMemo(() => gruposApi.map(deApi), [gruposApi]);
 
   const temCategorias = grupos.some((grupo) => grupo.categoria);
 
@@ -276,7 +226,7 @@ export default function MeusGrupos() {
   }
 
   // Sem nenhum grupo na conta: mostra a tela de primeiro acesso
-  if (!preview && !carregando && !erro && gruposApi.length === 0) {
+  if (!carregando && !erro && gruposApi.length === 0) {
     return <MeusGruposVazio />;
   }
 

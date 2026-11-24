@@ -1,7 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import AppShell from "../components/app-shell";
-import Link from "../components/app-link";
 import Icon from "../components/icon";
 import { useAuth } from "../auth/auth-context";
 import { ApiError, apiRequest } from "../lib/api";
@@ -14,7 +13,6 @@ import {
   limparRascunho,
   type GrupoRascunho,
 } from "../lib/grupo-rascunho";
-import { useAppNavigate as useNavigate } from "../lib/navigation";
 
 // Mesmos ids da tela de criação manual
 const CATEGORIAS: Record<string, { nome: string; emoji: string }> = {

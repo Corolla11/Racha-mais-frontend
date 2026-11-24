@@ -45,9 +45,6 @@
 .profile-menu__item:hover, .profile-menu__item--active { background: #ffeadf; color: #99500d; }
 .profile-menu__item--active { font-weight: 600; }
 .profile-menu__item > i { width: 4px; height: 4px; border-radius: 50%; background: #b85d0c; margin-left: auto; }
-.profile-menu__badge { margin-left: auto; padding: 3px 6px; border-radius: 10px; font-size:var(--ui-font-meta); white-space: nowrap; }
-.profile-menu__badge--notifications { color: white; background: #ff873d; }
-.profile-menu__badge--plan { color: #9a602f; background: #ffe1bd; }
 .profile-menu__footer { margin-top: 10px; padding-top: 7px; border-top: 1px solid #e7ecf8; }
 .profile-menu__footer button { display: flex; align-items: center; gap: 9px; width: 100%; padding: 10px 8px; border-radius: 5px; color: #e44329; font-size:var(--ui-font-caption); text-align: left; cursor: pointer; }
 .profile-menu__footer button > svg { width: 16px; height: 16px; }

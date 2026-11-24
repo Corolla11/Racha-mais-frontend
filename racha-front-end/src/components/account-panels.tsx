@@ -1,8 +1,8 @@
 import { Fragment, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../auth/auth-context";
 import { ApiError, apiRequest } from "../lib/api";
 import { ENDPOINTS, type ChavePixApi, type TipoChavePix } from "../lib/endpoints";
-import Link from "./app-link";
 import Icon from "./icon";
 import Overlay from "./overlay";
 import PixPreview from "./pix-preview";

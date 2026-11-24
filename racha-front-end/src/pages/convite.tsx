@@ -85,7 +85,7 @@ export default function Convite() {
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-space-lg px-gutter-mobile py-space-md sm:px-gutter sm:py-space-lg">
           {/* Breadcrumb */}
           <nav aria-label="Breadcrumb" className="flex items-center gap-space-xs font-label-sm text-label-sm text-on-surface-variant">
-            <Link to="/revisao" className="flex items-center gap-1 transition-colors hover:text-primary">
+            <Link to="/meus-grupos" className="flex items-center gap-1 transition-colors hover:text-primary">
               <Icon name="home" size={16} />
               <span>Início</span>
             </Link>
@@ -255,7 +255,7 @@ export default function Convite() {
                         <span>Dúvidas sobre o funcionamento do grupo?</span>
                       </div>
                     )}
-                    <Link className="font-label-sm text-label-sm text-primary hover:underline" to="/previa/faq">
+                    <Link className="font-label-sm text-label-sm text-primary hover:underline" to="/faq">
                       Fale com o criador
                     </Link>
                   </div>
@@ -409,7 +409,7 @@ function Resultado({ estado, titulo }: { estado: Exclude<Estado, "received">; ti
         <p className="font-body-md text-body-md text-on-surface-variant">{info.texto}</p>
       </div>
       <Link
-        to={acessar ? "/previa/grupo" : "/revisao"}
+        to={acessar ? "/grupo" : "/meus-grupos"}
         className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-container px-6 py-3 font-label-lg text-label-lg text-on-primary shadow-[0_8px_20px_-4px_rgba(255,140,66,0.45)] transition-all hover:bg-primary active:scale-[0.99] sm:w-auto"
       >
         {acessar ? "Acessar o grupo" : "Voltar aos meus grupos"}

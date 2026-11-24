@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import AppShell from "../components/app-shell";
-import Link from "../components/app-link";
 import Icon from "../components/icon";
 import { futureModules } from "../lib/endpoints";
-import { useAppNavigate as useNavigate } from "../lib/navigation";
 
 /* =====================================================
    DADOS DEMONSTRATIVOS

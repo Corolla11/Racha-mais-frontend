@@ -1,11 +1,9 @@
 import EditarTarefa, { type DadosTarefa } from "./editar-tarefa";
 import { useMemo, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
-import { useAppNavigate as useNavigate } from "../lib/navigation";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { salvarRascunho, type GrupoRascunho } from "../lib/grupo-rascunho";
 
 import AppShell from "../components/app-shell";
-import Link from "../components/app-link";
 import Icon from "../components/icon";
 
 interface Membro {

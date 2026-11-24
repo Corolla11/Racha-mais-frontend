@@ -4,10 +4,9 @@ import { ApiError, apiRequest } from "../lib/api";
 import { ENDPOINTS, futureModules, type ChavePixApi } from "../lib/endpoints";
 import { canCloseGroup,money,paymentLabels,share,type Payment,type PaymentStatus } from "../lib/finance";
 import type { DadosTarefa } from "../pages/editar-tarefa";
-import Link from "./app-link";
+import { Link } from "react-router-dom";
 import { GroupAudit, GroupEditForm, PaymentBadge, PaymentManagement } from "./group-panels";
 import Icon from "./icon";
-import { useSearchParams } from "react-router-dom";
 import Overlay from "./overlay";
 import PixPreview from "./pix-preview";
 
@@ -17,14 +16,12 @@ export interface GroupFlowControl { openPayments: (taskId?: string) => void }
 interface Props { idGrupo?: string; currentUserId?: string; parteIds?: Record<string, string>; taskEvents: Activity[]; tasks: DadosTarefa[]; name: string; onName: (name: string) => void; closed: boolean; onCloseGroup: () => void; memberMode: boolean; payments: Record<string, Payment>; setPayments: Dispatch<SetStateAction<Record<string, Payment>>>; ref?: Ref<GroupFlowControl> }
 
 export default function GroupFlows({ idGrupo, currentUserId = "1", parteIds = {}, taskEvents, tasks, name, onName, closed, onCloseGroup, memberMode, payments, setPayments, ref }: Props) {
-  const [params] = useSearchParams();
-  const initialPanel = params.get("painel");
-  const [view, setView] = useState<"payments" | "members" | "edit" | "close" | "leave" | null>(initialPanel === "pix" || initialPanel === "payments" ? "payments" : initialPanel === "members" || initialPanel === "edit" || initialPanel === "close" ? initialPanel : null);
+  const [view, setView] = useState<"payments" | "members" | "edit" | "close" | "leave" | null>(null);
   const [tab, setTab] = useState("tasks");
   const [memberTab, setMemberTab] = useState("members");
   const [members, setMembers] = useState<Member[]>(() => (tasks[0]?.participantes ?? []).map(p => ({ id: p.id, nome: p.nome, admin: p.id === currentUserId, active: true })));
   const [events, setEvents] = useState<Activity[]>([{ text: "Grupo criado · Rodrigo Martins", date: "2025-11-14T12:00:00.000Z" }]);
-  const [selected, setSelected] = useState(initialPanel === "pix" ? `tarefa-02:${currentUserId}` : "");
+  const [selected, setSelected] = useState("");
   useImperativeHandle(ref, () => ({ openPayments(taskId) { setView("payments"); setSelected(taskId ? `${taskId}:${currentUserId}` : ""); } }), [currentUserId]);
   const [receipt, setReceipt] = useState<{ data: string; name: string } | null>(null);
   const [message, setMessage] = useState("");
@@ -276,7 +273,7 @@ export default function GroupFlows({ idGrupo, currentUserId = "1", parteIds = {}
           <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-fixed text-primary"><Icon name="mail" size={24}/></span>
           <div><h3 className="font-headline-sm text-headline-sm text-on-surface">Chame seus amigos para o racha</h3><p className="font-body-sm text-body-sm text-on-surface-variant">Compartilhe as tarefas e acompanhe cada acerto em um só lugar.</p></div>
           <div className="flex w-full flex-col gap-1.5 text-left"><label htmlFor="invite-email" className="font-label-md text-label-md text-on-surface">E-mail do participante</label><div className="relative flex items-center"><Icon name="alternate_email" size={18} className="pointer-events-none absolute left-3 text-outline"/><input id="invite-email" type="email" required placeholder="amigo@exemplo.com" value={invite} onChange={event => setInvite(event.target.value)} className="w-full rounded-lg bg-surface-container-lowest py-2.5 pl-10 pr-4 font-body-md text-body-md text-on-surface shadow-sm outline-none transition-all placeholder:text-outline focus:ring-2 focus:ring-primary/20"/></div></div>
-          <div className="flex w-full flex-col gap-space-sm sm:flex-row sm:justify-center"><button type="submit" className={btnPrimary}><Icon name="person_add" size={18}/>Preparar convite</button><Link className={btnSecondary} to="/convite/demo"><Icon name="visibility" size={18}/>Visualizar convite</Link></div>
+          <div className="flex w-full flex-col gap-space-sm sm:flex-row sm:justify-center"><button type="submit" className={btnPrimary}><Icon name="person_add" size={18}/>Preparar convite</button></div>
           {invites.length > 0 && <ul className="flex w-full flex-col gap-space-xs text-left">{invites.map(email => <li key={email} className="flex items-center justify-between gap-space-sm rounded-lg bg-surface-container-lowest px-space-md py-space-sm font-body-sm text-body-sm text-on-surface"><span className="truncate">{email}</span><span className="shrink-0 font-label-sm text-label-sm text-tertiary">aguardando aceite</span></li>)}</ul>}
         </form>}
         {remove && <div className="flex flex-col gap-space-sm rounded-xl bg-error-container/30 p-space-md" role="alertdialog" aria-label={`Remover ${remove.nome}`}>

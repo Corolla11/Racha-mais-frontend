@@ -1,6 +1,6 @@
 import { useEffect } from "react";
+import { Link } from "react-router-dom";
 import Icon from "../components/icon";
-import Link from "../components/app-link";
 import type { Tarefa } from "./tarefa";
 
 interface TarefaConcluidaProps {
