@@ -1,9 +1,9 @@
 import { Banknote, Check, Copy, CreditCard, Download, FileText, LockKeyhole, Plus, QrCode, ShieldCheck, Smartphone, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../auth/auth-context";
 import { ApiError, apiRequest } from "../lib/api";
 import { ENDPOINTS, type ChavePixApi, type TipoChavePix } from "../lib/endpoints";
-import Link from "./app-link";
 import Overlay from "./overlay";
 import PixPreview from "./pix-preview";
 

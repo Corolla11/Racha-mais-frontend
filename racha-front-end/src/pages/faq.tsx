@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowLeftRight,
   ArrowRight,
@@ -30,7 +31,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import AppShell from "../components/app-shell";
-import { useAppNavigate as useNavigate } from "../lib/navigation";
 
 /* =====================================================
    TOKENS DO DESIGN

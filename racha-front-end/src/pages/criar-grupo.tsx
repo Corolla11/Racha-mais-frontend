@@ -1,7 +1,6 @@
 import EditarTarefa, { type DadosTarefa } from "./editar-tarefa";
 import { useMemo, useState } from "react";
-import { useAppNavigate as useNavigate } from "../lib/navigation";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { salvarRascunho, type GrupoRascunho } from "../lib/grupo-rascunho";
 
 import {

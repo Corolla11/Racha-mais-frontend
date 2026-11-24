@@ -19,10 +19,9 @@ import {
   WalletCards,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/auth-context";
 import AccountPanels from "../components/account-panels";
-import Link from "../components/app-link";
 import AppShell from "../components/app-shell";
 import { PageHeading } from "../components/ui";
 import { apiRequest } from "../lib/api";

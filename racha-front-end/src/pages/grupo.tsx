@@ -282,17 +282,16 @@ type FiltroTarefas =
   | "andamento"
   | "concluidas";
 
-export default function Grupo() {
+export default function Grupo({ memberMode: initialMemberMode = false }: { memberMode?: boolean }) {
   const { idGrupo } = useParams<{ idGrupo?: string }>();
   const { user } = useAuth();
   const currentUserId = idGrupo && user?.id ? user.id : "1";
-
+  const [memberMode, setMemberMode] = useState(initialMemberMode);
   const [groupName, setGroupName] = useState(nomeGrupo);
   const [participantesAtuais, setParticipantesAtuais] =
     useState<ParticipanteTarefa[]>(participantesGrupo);
   const [parteIds, setParteIds] = useState<Record<string, string>>({});
   const [closed, setClosed] = useState(false);
-  const [memberMode, setMemberMode] = useState(false);
   const [creating, setCreating] = useState(false);
   const [payments, setPayments] = useState<Record<string, Payment>>({});
   const [taskEvents, setTaskEvents] = useState<Activity[]>([]);
@@ -640,7 +639,6 @@ export default function Grupo() {
             </div>
           </div>
 
-          <div className="racha-role-preview"><label>Prévia de permissões: <select aria-label="Papel na demonstração" value={memberMode ? "member" : "admin"} onChange={event => setMemberMode(event.target.value === "member")} ><option value="admin">Administrador</option><option value="member">Membro comum</option></select></label></div>
           <GroupFlows idGrupo={idGrupo} currentUserId={currentUserId} parteIds={parteIds} taskEvents={taskEvents} ref={flowControl} payments={payments} setPayments={setPayments} tasks={tarefas} name={groupName} onName={setGroupName} closed={closed} onCloseGroup={() => setClosed(true)} memberMode={memberMode}/>
           {!closed && <>
           {/* RESUMO */}

@@ -85,7 +85,6 @@
 .racha-avatar-stack span { display: grid; place-items: center; border: 2px solid white; border-radius: 50%; margin-left: -4px; width: 27px; height: 27px; background: #ffd9c8; color: #9a6f58; font-size:var(--ui-font-caption); }
 .racha-avatar-stack span:nth-child(3n) { background: #e6ecff; color: #7b8ca8; }
 .racha-avatar-stack span:last-child { background: #ff9649; color: white; }
-.racha-preview-return { position: fixed; bottom: 11px; right: 14px; z-index: 50; background: #fff; border: 1px solid #e5e9f4; color: #9b8e85; padding: 7px 12px; border-radius: 20px; box-shadow: 0 2px 6px #17233708; font-size:var(--ui-font-caption); }
 .racha-feedback { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); max-width: calc(100vw - 32px); z-index: 200; background: #fff; color: #8b6c53; border: 1px solid #ffd9bf; padding: 14px 20px; border-radius: 8px; font-size:var(--ui-font-body); box-shadow: 0 4px 24px #1723371a; }
 .racha-feedback button { margin-left: 12px; cursor: pointer; }
 .racha-app :focus-visible, .racha-dialog :focus-visible, .racha-auth-page :focus-visible, .racha-flows :focus-visible { outline: 2px solid #d37d3b; outline-offset: 3px; }

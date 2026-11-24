@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AlarmClock,
   ArrowLeftRight,
@@ -40,7 +41,6 @@ import {
 } from "lucide-react";
 import AppShell from "../components/app-shell";
 import { futureModules } from "../lib/endpoints";
-import { useAppNavigate as useNavigate } from "../lib/navigation";
 
 /* =====================================================
    TOKENS DO DESIGN

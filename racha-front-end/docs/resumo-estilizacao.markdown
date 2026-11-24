@@ -155,10 +155,6 @@ Também foram conferidas medidas calculadas pelo navegador, como os títulos de 
 
 Build e lint passaram após os ajustes. Os seis testes financeiros existentes também passaram como verificação de regressão; esses testes validam regras de rateio e encerramento, não a aparência das telas. O build mantém um aviso sobre o tamanho do pacote JavaScript principal.
 
-## 10. Recursos temporários e limites do trabalho
-
-A página `/revisao`, a biblioteca de estados, as rotas `/previa/*` e o botão “Biblioteca de telas” foram usados para inspeção visual sem depender do login. Eles são recursos de desenvolvimento e revisão e não devem compor a navegação pública do produto final.
-
-Atualmente, esses recursos ainda estão no aplicativo. Antes da publicação, será necessário remover ou restringir suas rotas e retirar o botão da versão pública; apenas escondê-lo visualmente não elimina as rotas.
+## 10. Limites de integração
 
 A estilização não representa uma integração completa com o backend. QR Codes, cobranças, convites e outras ações identificadas como demonstração continuam dependendo das integrações correspondentes para uso real.

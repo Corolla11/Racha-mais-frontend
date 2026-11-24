@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   CheckCircle2,
@@ -10,9 +11,7 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import Link from "../components/app-link";
 import { ApiError, apiRequest } from "../lib/api";
-import { useAppNavigate as useNavigate } from "../lib/navigation";
 
 /* =====================================================
    TOKENS DO DESIGN

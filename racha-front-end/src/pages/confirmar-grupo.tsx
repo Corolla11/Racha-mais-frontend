@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
@@ -16,7 +16,6 @@ import {
   Users,
   X,
 } from "lucide-react";
-import Link from "../components/app-link";
 import { useAuth } from "../auth/auth-context";
 import { ApiError, apiRequest } from "../lib/api";
 import { ENDPOINTS } from "../lib/endpoints";
@@ -28,7 +27,6 @@ import {
   limparRascunho,
   type GrupoRascunho,
 } from "../lib/grupo-rascunho";
-import { useAppNavigate as useNavigate } from "../lib/navigation";
 
 /* =====================================================
    TOKENS DO DESIGN
