@@ -163,4 +163,53 @@ describe("parteService", () => {
       403,
     );
   });
+
+  it("permite membro comum informar pagamento com comprovanteKey válida e limpar motivoContestacao", async () => {
+    let dataRecebida: unknown = null;
+    mockProp(prisma.parte, "findUnique", async () => ({
+      id: "p1",
+      idUser: "u2",
+      idTarefa: "t1",
+      descricao: "Cota",
+      valor: new Prisma.Decimal("50.00"),
+      status: StatusAndamento.AGENDADA,
+      comprovanteKey: null,
+      comprovanteNome: null,
+      motivoContestacao: "Valor errado",
+      user: { id: "u2", name: "Ana", image: null },
+      tarefa: { id: "t1", idGrupo: "g1" },
+    }));
+    mockProp(prisma.tarefa, "findUnique", async () => ({
+      id: "t1",
+      idGrupo: "g1",
+      idUser: "criador",
+      nome: "Mercado",
+      dataFinal: new Date(),
+      valorTotal: new Prisma.Decimal("100.00"),
+    }));
+    mockProp(prisma.membro, "findUnique", async () => ({
+      idUser: "u2",
+      idGrupo: "g1",
+      funcao: Funcao.membro,
+    }));
+    mockProp(prisma.grupo, "findUnique", async () => ({ encerradoEm: null }));
+    mockProp(prisma.parte, "update", async ({ data }: { data: unknown }) => {
+      dataRecebida = data;
+      return { id: "p1", status: StatusAndamento.EM_ANDAMENTO };
+    });
+
+    await parteService.atualizar("u2", "p1", {
+      status: StatusAndamento.EM_ANDAMENTO,
+      comprovanteKey: "comprovantes/p1/recibo.pdf",
+      comprovanteNome: "recibo.pdf",
+      motivoContestacao: null,
+    });
+
+    assert.deepEqual(dataRecebida, {
+      status: StatusAndamento.EM_ANDAMENTO,
+      comprovanteKey: "comprovantes/p1/recibo.pdf",
+      comprovanteNome: "recibo.pdf",
+      motivoContestacao: null,
+    });
+  });
 });

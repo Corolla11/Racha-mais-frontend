@@ -17,7 +17,7 @@ export const auth = betterAuth({
     .filter(Boolean),
 
   plugins: [
-    openAPI(),
+    openAPI({ disableDefaultReference: true }),
     emailOTP({
       otpLength: 6,
       overrideDefaultEmailVerification: true,

@@ -13,7 +13,7 @@ async function main() {
 
   const usuarios = [
     { id: "seed-user-ana", name: "Ana Souza", email: "ana@racha.test", chavePix: "ana@racha.test", tipoChave: "email" as const },
-    { id: "seed-user-bruno", name: "Bruno Lima", email: "bruno@racha.test", chavePix: "11999990001", tipoChave: "telefone" as const },
+    { id: "seed-user-bruno", name: "Bruno Lima", email: "bruno@racha.test", chavePix: "+5511999990001", tipoChave: "telefone" as const },
     { id: "seed-user-carla", name: "Carla Dias", email: "carla@racha.test", chavePix: "12345678909", tipoChave: "cpf" as const },
   ];
 

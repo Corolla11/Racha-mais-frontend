@@ -1,6 +1,8 @@
 import express from "express";
+import { apiReference } from "@scalar/express-api-reference";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.js";
+import { openApiSpec } from "./lib/openapi.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { assinaturaController } from "./api/assinaturas/assinatura.controller.js";
 import { assinaturaRoutes } from "./api/assinaturas/assinatura.routes.js";
@@ -20,6 +22,25 @@ app.post(
 );
 
 app.use(express.json());
+
+if (process.env.NODE_ENV !== "production") {
+  app.get("/openapi.json", (_req, res) => {
+    res.json(openApiSpec);
+  });
+  app.use(
+    "/reference",
+    apiReference({
+      sources: [
+        { title: "Racha+ API", slug: "racha", url: "/openapi.json" },
+        {
+          title: "Autenticação (Better Auth)",
+          slug: "auth",
+          url: "/api/auth/open-api/generate-schema",
+        },
+      ],
+    }),
+  );
+}
 
 app.use("/planos", planoRoutes);
 app.use("/assinaturas", assinaturaRoutes);

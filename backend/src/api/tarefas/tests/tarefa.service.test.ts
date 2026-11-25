@@ -179,4 +179,56 @@ describe("tarefaService", () => {
     assert.deepEqual(removidos, ["p-antiga"]);
     assert.equal(criados, 1);
   });
+
+  it("rejeita sync de partes com participante duplicado, soma acima do total ou usuário fora do grupo", async () => {
+    mockProp(prisma.tarefa, "findUniqueOrThrow", async () => ({
+      id: "t1",
+      idGrupo: "g1",
+      idUser: "u1",
+      valorTotal: new Prisma.Decimal("100.00"),
+      dataInicio: new Date("2026-03-01T00:00:00Z"),
+      dataFinal: new Date("2026-03-02T00:00:00Z"),
+    }));
+    mockProp(prisma.membro, "findUnique", async () => ({
+      idUser: "u1",
+      idGrupo: "g1",
+      funcao: Funcao.dono,
+    }));
+    mockProp(prisma.grupo, "findUnique", async () => ({ encerradoEm: null }));
+
+    await assert.rejects(
+      () =>
+        tarefaService.atualizar("u1", "t1", {
+          partes: [
+            { idUser: "u1", valor: "30.00" },
+            { idUser: "u1", valor: "30.00" },
+          ],
+        }),
+      (err: unknown) => err instanceof AppError && err.statusCode === 400,
+    );
+
+    await assert.rejects(
+      () =>
+        tarefaService.atualizar("u1", "t1", {
+          valorTotal: 50,
+          partes: [{ idUser: "u1", valor: "60.00" }],
+        }),
+      (err: unknown) => err instanceof AppError && err.statusCode === 409,
+    );
+
+    mockProp(prisma, "$transaction", async (cb: (tx: unknown) => Promise<unknown>) =>
+      cb({
+        $executeRaw: async () => 1,
+        membro: { count: async () => 0 },
+      }),
+    );
+
+    await assert.rejects(
+      () =>
+        tarefaService.atualizar("u1", "t1", {
+          partes: [{ idUser: "intruso", valor: "20.00" }],
+        }),
+      (err: unknown) => err instanceof AppError && err.statusCode === 400,
+    );
+  });
 });
