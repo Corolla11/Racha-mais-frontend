@@ -1,7 +1,8 @@
 import EditarTarefa, { type DadosTarefa } from "./editar-tarefa";
-import { useMemo, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
+import { useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/auth-context";
+import { initials, money } from "../lib/finance";
 import { salvarRascunho, type GrupoRascunho } from "../lib/grupo-rascunho";
 
 import AppShell from "../components/app-shell";
@@ -49,6 +50,13 @@ const modelosRateio = [
     descricao:
       "Soma todas as despesas e reparte igualmente por cabeça. Ideal para churrascos e festas.",
   },
+  {
+    id: "manual",
+    nome: "Rateio manual (desabilitado)",
+    icone: "tune",
+    descricao:
+      "Sem divisão automática na criação. Você define os valores por participante depois ou organiza apenas tarefas.",
+  },
 ];
 
 const etiquetasItem: Record<TipoItem, { rotulo: string; icone: string }> = {
@@ -64,23 +72,6 @@ const coresAvatar = [
 
 const campoClasse =
   "h-12 w-full rounded-lg bg-surface-container-low pl-11 pr-space-md font-body-md text-body-md text-on-surface shadow-inner transition-all placeholder:text-outline focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary-container";
-
-function formatarMoeda(valor: number) {
-  return valor.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
-}
-
-function gerarIniciais(nome: string) {
-  const partes = nome.trim().split(/\s+/);
-
-  if (partes.length === 1) {
-    return partes[0].slice(0, 2).toUpperCase();
-  }
-
-  return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
-}
 
 export default function CriarGrupo() {
   const navigate = useNavigate();
@@ -112,7 +103,7 @@ export default function CriarGrupo() {
       id: 1,
       nome: user?.name || "Você",
       contato: user?.email || "",
-      iniciais: gerarIniciais(user?.name || "VC"),
+      iniciais: initials(user?.name || "VC"),
       etiqueta: "Você (Admin)",
       admin: true,
       adiantado: 0,
@@ -121,9 +112,11 @@ export default function CriarGrupo() {
 
   // DADOS DO GRUPO
   const [nomeGrupo, setNomeGrupo] = useState(nomeInicial);
+  const [nomeErro, setNomeErro] = useState("");
+  const nomeInputRef = useRef<HTMLInputElement>(null);
   const [categoria, setCategoria] = useState(categoriaInicial);
   const [dataEvento, setDataEvento] = useState(rascunho?.data ?? "");
-  const [moeda, setMoeda] = useState(rascunho?.moeda ?? "BRL");
+  const moeda = "BRL";
   const [descricao, setDescricao] = useState(descricaoInicial);
 
   // PARTICIPANTES
@@ -162,7 +155,7 @@ export default function CriarGrupo() {
         id: Date.now(),
         nome,
         contato: novoContato.trim() || "Sem contato",
-        iniciais: gerarIniciais(nome),
+        iniciais: initials(nome),
         etiqueta: "Novo",
         admin: false,
         adiantado: 0,
@@ -209,7 +202,12 @@ export default function CriarGrupo() {
       cota: cotaIndividual,
     };
 
-    if (!nomeGrupo.trim()) { window.alert("Informe o nome do grupo."); return; }
+    if (!nomeGrupo.trim()) {
+      setNomeErro("Informe o nome do grupo.");
+      nomeInputRef.current?.focus();
+      return;
+    }
+    setNomeErro("");
     salvarRascunho(grupo);
 
     navigate("/criar-grupo/confirmar", { state: { grupo } });
@@ -256,7 +254,7 @@ export default function CriarGrupo() {
         <div className="mb-space-xl flex flex-col gap-space-md md:flex-row md:items-end md:justify-between">
           <div>
             <div className="mb-space-xs flex items-center gap-space-xs font-label-md text-label-md font-bold uppercase tracking-wider text-primary">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-primary-container" />
+              <span className="h-2 w-2 rounded-full bg-primary-container" />
               Passo 1 de 2 • Setup Inicial
             </div>
             <h1 className="font-headline-lg-mobile text-headline-lg-mobile font-bold tracking-tight text-on-surface sm:font-headline-lg sm:text-headline-lg">
@@ -303,14 +301,26 @@ export default function CriarGrupo() {
                 <div className="relative flex items-center">
                   <Icon name={iconeNome} size={20} className="pointer-events-none absolute left-space-md text-outline" />
                   <input
+                    ref={nomeInputRef}
                     id="nome-grupo"
                     type="text"
                     value={nomeGrupo}
-                    onChange={(event) => setNomeGrupo(event.target.value)}
+                    aria-invalid={Boolean(nomeErro)}
+                    aria-describedby={nomeErro ? "nome-grupo-erro" : undefined}
+                    onChange={(event) => {
+                      setNomeGrupo(event.target.value);
+                      if (nomeErro && event.target.value.trim()) setNomeErro("");
+                    }}
                     placeholder="Ex.: Churrasco de Domingo, Apê 304"
-                    className={campoClasse}
+                    className={`${campoClasse} ${nomeErro ? "ring-2 ring-error focus:ring-error" : ""}`}
                   />
                 </div>
+                {nomeErro && (
+                  <p id="nome-grupo-erro" role="alert" className="flex items-center gap-1 font-label-sm text-label-sm text-error">
+                    <Icon name="error" size={16} />
+                    <span>{nomeErro}</span>
+                  </p>
+                )}
               </div>
 
               <div className="flex flex-col gap-space-xs md:col-span-2">
@@ -326,7 +336,7 @@ export default function CriarGrupo() {
                         type="button"
                         aria-pressed={ativa}
                         onClick={() => setCategoria(opcao.id)}
-                        className={`flex cursor-pointer items-center gap-1.5 rounded-full px-space-md py-space-xs font-label-md text-label-md transition-all active:scale-95 ${
+                        className={`flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full px-space-md py-space-xs font-label-md text-label-md transition-all active:scale-95 ${
                           ativa
                             ? "bg-primary text-on-primary shadow-sm hover:brightness-105"
                             : "bg-surface-container text-on-surface-variant hover:bg-surface-container-high"
@@ -364,18 +374,19 @@ export default function CriarGrupo() {
                 </label>
                 <div className="relative flex items-center">
                   <Icon name="payments" size={20} className="pointer-events-none absolute left-space-md text-outline" />
-                  <select
+                  <input
                     id="moeda-grupo"
-                    value={moeda}
-                    onChange={(event) => setMoeda(event.target.value)}
-                    className={`${campoClasse} cursor-pointer appearance-none pr-10`}
-                  >
-                    <option value="BRL">Real Brasileiro (BRL - R$)</option>
-                    <option value="USD">Dólar Americano (USD - $)</option>
-                    <option value="EUR">Euro (EUR - €)</option>
-                  </select>
-                  <Icon name="expand_more" size={20} className="pointer-events-none absolute right-space-md text-outline" />
+                    type="text"
+                    readOnly
+                    value="Real Brasileiro (BRL - R$)"
+                    aria-describedby="moeda-grupo-nota"
+                    className={`${campoClasse} cursor-default pr-10 text-on-surface-variant`}
+                  />
+                  <Icon name="lock" size={18} className="pointer-events-none absolute right-space-md text-outline" />
                 </div>
+                <p id="moeda-grupo-nota" className="font-label-sm text-label-sm text-on-surface-variant">
+                  Todos os rateios e cobranças são feitos em Reais (R$).
+                </p>
               </div>
 
               <div className="flex flex-col gap-1.5 md:col-span-2">
@@ -429,14 +440,14 @@ export default function CriarGrupo() {
               </div>
               <div className="relative flex flex-1 items-center">
                 <Icon name="alternate_email" size={20} className="pointer-events-none absolute left-space-md text-outline" />
-                <label htmlFor="novo-membro-contato" className="sr-only">WhatsApp ou e-mail do participante</label>
+                <label htmlFor="novo-membro-contato" className="sr-only">E-mail do participante</label>
                 <input
                   id="novo-membro-contato"
-                  type="text"
+                  type="email"
                   value={novoContato}
                   onChange={(event) => setNovoContato(event.target.value)}
                   onKeyDown={aoTeclarMembro}
-                  placeholder="WhatsApp (DDD) ou E-mail"
+                  placeholder="E-mail do participante (opcional)"
                   className={`${campoClasse} font-body-sm text-body-sm`}
                 />
               </div>
@@ -502,7 +513,7 @@ export default function CriarGrupo() {
                       aria-label={`Remover ${membro.nome}`}
                       title="Remover participante"
                       onClick={() => removerMembro(membro.id)}
-                      className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-outline transition-colors hover:bg-error-container hover:text-on-error-container"
+                      className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-outline transition-colors hover:bg-error-container hover:text-on-error-container"
                     >
                       <Icon name="close" size={18} />
                     </button>
@@ -524,7 +535,7 @@ export default function CriarGrupo() {
                 <button
                   type="button"
                   onClick={abrirModalItem}
-                  className="flex h-10 shrink-0 cursor-pointer items-center gap-space-xs rounded-lg bg-surface-container-highest px-space-md font-label-md text-label-md text-on-surface transition-colors hover:bg-surface-container-high"
+                  className="flex min-h-11 shrink-0 cursor-pointer items-center gap-space-xs rounded-lg bg-surface-container-highest px-space-md font-label-md text-label-md text-on-surface transition-colors hover:bg-surface-container-high"
                 >
                   <Icon name="add_circle" size={18} />
                   <span>Adicionar Item</span>
@@ -584,7 +595,7 @@ export default function CriarGrupo() {
                     <div className="flex w-full items-center justify-between gap-space-sm sm:w-auto sm:justify-end">
                       <div className="flex flex-col items-start sm:items-end">
                         <span className={`font-label-lg text-label-lg font-bold ${item.valor > 0 ? "text-on-surface" : "text-outline"}`}>
-                          {formatarMoeda(item.valor)}
+                          {money(item.valor)}
                         </span>
                         <span className="font-label-sm text-label-sm text-on-surface-variant">
                           {item.valor === 0
@@ -599,7 +610,7 @@ export default function CriarGrupo() {
                         aria-label={`Remover ${item.titulo}`}
                         title="Remover item"
                         onClick={() => removerItem(item.id)}
-                        className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-outline transition-colors hover:bg-error-container hover:text-on-error-container"
+                        className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-outline transition-colors hover:bg-error-container hover:text-on-error-container"
                       >
                         <Icon name="delete" size={18} />
                       </button>
@@ -663,7 +674,7 @@ export default function CriarGrupo() {
                   Custo total cadastrado
                 </span>
                 <span className="font-headline-sm text-headline-sm font-bold text-on-surface">
-                  {formatarMoeda(totalCadastrado)}
+                  {money(totalCadastrado)}
                 </span>
               </div>
 
@@ -671,7 +682,7 @@ export default function CriarGrupo() {
                 {totalCadastrado > 0 && itensComValor.map((item, indice) => (
                   <div
                     key={item.id}
-                    title={`${item.titulo} — ${formatarMoeda(item.valor)}`}
+                    title={`${item.titulo} — ${money(item.valor)}`}
                     className={indice % 2 === 0 ? "bg-primary-container" : "bg-tertiary-container"}
                     style={{ width: `${(item.valor / totalCadastrado) * 100}%` }}
                   />
@@ -679,13 +690,28 @@ export default function CriarGrupo() {
               </div>
 
               <div className="flex flex-wrap items-center justify-between gap-space-sm font-body-sm text-body-sm text-on-surface-variant">
-                <span>
-                  Cota estimada:{" "}
-                  <strong className="font-semibold text-on-surface">{formatarMoeda(cotaIndividual)} / membro</strong>
-                </span>
-                <span className="rounded-full bg-surface-container-lowest px-space-sm py-0.5 font-label-sm text-label-sm shadow-sm">
-                  Base: {membros.length} cotistas previstos
-                </span>
+                {rateio === "manual" ? (
+                  <>
+                    <span>
+                      Divisão automática{" "}
+                      <strong className="font-semibold text-on-surface">desabilitada</strong>
+                      {" "}— os valores serão definidos manualmente nas tarefas.
+                    </span>
+                    <span className="rounded-full bg-surface-container-lowest px-space-sm py-0.5 font-label-sm text-label-sm shadow-sm">
+                      Rateio manual
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span>
+                      Cota estimada:{" "}
+                      <strong className="font-semibold text-on-surface">{money(cotaIndividual)} / membro</strong>
+                    </span>
+                    <span className="rounded-full bg-surface-container-lowest px-space-sm py-0.5 font-label-sm text-label-sm shadow-sm">
+                      Base: {membros.length} cotistas previstos
+                    </span>
+                  </>
+                )}
               </div>
 
               {adiantadores.map((membro) => (
@@ -693,12 +719,12 @@ export default function CriarGrupo() {
                   <div className="flex items-center justify-between gap-space-sm font-body-sm text-body-sm">
                     <span className="text-on-surface-variant">Balanço de {membro.nome}:</span>
                     <span className="shrink-0 font-semibold text-tertiary">
-                      +{formatarMoeda(membro.adiantado - cotaIndividual)} a receber
+                      +{money(membro.adiantado - cotaIndividual)} a receber
                     </span>
                   </div>
                   <span className="font-label-sm text-label-sm text-on-surface-variant">
-                    (Adiantou {formatarMoeda(membro.adiantado)} e a cota própria é{" "}
-                    {formatarMoeda(cotaIndividual)})
+                    (Adiantou {money(membro.adiantado)} e a cota própria é{" "}
+                    {money(cotaIndividual)})
                   </span>
                 </div>
               ))}
@@ -725,7 +751,7 @@ export default function CriarGrupo() {
 
         <div className="mt-space-lg flex items-center justify-center gap-2 text-center font-label-sm text-label-sm text-on-surface-variant">
           <Icon name="lightbulb" size={16} className="shrink-0 text-tertiary" />
-          <span>Você poderá convidar mais amigos com link direto do WhatsApp logo após a confirmação.</span>
+          <span>Você poderá convidar mais amigos com link direto ou código do grupo logo após a confirmação.</span>
         </div>
       </div>
 

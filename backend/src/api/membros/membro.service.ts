@@ -5,6 +5,7 @@ import {
   erroPrismaComCodigo,
   exigirDono,
   exigirDonoNaTransacao,
+  exigirGrupoAberto,
   exigirMembro,
   transacionarGrupo,
 } from "../../lib/grupo-helpers.js";
@@ -44,6 +45,7 @@ export const membroService = {
 
     return transacionarGrupo(idGrupo, async (tx) => {
       await exigirDonoNaTransacao(tx, idSolicitante, idGrupo);
+      await exigirGrupoAberto(tx, idGrupo);
       try {
         const membro = await tx.membro.create({
           data: { idUser: usuario.id, idGrupo, funcao: Funcao.membro },
@@ -111,6 +113,7 @@ export const membroService = {
 
     return transacionarGrupo(idGrupo, async (tx) => {
       await exigirDonoNaTransacao(tx, idSolicitante, idGrupo);
+      await exigirGrupoAberto(tx, idGrupo);
       const membro = await tx.membro.findUnique({
         where: { idUser_idGrupo: { idUser, idGrupo } },
       });
@@ -147,6 +150,7 @@ export const membroService = {
     }
 
     await transacionarGrupo(idGrupo, async (tx) => {
+      await exigirGrupoAberto(tx, idGrupo);
       const solicitante = await tx.membro.findUnique({
         where: { idUser_idGrupo: { idUser: idSolicitante, idGrupo } },
       });

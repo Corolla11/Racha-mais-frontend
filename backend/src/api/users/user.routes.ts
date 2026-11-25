@@ -7,4 +7,6 @@ export const userRoutes = Router();
 userRoutes.use(requireAuth);
 
 userRoutes.get("/me", userController.obterPerfil);
+userRoutes.patch("/me", userController.atualizarPerfil);
+userRoutes.delete("/me", userController.desativarConta);
 userRoutes.get("/:id", userController.obter);

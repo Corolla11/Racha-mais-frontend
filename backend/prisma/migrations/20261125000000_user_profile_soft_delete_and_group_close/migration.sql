@@ -1,0 +1,10 @@
+-- AlterTable
+ALTER TABLE "user"
+ADD COLUMN "bio" TEXT NOT NULL DEFAULT '',
+ADD COLUMN "cidade" TEXT NOT NULL DEFAULT '',
+ADD COLUMN "telefone" TEXT NOT NULL DEFAULT '',
+ADD COLUMN "deletedAt" TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE "grupo"
+ADD COLUMN "encerradoEm" TIMESTAMP(3);

@@ -18,6 +18,11 @@ model User {
   email          String
   emailVerified  Boolean         @default(false)
   image          String?
+  bio            String          @default("")
+  cidade         String          @default("")
+  telefone       String          @default("")
+  notificarDespesas Boolean      @default(true)
+  deletedAt      DateTime?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   sessions       Session[]
@@ -28,6 +33,7 @@ model User {
   chavesPix      ChavePix[]
   assinaturasPro AssinaturaPro[]
   notificacoes   Notificacao[]
+  convitesEnviados ConviteGrupo[] @relation("ConviteEnviadoPor")
 
   @@unique([email])
   @@map("user")
@@ -90,9 +96,11 @@ model Grupo {
   id            String         @id @default(cuid())
   nome          String
   descricao     String         @default("")
+  encerradoEm   DateTime?
   membros       Membro[]
   tarefas       Tarefa[]
   assinaturaPro AssinaturaPro?
+  convites      ConviteGrupo[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -260,4 +268,22 @@ model Notificacao {
   @@index([idUser, createdAt])
   @@index([idUser, lidaEm, createdAt])
   @@map("notificacao")
+}
+
+model ConviteGrupo {
+  id             String    @id @default(cuid())
+  idGrupo        String
+  email          String
+  tokenHash      String    @unique
+  convidadoPorId String
+  expiresAt      DateTime
+  aceitoEm       DateTime?
+  createdAt      DateTime  @default(now())
+
+  grupo        Grupo @relation(fields: [idGrupo], references: [id], onDelete: Cascade)
+  convidadoPor User  @relation("ConviteEnviadoPor", fields: [convidadoPorId], references: [id], onDelete: Cascade)
+
+  @@unique([idGrupo, email])
+  @@index([idGrupo])
+  @@map("convite_grupo")
 }

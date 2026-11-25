@@ -140,7 +140,7 @@
   --text-numeric-stat--letter-spacing: -0.02em;
   --text-numeric-stat--font-weight: 700;
 
-  /* Tokens tipográficos mantidos para src/lib/typography.ts */
+  /* Tokens tipográficos auxiliares */
   --text-ui-meta: var(--ui-font-meta);
   --text-ui-meta--line-height: var(--ui-line-body);
   --text-ui-caption: var(--ui-font-caption);

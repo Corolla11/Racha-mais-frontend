@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import AppShell from "../components/app-shell";
 import Icon from "../components/icon";
+import Overlay from "../components/overlay";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ApiError, apiRequest } from "../lib/api";
+import { ENDPOINTS } from "../lib/endpoints";
+import { initials } from "../lib/finance";
 
 type Membro = {
   idUser: string;
@@ -24,6 +27,8 @@ export default function Membros() {
   const [mensagem, setMensagem] = useState("");
   const [busca, setBusca] = useState("");
   const [menu, setMenu] = useState<string | null>(null);
+  const [membroRemover, setMembroRemover] = useState<Membro | null>(null);
+  const [removendo, setRemovendo] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -80,24 +85,42 @@ export default function Membros() {
 
   async function adicionarMembro(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!idGrupo || !email.trim()) return;
+    const emailLimpo = email.trim().toLowerCase();
+    if (!idGrupo || !emailLimpo) return;
     setErro("");
     setMensagem("");
     setEnviando(true);
     try {
       const membroAdicionado = await apiRequest<Membro>(
-        `/grupos/${encodeURIComponent(idGrupo)}/membros`,
-        { method: "POST", body: { email: email.trim() } },
+        ENDPOINTS.grupos.membros(idGrupo),
+        { method: "POST", body: { email: emailLimpo } },
       );
       setMembros((atuais) => [...atuais, membroAdicionado]);
       setEmail("");
       setMensagem("Membro adicionado ao grupo.");
     } catch (error) {
-      setErro(
-        error instanceof ApiError
-          ? error.message
-          : "Não foi possível adicionar o membro.",
-      );
+      if (error instanceof ApiError && error.status === 404) {
+        try {
+          await apiRequest(ENDPOINTS.grupos.convites(idGrupo), {
+            method: "POST",
+            body: { email: emailLimpo },
+          });
+          setEmail("");
+          setMensagem("Usuário sem conta ainda. Convite enviado por e-mail!");
+        } catch (inviteErr) {
+          setErro(
+            inviteErr instanceof ApiError
+              ? inviteErr.message
+              : "Não foi possível enviar o convite por e-mail.",
+          );
+        }
+      } else {
+        setErro(
+          error instanceof ApiError
+            ? error.message
+            : "Não foi possível adicionar o membro.",
+        );
+      }
     } finally {
       setEnviando(false);
     }
@@ -132,32 +155,29 @@ export default function Membros() {
     }
   }
 
-  async function removerMembro(membro: Membro) {
-    if (!idGrupo) return;
-    if (
-      !window.confirm(
-        `Remover ${membro.user.name} do grupo? Caso seja seu próprio usuário, você sairá do grupo.`,
-      )
-    ) {
-      return;
-    }
+  async function confirmarRemocao() {
+    if (!idGrupo || !membroRemover) return;
     setErro("");
     setMensagem("");
+    setRemovendo(true);
     try {
       await apiRequest<void>(
-        `/grupos/${encodeURIComponent(idGrupo)}/membros/${encodeURIComponent(membro.idUser)}`,
+        `/grupos/${encodeURIComponent(idGrupo)}/membros/${encodeURIComponent(membroRemover.idUser)}`,
         { method: "DELETE" },
       );
       setMembros((atuais) =>
-        atuais.filter((atual) => atual.idUser !== membro.idUser),
+        atuais.filter((atual) => atual.idUser !== membroRemover.idUser),
       );
       setMensagem("Membro removido do grupo.");
+      setMembroRemover(null);
     } catch (error) {
       setErro(
         error instanceof ApiError
           ? error.message
           : "Não foi possível remover o membro.",
       );
+    } finally {
+      setRemovendo(false);
     }
   }
 
@@ -179,7 +199,7 @@ export default function Membros() {
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-gutter-mobile py-8 sm:px-6 lg:px-12">
         <nav
           aria-label="Navegação estrutural"
-          className="flex flex-wrap items-center gap-2 font-label-sm text-label-sm text-on-surface-variant"
+          className="flex flex-wrap items-center gap-space-xs font-label-sm text-label-sm text-on-surface-variant"
         >
           <Link
             to="/meus-grupos"
@@ -188,10 +208,10 @@ export default function Membros() {
             <Icon name="groups" size={16} />
             <span>Meus Grupos</span>
           </Link>
-          <Icon name="chevron_right" size={14} className="text-outline-variant" />
+          <Icon name="chevron_right" size={16} className="text-outline-variant" />
           <span className="max-w-[16rem] truncate">{nomeExibido}</span>
-          <Icon name="chevron_right" size={14} className="text-outline-variant" />
-          <span className="font-semibold text-on-surface">Gerenciar Membros</span>
+          <Icon name="chevron_right" size={16} className="text-outline-variant" />
+          <span className="font-semibold text-on-surface" aria-current="page">Gerenciar Membros</span>
         </nav>
 
         <div className="relative flex flex-col items-start justify-between gap-6 overflow-hidden rounded-xl bg-surface-container-lowest p-6 shadow-sm lg:flex-row lg:items-center lg:p-10">
@@ -346,7 +366,7 @@ export default function Membros() {
                           <span
                             className={`flex h-12 w-12 items-center justify-center rounded-full font-headline-sm text-headline-sm font-bold shadow-sm ${dono ? "bg-primary-fixed text-on-primary-fixed-variant ring-2 ring-primary-container" : "bg-secondary-container text-on-secondary"}`}
                           >
-                            {iniciais(membro.user.name)}
+                            {initials(membro.user.name)}
                           </span>
                         )}
                         {dono && (
@@ -413,7 +433,7 @@ export default function Membros() {
                             role="menuitem"
                             onClick={() => {
                               setMenu(null);
-                              void removerMembro(membro);
+                              setMembroRemover(membro);
                             }}
                             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left font-label-sm text-label-sm text-error hover:bg-error-container/30"
                           >
@@ -443,18 +463,45 @@ export default function Membros() {
           </div>
         </div>
       </div>
-    </AppShell>
-  );
-}
 
-function iniciais(nome: string) {
-  return (
-    nome
-      .split(" ")
-      .filter(Boolean)
-      .map((parte) => parte[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase() || "?"
+      {membroRemover && (
+        <Overlay
+          title={`Remover ${membroRemover.user.name}?`}
+          description="Confirmar remoção de membro"
+          onClose={() => {
+            if (!removendo) setMembroRemover(null);
+          }}
+          footer={
+            <div className="flex flex-col-reverse gap-space-xs sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                disabled={removendo}
+                onClick={() => setMembroRemover(null)}
+                className="min-h-11 cursor-pointer rounded-lg bg-surface-container-low px-space-lg font-label-md text-label-md text-on-surface transition-colors hover:bg-surface-container-high disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={removendo}
+                onClick={() => void confirmarRemocao()}
+                className="min-h-11 cursor-pointer rounded-lg bg-error px-space-lg font-label-md text-label-md text-on-error transition-colors hover:bg-error/90 disabled:opacity-60"
+              >
+                {removendo ? "Removendo..." : "Remover membro"}
+              </button>
+            </div>
+          }
+        >
+          <div className="flex items-start gap-space-sm">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-error-container text-on-error-container">
+              <Icon name="person_remove" size={22} />
+            </div>
+            <p className="font-body-sm text-body-sm text-on-surface-variant">
+              Essa pessoa perderá acesso ao grupo. Caso seja seu próprio usuário, você sairá do grupo.
+            </p>
+          </div>
+        </Overlay>
+      )}
+    </AppShell>
   );
 }

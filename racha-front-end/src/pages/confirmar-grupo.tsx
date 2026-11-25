@@ -5,7 +5,7 @@ import Icon from "../components/icon";
 import { useAuth } from "../auth/auth-context";
 import { ApiError, apiRequest } from "../lib/api";
 import { ENDPOINTS } from "../lib/endpoints";
-import { money, share } from "../lib/finance";
+import { initials, money, share } from "../lib/finance";
 import {
   ehOrganizador,
   extrairEmail,
@@ -25,17 +25,9 @@ const CATEGORIAS: Record<string, { nome: string; emoji: string }> = {
 
 const MOEDAS: Record<string, string> = {
   BRL: "Real Brasileiro (BRL)",
-  USD: "Dólar Americano (USD)",
-  EUR: "Euro (EUR)",
 };
 
 type GrupoCriado = { id: string; nome: string };
-
-function iniciais(nome: string) {
-  const partes = nome.trim().split(/\s+/);
-  if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
-  return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
-}
 
 function nomeCurto(nome: string) {
   const partes = nome.trim().split(/\s+/);
@@ -119,8 +111,23 @@ export default function ConfirmarGrupo() {
           );
           if (adicionado?.idUser) idsAdicionados.push(adicionado.idUser);
         } catch (error) {
-          const motivo = error instanceof ApiError ? error.message : "falha ao adicionar";
-          naoAdicionados.push(`${membro.nome} (${email}): ${motivo}`);
+          if (error instanceof ApiError && error.status === 404) {
+            try {
+              await apiRequest(ENDPOINTS.grupos.convites(novo.id), {
+                method: "POST",
+                body: { email },
+              });
+            } catch (inviteErr) {
+              const motivo =
+                inviteErr instanceof ApiError
+                  ? inviteErr.message
+                  : "falha ao enviar convite";
+              naoAdicionados.push(`${membro.nome} (${email}): ${motivo}`);
+            }
+          } else {
+            const motivo = error instanceof ApiError ? error.message : "falha ao adicionar";
+            naoAdicionados.push(`${membro.nome} (${email}): ${motivo}`);
+          }
         }
       }
 
@@ -146,7 +153,7 @@ export default function ConfirmarGrupo() {
             },
           });
 
-          if (item.valor > 0 && idsAdicionados.length > 0) {
+          if (grupo.rateio !== "manual" && item.valor > 0 && idsAdicionados.length > 0) {
             for (let i = 0; i < idsAdicionados.length; i++) {
               const cota = share(item.valor, idsAdicionados.length, i);
               if (cota > 0) {
@@ -208,7 +215,7 @@ export default function ConfirmarGrupo() {
 
         <span className="mb-space-xs inline-flex items-center gap-1 rounded-full bg-surface-container-low px-space-md py-1 font-label-sm text-label-sm font-semibold uppercase tracking-wide text-primary">
           <Icon name="verified" size={16} />
-          Passo Final de Validação
+          Passo 2 de 2 • Revisão Final
         </span>
         <h1 className="mb-space-xs max-w-lg font-headline-lg-mobile text-headline-lg-mobile tracking-tight text-on-surface sm:font-headline-lg sm:text-headline-lg">
           Tudo pronto! Revise os detalhes do grupo
@@ -272,7 +279,7 @@ export default function ConfirmarGrupo() {
             <ul className="grid grid-cols-1 gap-space-xs min-[420px]:grid-cols-2">
               <li className="flex items-center gap-space-sm rounded-lg bg-surface-container-low p-space-sm">
                 <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-container font-label-md text-label-md font-bold text-on-primary shadow-sm">
-                  {user?.name ? iniciais(user.name) : "VC"}
+                  {user?.name ? initials(user.name) : "VC"}
                   <span
                     className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-surface-container-lowest shadow-sm"
                     title="Organizador"
@@ -290,7 +297,7 @@ export default function ConfirmarGrupo() {
                 return (
                   <li key={membro.id} className="flex items-center gap-space-sm rounded-lg bg-surface-container-low p-space-sm">
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-container-highest font-label-md text-label-md font-bold text-on-surface shadow-sm">
-                      {membro.iniciais || iniciais(membro.nome)}
+                      {membro.iniciais || initials(membro.nome)}
                     </span>
                     <span className="min-w-0">
                       <span className="block truncate font-label-md text-label-md text-on-surface">{nomeCurto(membro.nome)}</span>
@@ -320,8 +327,8 @@ export default function ConfirmarGrupo() {
             <Parametro
               icone="payments"
               rotulo="Moeda Padrão"
-              valor={MOEDAS[grupo.moeda] ?? grupo.moeda}
-              detalhe={grupo.moeda === "BRL" ? "Símbolo R$" : undefined}
+              valor={MOEDAS[grupo.moeda] ?? MOEDAS.BRL}
+              detalhe="Símbolo R$ · Padrão do app"
             />
             <Parametro icone="notifications_active" rotulo="Notificações" valor="Avisos no app" detalhe="Ativadas" destaque />
             <Parametro icone="qr_code_2" rotulo="Liquidação" valor="Pix entre membros" detalhe="Copia e Cola" />
@@ -488,16 +495,17 @@ function Moldura({ children }: { children: ReactNode }) {
         <div className="pointer-events-none absolute -top-12 left-1/2 -z-10 h-96 w-96 -translate-x-1/2 rounded-full bg-primary-fixed-dim/20 blur-3xl" />
         <div className="pointer-events-none absolute -right-16 top-1/2 -z-10 h-64 w-64 rounded-full bg-secondary-fixed/30 blur-3xl" />
 
-        <nav aria-label="Navegação estrutural" className="mb-space-lg flex flex-wrap items-center justify-center gap-space-xs text-center">
-          <Link to="/meus-grupos" className="font-label-sm text-label-sm text-outline transition-colors hover:text-on-surface">
-            Meus Grupos
+        <nav aria-label="Navegação estrutural" className="mb-space-lg flex flex-wrap items-center justify-center gap-space-xs text-center font-label-sm text-label-sm text-on-surface-variant">
+          <Link to="/meus-grupos" className="flex items-center gap-1 transition-colors hover:text-primary">
+            <Icon name="groups" size={16} />
+            <span>Meus Grupos</span>
           </Link>
           <Icon name="chevron_right" size={16} className="text-outline-variant" />
-          <Link to="/criar-grupo" className="font-label-sm text-label-sm text-outline transition-colors hover:text-on-surface">
+          <Link to="/criar-grupo" className="transition-colors hover:text-primary">
             Criar Novo Grupo
           </Link>
           <Icon name="chevron_right" size={16} className="text-outline-variant" />
-          <span className="font-label-sm text-label-sm font-semibold text-primary" aria-current="page">
+          <span className="font-semibold text-on-surface" aria-current="page">
             Confirmação
           </span>
         </nav>

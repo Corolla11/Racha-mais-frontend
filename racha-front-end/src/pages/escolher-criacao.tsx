@@ -26,7 +26,7 @@ const PRESETS: Preset[] = [
     emoji: "✈️",
     texto:
       "Viagem de praia no feriado com 6 amigos: Camila, Lucas, Pedro, Ana, Guilherme e Tiago. Teremos aluguel da casa de praia por R$ 2.400, churrasco de boas-vindas com carne e bebidas estimado em R$ 450 pago pela Ana, e passeio de barco por R$ 720 pago pela Camila.",
-    titulo: "Viagem Litoral 2025",
+    titulo: "Viagem Litoral",
     categoria: "Férias & Lazer",
     categoriaId: "viagem",
     categoriaIcone: "flight_takeoff",
@@ -205,11 +205,12 @@ export default function EscolherCriacao() {
             aria-label="Navegação estrutural"
             className="flex items-center justify-between gap-space-sm font-body-sm text-body-sm text-on-surface-variant"
           >
-            <div className="flex flex-wrap items-center gap-space-xs">
-              <Link to="/meus-grupos" className="transition-colors hover:text-primary">
-                Meus Grupos
+            <div className="flex flex-wrap items-center gap-space-xs font-label-sm text-label-sm">
+              <Link to="/meus-grupos" className="flex items-center gap-1 transition-colors hover:text-primary">
+                <Icon name="groups" size={16} />
+                <span>Meus Grupos</span>
               </Link>
-              <Icon name="chevron_right" size={16} className="text-outline" />
+              <Icon name="chevron_right" size={16} className="text-outline-variant" />
               <button
                 type="button"
                 onClick={fecharAssistente}
@@ -217,14 +218,14 @@ export default function EscolherCriacao() {
               >
                 Criar Novo Grupo
               </button>
-              <Icon name="chevron_right" size={16} className="text-outline" />
-              <span className="font-label-md font-semibold text-on-surface" aria-current="page">
+              <Icon name="chevron_right" size={16} className="text-outline-variant" />
+              <span className="font-semibold text-on-surface" aria-current="page">
                 Assistente de IA
               </span>
             </div>
             <div className="hidden items-center gap-space-xs rounded-full bg-surface-container-high px-space-sm py-1 font-label-sm text-label-sm font-semibold text-on-tertiary-container sm:flex">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-primary-container" />
-              <span>Passo 2 de 2 • Automático</span>
+              <span className="h-2 w-2 rounded-full bg-primary-container" />
+              <span>Assistente IA • Criação Rápida</span>
             </div>
           </nav>
 
@@ -441,7 +442,7 @@ export default function EscolherCriacao() {
             <Icon name="groups" size={16} />
             <span>Meus Grupos</span>
           </Link>
-          <Icon name="chevron_right" size={14} className="text-outline" />
+          <Icon name="chevron_right" size={16} className="text-outline-variant" />
           <span className="font-label-sm text-label-sm font-semibold text-on-surface" aria-current="page">
             Criar Novo Grupo
           </span>
@@ -450,8 +451,8 @@ export default function EscolherCriacao() {
         {/* Título */}
         <header className="mx-auto mb-space-xl max-w-2xl text-center">
           <div className="mb-space-sm inline-flex items-center gap-1.5 rounded-full bg-surface-container-high px-3 py-1 font-label-sm text-label-sm text-on-surface shadow-sm">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary-container" />
-            Passo 1 de 2 • Modo de Criação
+            <span className="h-1.5 w-1.5 rounded-full bg-primary-container" />
+            Modo de Criação
           </div>
           <h1 className="font-headline-lg-mobile text-headline-lg-mobile tracking-tight text-on-surface sm:font-headline-lg sm:text-headline-lg">
             Como você deseja começar seu grupo?
@@ -597,13 +598,13 @@ export default function EscolherCriacao() {
           </div>
           <span className="inline-block h-1 w-1 rounded-full bg-outline-variant" />
           <div className="flex items-center gap-1.5">
-            <Icon name="currency_exchange" size={16} className="text-primary" />
-            <span>Múltiplas moedas suportadas</span>
+            <Icon name="payments" size={16} className="text-primary" />
+            <span>Divisão transparente em Reais (R$)</span>
           </div>
           <span className="inline-block h-1 w-1 rounded-full bg-outline-variant" />
           <div className="flex items-center gap-1.5">
             <Icon name="share" size={16} className="text-secondary" />
-            <span>Convites rápidos via link ou WhatsApp</span>
+            <span>Convites rápidos via link ou código</span>
           </div>
         </div>
       </div>

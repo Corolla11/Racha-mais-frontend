@@ -14,17 +14,20 @@ function mockProp(obj: object, prop: string, value: unknown) {
 }
 
 const origTarefa = { ...prisma.tarefa };
+const origGrupo = { ...prisma.grupo };
 const origMembro = { ...prisma.membro };
 const origTx = prisma.$transaction;
 
 describe("tarefaService", () => {
   afterEach(() => {
     Object.assign(prisma.tarefa, origTarefa);
+    Object.assign(prisma.grupo, origGrupo);
     Object.assign(prisma.membro, origMembro);
     mockProp(prisma, "$transaction", origTx);
   });
 
   it("rejeita atualização quando apenas dataFinal é enviada e fica anterior a dataInicio", async () => {
+    mockProp(prisma.grupo, "findUnique", async () => ({ encerradoEm: null }));
     mockProp(prisma.tarefa, "findUniqueOrThrow", async () => ({
       id: "t1",
       idGrupo: "g1",
@@ -48,6 +51,7 @@ describe("tarefaService", () => {
   });
 
   it("rejeita atualização quando novo valorTotal é menor que a soma das partes", async () => {
+    mockProp(prisma.grupo, "findUnique", async () => ({ encerradoEm: null }));
     mockProp(prisma.tarefa, "findUniqueOrThrow", async () => ({
       id: "t1",
       idGrupo: "g1",

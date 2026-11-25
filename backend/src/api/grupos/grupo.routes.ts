@@ -10,4 +10,5 @@ grupoRoutes.post("/", grupoController.criar);
 grupoRoutes.get("/", grupoController.listar);
 grupoRoutes.get("/:id", grupoController.obter);
 grupoRoutes.patch("/:id", grupoController.atualizar);
+grupoRoutes.post("/:id/encerrar", grupoController.encerrar);
 grupoRoutes.delete("/:id", grupoController.excluir);

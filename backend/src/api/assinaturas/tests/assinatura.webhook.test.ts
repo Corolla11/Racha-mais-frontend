@@ -117,4 +117,55 @@ describe("assinaturaService.processarWebhook", () => {
       (erro: unknown) => erro instanceof AppError && erro.statusCode === 400,
     );
   });
+
+  it("falha com 409 para permitir retry quando checkout pendente ainda não foi salvo", async () => {
+    mockTransaction({
+      eventoAbacatePay: { createMany: async () => ({ count: 1 }) },
+      assinaturaPro: { updateMany: async () => ({ count: 0 }) },
+    });
+
+    await assert.rejects(
+      () =>
+        assinaturaService.processarWebhook({
+          id: "evt_corrida",
+          event: "subscription.completed",
+          data: { subscription: { id: "sub_1", checkoutId: "chk_1" } },
+        }),
+      (erro: unknown) => erro instanceof AppError && erro.statusCode === 409,
+    );
+  });
+
+  it("ativa assinatura pelo externalId quando providerCheckoutId ainda não estava gravado", async () => {
+    const chamadas: unknown[] = [];
+    mockTransaction({
+      eventoAbacatePay: { createMany: async () => ({ count: 1 }) },
+      assinaturaPro: {
+        updateMany: async (payload: unknown) => {
+          chamadas.push(payload);
+          return { count: chamadas.length === 1 ? 0 : 1 };
+        },
+      },
+    });
+
+    await assinaturaService.processarWebhook({
+      id: "evt_fallback",
+      event: "subscription.completed",
+      data: {
+        subscription: { id: "sub_1", checkoutId: "chk_1", externalId: "ass_1" },
+      },
+    });
+
+    assert.equal(chamadas.length, 2);
+    assert.deepEqual(chamadas[1], {
+      where: {
+        id: "ass_1",
+        status: StatusAssinaturaPro.PENDENTE,
+      },
+      data: {
+        providerCheckoutId: "chk_1",
+        providerSubscriptionId: "sub_1",
+        status: StatusAssinaturaPro.ATIVA,
+      },
+    });
+  });
 });

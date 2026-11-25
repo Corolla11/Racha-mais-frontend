@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/auth-context";
 import { ApiError } from "../lib/api";
 import BrandLogo, { BrandMark } from "../components/brand-logo";
@@ -58,6 +58,7 @@ const classeCampo =
 
 export default function Cadastro() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { signUp } = useAuth();
 
   const [mostrarSenha, setMostrarSenha] = useState(false);
@@ -104,13 +105,20 @@ export default function Cadastro() {
         formulario.email.trim(),
         formulario.senha,
       );
+      const origem = (location.state as { from?: { pathname?: unknown } } | null)
+        ?.from?.pathname;
+      const destino =
+        typeof origem === "string" && origem.startsWith("/") ? origem : null;
       if (requiresVerification) {
         navigate("/verificar-email", {
           replace: true,
-          state: { email: formulario.email.trim() },
+          state: {
+            email: formulario.email.trim(),
+            ...(destino ? { from: { pathname: destino } } : {}),
+          },
         });
       } else {
-        navigate("/home", { replace: true });
+        navigate(destino ?? "/home", { replace: true });
       }
     } catch (error) {
       setErro(

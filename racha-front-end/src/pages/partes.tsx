@@ -3,6 +3,7 @@ import AppShell from "../components/app-shell";
 import Icon from "../components/icon";
 import { Link, useParams } from "react-router-dom";
 import { ApiError, apiRequest } from "../lib/api";
+import { initials, money } from "../lib/finance";
 
 type StatusParte =
   | "AGENDADA"
@@ -237,14 +238,14 @@ export default function Partes() {
           <MetricCard
             titulo="Total Rateado"
             icone="calculate"
-            valor={moeda(totalRateado)}
+            valor={money(totalRateado)}
             detalhe={`${partes.length} ${partes.length === 1 ? "parte cadastrada" : "partes cadastradas"}`}
             progresso={partes.length ? 100 : 0}
           />
           <MetricCard
             titulo="Finalizado"
             icone="check_circle"
-            valor={moeda(totalFinalizado)}
+            valor={money(totalFinalizado)}
             detalhe={`${finalizadas.length} ${finalizadas.length === 1 ? "parte finalizada" : "partes finalizadas"} (${percentual(totalFinalizado)}%)`}
             progresso={percentual(totalFinalizado)}
             destaque="primary"
@@ -252,7 +253,7 @@ export default function Partes() {
           <MetricCard
             titulo="Em Aberto"
             icone="pending_actions"
-            valor={moeda(totalEmAberto)}
+            valor={money(totalEmAberto)}
             detalhe={`${emAberto.length} ${emAberto.length === 1 ? "parte agendada, em andamento ou atrasada" : "partes agendadas, em andamento ou atrasadas"}`}
             progresso={percentual(totalEmAberto)}
             destaque="tertiary"
@@ -309,7 +310,7 @@ export default function Partes() {
                               />
                             ) : (
                               <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-container-high text-[15px] font-bold text-primary">
-                                {iniciais(parte.user.name)}
+                                {initials(parte.user.name)}
                               </span>
                             )}
                             <span
@@ -561,22 +562,6 @@ const statusVisual: Record<
     selo: "bg-surface-container text-outline",
   },
 };
-
-function moeda(valor: number) {
-  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
-
-function iniciais(nome: string) {
-  return (
-    nome
-      .split(" ")
-      .filter(Boolean)
-      .map((parte) => parte[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase() || "?"
-  );
-}
 
 function MetricCard({
   titulo,

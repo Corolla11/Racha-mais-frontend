@@ -68,6 +68,7 @@ describe("membroService", () => {
     mockProp(prisma, "$transaction", async (cb: (tx: unknown) => Promise<unknown>) =>
       cb({
         $executeRaw: async () => 1,
+        grupo: { findUnique: async () => ({ encerradoEm: null }) },
         membro: {
           findUnique: async () => ({ idUser: "dono", idGrupo: "g1", funcao: Funcao.dono }),
           count: async () => 1,
@@ -101,6 +102,7 @@ describe("membroService", () => {
     mockProp(prisma, "$transaction", async (cb: (tx: unknown) => Promise<unknown>) =>
       cb({
         $executeRaw: async () => 1,
+        grupo: { findUnique: async () => ({ encerradoEm: null }) },
         membro: {
           findUnique: async () => ({ idUser: "m1", idGrupo: "g1", funcao: Funcao.membro }),
           delete: async () => {
@@ -124,6 +126,7 @@ describe("membroService", () => {
     mockProp(prisma, "$transaction", async (cb: (tx: unknown) => Promise<unknown>) =>
       cb({
         $executeRaw: async () => 1,
+        grupo: { findUnique: async () => ({ encerradoEm: null }) },
         membro: {
           findUnique: async () => ({ idUser: "dono", idGrupo: "g1", funcao: Funcao.dono }),
           count: async () => 1,

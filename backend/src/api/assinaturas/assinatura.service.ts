@@ -41,6 +41,7 @@ const webhookSchema = z.object({
       .object({
         id: z.string().optional(),
         checkoutId: z.string().nullable().optional(),
+        externalId: z.string().nullable().optional(),
       })
       .optional(),
   }),
@@ -269,43 +270,62 @@ export const assinaturaService = {
   },
 
   async cancelarDoGrupo(idUser: string, idGrupo: string) {
-    await exigirDono(idUser, idGrupo, MSG_SOMENTE_DONO);
-    const assinatura = await prisma.assinaturaPro.findUnique({
-      where: { idGrupo },
-    });
-    if (!assinatura) {
-      throw new AppError(409, "Não há assinatura Pro ativa para cancelar");
-    }
-
-    if (assinatura.status === StatusAssinaturaPro.CANCELADA) {
-      return { status: assinatura.status };
-    }
-
-    if (assinatura.status === StatusAssinaturaPro.PENDENTE) {
-      if (assinatura.providerCheckoutId) {
-        await postAbacatePay(
-          `/subscriptions/checkouts/delete?id=${encodeURIComponent(assinatura.providerCheckoutId)}`,
-          {},
-          checkoutExcluidoSchema,
-        );
+    const acao = await transacionarGrupo(idGrupo, async (tx) => {
+      await exigirDonoNaTransacao(tx, idUser, idGrupo, MSG_SOMENTE_DONO);
+      const assinatura = await tx.assinaturaPro.findUnique({
+        where: { idGrupo },
+      });
+      if (!assinatura) {
+        throw new AppError(409, "Não há assinatura Pro ativa para cancelar");
       }
-    } else if (
-      assinatura.status === StatusAssinaturaPro.ATIVA &&
-      assinatura.providerSubscriptionId
-    ) {
+      if (assinatura.status === StatusAssinaturaPro.CANCELADA) {
+        return { jaCancelada: true as const };
+      }
+      if (assinatura.status === StatusAssinaturaPro.PENDENTE) {
+        return {
+          jaCancelada: false as const,
+          tipo: "checkout" as const,
+          providerId: assinatura.providerCheckoutId,
+        };
+      }
+      if (
+        assinatura.status === StatusAssinaturaPro.ATIVA &&
+        assinatura.providerSubscriptionId
+      ) {
+        return {
+          jaCancelada: false as const,
+          tipo: "subscription" as const,
+          providerId: assinatura.providerSubscriptionId,
+        };
+      }
+      throw new AppError(409, "Não há assinatura Pro ativa para cancelar");
+    });
+
+    if (acao.jaCancelada) {
+      return { status: StatusAssinaturaPro.CANCELADA };
+    }
+
+    if (acao.tipo === "checkout" && acao.providerId) {
+      await postAbacatePay(
+        `/subscriptions/checkouts/delete?id=${encodeURIComponent(acao.providerId)}`,
+        {},
+        checkoutExcluidoSchema,
+      );
+    } else if (acao.tipo === "subscription") {
       await postAbacatePay(
         "/subscriptions/cancel",
-        { id: assinatura.providerSubscriptionId },
+        { id: acao.providerId },
         assinaturaCanceladaSchema,
       );
-    } else {
-      throw new AppError(409, "Não há assinatura Pro ativa para cancelar");
     }
 
-    return prisma.assinaturaPro.update({
-      where: { idGrupo },
-      data: { status: StatusAssinaturaPro.CANCELADA },
-      select: { status: true },
+    return transacionarGrupo(idGrupo, async (tx) => {
+      await exigirDonoNaTransacao(tx, idUser, idGrupo, MSG_SOMENTE_DONO);
+      return tx.assinaturaPro.update({
+        where: { idGrupo },
+        data: { status: StatusAssinaturaPro.CANCELADA },
+        select: { status: true },
+      });
     });
   },
 
@@ -324,7 +344,7 @@ export const assinaturaService = {
         if (!assinatura?.id || !assinatura.checkoutId) {
           throw new AppError(400, "Evento de assinatura sem IDs obrigatórios");
         }
-        await tx.assinaturaPro.updateMany({
+        let resultado = await tx.assinaturaPro.updateMany({
           where: {
             providerCheckoutId: assinatura.checkoutId,
             status: StatusAssinaturaPro.PENDENTE,
@@ -334,6 +354,25 @@ export const assinaturaService = {
             status: StatusAssinaturaPro.ATIVA,
           },
         });
+        if (resultado.count === 0 && assinatura.externalId) {
+          resultado = await tx.assinaturaPro.updateMany({
+            where: {
+              id: assinatura.externalId,
+              status: StatusAssinaturaPro.PENDENTE,
+            },
+            data: {
+              providerCheckoutId: assinatura.checkoutId,
+              providerSubscriptionId: assinatura.id,
+              status: StatusAssinaturaPro.ATIVA,
+            },
+          });
+        }
+        if (resultado.count === 0) {
+          throw new AppError(
+            409,
+            "Assinatura pendente ainda não encontrada para este checkout",
+          );
+        }
       } else if (evento.event === "subscription.cancelled") {
         if (!assinatura?.id) {
           throw new AppError(400, "Evento de cancelamento sem ID de assinatura");

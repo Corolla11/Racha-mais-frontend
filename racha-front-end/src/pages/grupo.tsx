@@ -7,7 +7,25 @@ import { useAuth } from "../auth/auth-context";
 import { ApiError, apiRequest } from "../lib/api";
 import { ENDPOINTS } from "../lib/endpoints";
 import GroupFlows, { type GroupFlowControl, type Activity } from "../components/group-flows";
-import { share, type Payment } from "../lib/finance";
+import { initials, money, share, type Payment } from "../lib/finance";
+import {
+  converterParaVisualizacao,
+  corAvatar,
+  cotasDaTarefa,
+  dataBR,
+  dataCurta,
+  iconeTarefa,
+  mapearTarefasDoGrupo,
+  nomeCurto,
+  nomePagador,
+  nomeResponsavel,
+  periodoGrupo,
+  quantidadeParticipantes,
+  somar,
+  statusItem,
+  type GrupoDetalheApi,
+  type TarefaDetalheApi,
+} from "../lib/grupo-dados";
 
 import OrangeButton from "../components/orange-button";
 
@@ -16,258 +34,17 @@ import EditarTarefa, {
   type ParticipanteTarefa,
 } from "./editar-tarefa";
 
-import VisualizarTarefa, {
-  type Tarefa,
-  type ParticipanteTarefa as ParticipanteVisualizacao,
-} from "./tarefa";
+import VisualizarTarefa, { type Tarefa } from "./tarefa";
 import TarefaConcluida from "./tarefa-concluida";
 
 const categoriaGrupo = "Grupo";
 const destinoGrupo = "";
-
-type GrupoDetalheApi = {
-  id: string;
-  nome: string;
-  descricao: string;
-  membros: {
-    idUser: string;
-    funcao: "dono" | "membro";
-    user: { id: string; name: string; image: string | null };
-  }[];
-};
-
-type TarefaDetalheApi = {
-  id: string;
-  idGrupo: string;
-  idUser: string;
-  nome: string;
-  descricao: string | null;
-  valorTotal: string | number | null;
-  dataInicio: string;
-  dataFinal: string;
-  statusAndamento: "AGENDADA" | "EM_ANDAMENTO" | "FINALIZADA" | "ATRASADA" | "CANCELADA";
-  partes?: {
-    id: string;
-    idUser: string | null;
-    valor: string | number;
-    status: "AGENDADA" | "EM_ANDAMENTO" | "FINALIZADA" | "ATRASADA" | "CANCELADA";
-  }[];
-};
-
-function moeda(valor: number) {
-  return valor.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
-}
-
-function somar(valores: number[]) {
-  return valores.reduce((total, valor) => total + Math.round(valor * 100), 0) / 100;
-}
-
-function dataBR(data: string) {
-  return data ? data.split("-").reverse().join("/") : "Não definida";
-}
-
-const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-
-function dataCurta(data: string) {
-  if (!data) return "Sem prazo";
-  const [, mes, dia] = data.split("-");
-  return `${Number(dia)} ${MESES[Number(mes) - 1] ?? ""}`;
-}
-
-/** Período do grupo a partir dos prazos das tarefas (ex.: "14 a 22 Nov 2025"). */
-function periodoGrupo(datas: string[]) {
-  const validas = datas.filter(Boolean).sort();
-  if (!validas.length) return "";
-  const inicio = validas[0];
-  const fim = validas[validas.length - 1];
-  const [anoInicio, mesInicio, diaInicio] = inicio.split("-");
-  const [anoFim, mesFim, diaFim] = fim.split("-");
-  if (inicio === fim) return `${Number(diaInicio)} ${MESES[Number(mesInicio) - 1]} ${anoInicio}`;
-  if (anoInicio === anoFim && mesInicio === mesFim) return `${Number(diaInicio)} a ${Number(diaFim)} ${MESES[Number(mesFim) - 1]} ${anoFim}`;
-  return `${dataCurta(inicio)} a ${dataCurta(fim)} ${anoFim}`;
-}
-
-function iniciais(nome: string) {
-  return nome
-    .trim()
-    .split(" ")
-    .slice(0, 2)
-    .map((parte) => parte.charAt(0))
-    .join("")
-    .toUpperCase();
-}
-
-function nomeCurto(nome: string) {
-  const partes = nome.trim().split(/\s+/);
-  return partes.length > 1 ? `${partes[0]} ${partes[partes.length - 1].charAt(0)}.` : partes[0];
-}
-
-const coresAvatar = [
-  "bg-primary-container text-on-primary",
-  "bg-secondary-fixed text-on-secondary-fixed",
-  "bg-primary-fixed-dim text-on-primary-fixed",
-  "bg-tertiary-fixed text-on-tertiary-fixed",
-  "bg-surface-container-highest text-on-surface-variant",
-  "bg-surface-container-high text-on-surface",
-];
-
-function corAvatar(id: string, lista: ParticipanteTarefa[] = []) {
-  const indice = lista.findIndex((p) => p.id === id);
-  return coresAvatar[(indice < 0 ? 0 : indice) % coresAvatar.length];
-}
-
-function nomeResponsavel(tarefa: DadosTarefa, currentUserId: string, currentUserName?: string) {
-  const participante = tarefa.participantes.find(
-    (p) => p.id === tarefa.responsavelId
-  );
-
-  if (!participante) return "Não definido";
-
-  return participante.id === currentUserId
-    ? currentUserName
-      ? `Você (${currentUserName.split(" ")[0]})`
-      : "Você"
-    : participante.nome;
-}
-
-function nomePagador(tarefa: DadosTarefa, currentUserId: string) {
-  const pagador = tarefa.participantes.find((p) => p.id === tarefa.pagadorId);
-  if (!pagador) return "Não definido";
-  return pagador.id === currentUserId ? "Você" : pagador.nome;
-}
-
-function quantidadeParticipantes(tarefa: DadosTarefa) {
-  return tarefa.participantes.filter((p) => p.selecionado).length;
-}
-
-/** Ícone ilustrativo da tarefa, escolhido pelo título. */
-function iconeTarefa(titulo: string) {
-  const texto = titulo.toLowerCase();
-  if (/van|carro|transporte|combust|ped[aá]gio|uber/.test(texto)) return "airport_shuttle";
-  if (/churrasco|carne|carv[aã]o/.test(texto)) return "outdoor_grill";
-  if (/barco|passeio|escuna/.test(texto)) return "directions_boat";
-  if (/bebida|gelo|cerveja/.test(texto)) return "local_bar";
-  if (/jantar|restaurante|almo[cç]o|comida/.test(texto)) return "restaurant";
-  if (/casa|hosped|airbnb|hotel|aluguel/.test(texto)) return "house";
-  return "task_alt";
-}
-
-interface Cota {
-  tarefa: DadosTarefa;
-  pessoa: ParticipanteTarefa;
-  valor: number;
-  pago: boolean;
-}
-
-// Mesma regra usada pelos fluxos de pagamento: sem registro, o pagador
-// aparece como tendo quitado sua própria cota.
-function cotasDaTarefa(tarefa: DadosTarefa, payments: Record<string, Payment>): Cota[] {
-  if (!tarefa.possuiDespesa) return [];
-  const selecionados = tarefa.participantes.filter((p) => p.selecionado);
-  return selecionados.map((pessoa, index) => {
-    const pagamento = payments[`${tarefa.id}:${pessoa.id}`];
-    return {
-      tarefa,
-      pessoa,
-      valor: share(tarefa.valorTotal, selecionados.length, index),
-      pago: pagamento?.status === "confirmado" || (!pagamento && pessoa.id === tarefa.pagadorId),
-    };
-  });
-}
-
-// Converte os dados utilizados na edição para o formato
-// utilizado pela tela de visualização.
-
-function converterParaVisualizacao(
-  dados: DadosTarefa,
-  payments: Record<string, Payment>,
-  groupLabel: string,
-): Tarefa {
-  const participantesSelecionados = dados.participantes.filter(
-    (p) => p.selecionado
-  );
-
-
-  const participantes: ParticipanteVisualizacao[] =
-    participantesSelecionados.map((p, index) => ({
-      id: p.id,
-      nome: p.nome,
-      iniciais: iniciais(p.nome),
-      funcao:
-        p.id === dados.responsavelId
-          ? "Responsável"
-          : "Participante",
-      cor: corAvatar(p.id, dados.participantes),
-
-      // Dados demonstrativos de pagamento:
-      // o pagador aparece como tendo pago sua própria cota.
-      valorPago:
-        dados.possuiDespesa && (payments[`${dados.id}:${p.id}`]?.status === "confirmado" || (!payments[`${dados.id}:${p.id}`] && p.id === dados.pagadorId))
-          ? share(dados.valorTotal, participantesSelecionados.length, index)
-          : 0,
-
-      statusPagamento:
-        dados.possuiDespesa && (payments[`${dados.id}:${p.id}`]?.status === "confirmado" || (!payments[`${dados.id}:${p.id}`] && p.id === dados.pagadorId))
-          ? "pago"
-          : "pendente",
-    }));
-
-  return {
-    id: dados.id,
-    titulo: dados.titulo,
-    grupo: groupLabel,
-    status: dados.concluida ? "concluida" : dados.emAndamento ? "andamento" : "pendente",
-    descricao: dados.descricao,
-    responsavelId: dados.responsavelId,
-    prazo: `${dataBR(dados.dataLimite)} às ${dados.horario}`,
-    participantes,
-
-    despesa: dados.possuiDespesa
-      ? {
-          valorTotal: dados.valorTotal,
-          descricao: "Despesa vinculada à tarefa",
-          categoria: "Geral",
-          formaPagamento: "Pix",
-          participantesIds: participantesSelecionados.map((p) => p.id),
-        }
-      : undefined,
-
-    comprovantes: dados.comprovante
-      ? [
-          {
-            id: "comprovante-1",
-            nome: "Comprovante da tarefa",
-            descricao: "Arquivo informado na edição",
-            url: dados.comprovante,
-          },
-        ]
-      : [],
-
-    historico: [
-      "Tarefa cadastrada no grupo.",
-      ...(dados.concluida ? ["Tarefa marcada como concluída."] : []),
-    ],
-  };
-}
 
 type FiltroTarefas =
   | "todas"
   | "planejadas"
   | "andamento"
   | "concluidas";
-
-function statusItem(tarefa: DadosTarefa, quitado: boolean) {
-  if (tarefa.concluida) {
-    return quitado
-      ? { texto: "Quitado", icone: "check_circle", classe: "bg-emerald-100 text-emerald-800" }
-      : { texto: "Concluída", icone: "task_alt", classe: "bg-emerald-100 text-emerald-800" };
-  }
-  if (tarefa.emAndamento) return { texto: "Em andamento", icone: "sync", classe: "bg-blue-100 text-blue-900" };
-  return { texto: "Pendente", icone: "hourglass_empty", classe: "bg-amber-100 text-amber-900" };
-}
 
 /** Mini gráfico circular de progresso (Stitch, tela 19). */
 function ProgressoCircular({ valor, rotulo }: { valor: number; rotulo: string }) {
@@ -320,6 +97,7 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
         const grupo = await apiRequest<GrupoDetalheApi>(ENDPOINTS.grupos.byId(idGrupo!));
         if (!ativo) return;
         setGroupName(grupo.nome);
+        setClosed(Boolean(grupo.encerradoEm));
 
         const dono = grupo.membros.find((m) => m.funcao === "dono");
         if (dono) setAdminName(dono.user.name);
@@ -341,49 +119,11 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
         );
         if (!ativo) return;
 
-        const novosPagamentos: Record<string, Payment> = {};
-        const novasPartes: Record<string, string> = {};
-
-        const mapeadas: DadosTarefa[] = detalhes.map((t) => {
-          const valor = t.valorTotal != null ? Number(t.valorTotal) : 0;
-          const partes = t.partes ?? [];
-          const idsNasPartes = new Set(
-            partes.map((p) => p.idUser).filter((id): id is string => Boolean(id)),
-          );
-          const responsavel =
-            t.idUser ?? listaParticipantes[0]?.id ?? currentUserId;
-
-          for (const p of partes) {
-            if (p.idUser) {
-              const key = `${t.id}:${p.idUser}`;
-              novasPartes[key] = p.id;
-              if (p.status === "FINALIZADA") {
-                novosPagamentos[key] = { status: "confirmado" };
-              } else if (p.status === "EM_ANDAMENTO") {
-                novosPagamentos[key] = { status: "informado" };
-              }
-            }
-          }
-
-          return {
-            id: t.id,
-            titulo: t.nome,
-            descricao: t.descricao ?? "",
-            dataLimite: t.dataFinal ? t.dataFinal.slice(0, 10) : "",
-            horario: t.dataFinal ? t.dataFinal.slice(11, 16) || "09:00" : "09:00",
-            responsavelId: responsavel,
-            participantes: listaParticipantes.map((m) => ({
-              ...m,
-              selecionado: idsNasPartes.size > 0 ? idsNasPartes.has(m.id) : true,
-            })),
-            possuiDespesa: valor > 0,
-            valorTotal: valor,
-            pagadorId: responsavel,
-            comprovante: "",
-            concluida: t.statusAndamento === "FINALIZADA",
-            emAndamento: t.statusAndamento === "EM_ANDAMENTO",
-          };
-        });
+        const { mapeadas, novosPagamentos, novasPartes } = mapearTarefasDoGrupo(
+          detalhes,
+          listaParticipantes,
+          currentUserId,
+        );
 
         setParteIds(novasPartes);
         setPayments(novosPagamentos);
@@ -563,13 +303,18 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
     setEditarAberto(false);
   }
 
-  function concluirTarefa(tarefa: Tarefa) {
+  async function concluirTarefa(tarefa: Tarefa) {
     if (memberMode || closed) return;
     if (idGrupo) {
-      void apiRequest(ENDPOINTS.tarefas.byId(tarefa.id), {
-        method: "PATCH",
-        body: { statusAndamento: "FINALIZADA" },
-      }).catch(() => {});
+      try {
+        await apiRequest(ENDPOINTS.tarefas.byId(tarefa.id), {
+          method: "PATCH",
+          body: { statusAndamento: "FINALIZADA" },
+        });
+      } catch (err) {
+        setFeedback(err instanceof ApiError ? err.message : "Não foi possível concluir a tarefa.");
+        return;
+      }
     }
     record(`Tarefa concluida: ${tarefa.titulo}`);
     setTarefas((anteriores) =>
@@ -581,13 +326,18 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
     );
   }
 
-  function reabrirTarefa(tarefa: Tarefa) {
+  async function reabrirTarefa(tarefa: Tarefa) {
     if (memberMode || closed) return;
     if (idGrupo) {
-      void apiRequest(ENDPOINTS.tarefas.byId(tarefa.id), {
-        method: "PATCH",
-        body: { statusAndamento: "EM_ANDAMENTO" },
-      }).catch(() => {});
+      try {
+        await apiRequest(ENDPOINTS.tarefas.byId(tarefa.id), {
+          method: "PATCH",
+          body: { statusAndamento: "EM_ANDAMENTO" },
+        });
+      } catch (err) {
+        setFeedback(err instanceof ApiError ? err.message : "Não foi possível reabrir a tarefa.");
+        return;
+      }
     }
     record(`Tarefa reaberta: ${tarefa.titulo}`);
     setTarefas((anteriores) =>
@@ -597,13 +347,18 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
     );
   }
 
-  function excluirTarefa(tarefa: Tarefa) {
+  async function excluirTarefa(tarefa: Tarefa) {
     if (memberMode || closed) return;
     if (Object.keys(payments).some(key => key.startsWith(`${tarefa.id}:`))) { setFeedback("Preserve tarefas com pagamentos registrados no historico."); return; }
     if (idGrupo) {
-      void apiRequest(ENDPOINTS.tarefas.byId(tarefa.id), {
-        method: "DELETE",
-      }).catch(() => {});
+      try {
+        await apiRequest(ENDPOINTS.tarefas.byId(tarefa.id), {
+          method: "DELETE",
+        });
+      } catch (err) {
+        setFeedback(err instanceof ApiError ? err.message : "Não foi possível excluir a tarefa.");
+        return;
+      }
     }
     record(`Tarefa excluida: ${tarefa.titulo}`);
     setTarefas((anteriores) =>
@@ -628,7 +383,7 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
           title={p.id === currentUserId ? `${nomeCurto(p.nome)} (Você)` : p.nome}
           className={`inline-flex h-9 w-9 rounded-full ring-2 ring-surface-container-lowest items-center justify-center font-label-sm text-label-sm font-bold ${corAvatar(p.id, participantesAtuais)}`}
         >
-          {iniciais(p.nome)}
+          {initials(p.nome)}
         </div>
       ))}
     </div>
@@ -820,7 +575,7 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
                 </div>
                 <p className="font-headline-sm text-headline-sm text-on-surface font-semibold">
                   {suaParte > 0 ? (
-                    <>Você deve <span className="text-secondary font-bold">{moeda(suaParte)}</span> {credores.length === 1 ? `para ${credores[0]}` : "no grupo"}</>
+                    <>Você deve <span className="text-secondary font-bold">{money(suaParte)}</span> {credores.length === 1 ? `para ${credores[0]}` : "no grupo"}</>
                   ) : (
                     "Você não possui pendências neste grupo"
                   )}
@@ -852,7 +607,7 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
               <div className="flex items-start justify-between">
                 <div className="flex flex-col">
                   <span className="text-on-surface-variant font-label-md text-label-md">{memberMode ? "Total Acumulado" : "Total do Grupo"}</span>
-                  <span className="text-on-surface font-numeric-stat text-numeric-stat mt-1">{moeda(totalDespesas)}</span>
+                  <span className="text-on-surface font-numeric-stat text-numeric-stat mt-1">{money(totalDespesas)}</span>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-primary">
                   <Icon name={memberMode ? "receipt_long" : "payments"} size={22}/>
@@ -863,7 +618,7 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
                 {participantesAtuais.length > 0 && (
                   <span className="inline-flex items-center gap-0.5 text-tertiary font-label-sm text-label-sm font-semibold">
                     <Icon name="receipt_long" size={16}/>
-                    Média {moeda(totalDespesas / participantesAtuais.length)}/p
+                    Média {money(totalDespesas / participantesAtuais.length)}/p
                   </span>
                 )}
               </div>
@@ -873,7 +628,7 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
               <div className="flex items-start justify-between">
                 <div className="flex flex-col">
                   <span className="text-on-surface-variant font-label-md text-label-md">{memberMode ? "Sua Cota Prevista" : "Sua Cota Pessoal"}</span>
-                  <span className="text-on-surface font-numeric-stat text-numeric-stat mt-1">{moeda(suaCota)}</span>
+                  <span className="text-on-surface font-numeric-stat text-numeric-stat mt-1">{money(suaCota)}</span>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
                   <Icon name={memberMode ? "pie_chart" : "account_balance_wallet"} size={22}/>
@@ -882,11 +637,11 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
               <div className="mt-space-md flex flex-wrap items-center gap-space-sm pt-space-xs">
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm">
                   <span className="w-1.5 h-1.5 rounded-full bg-tertiary"/>
-                  Quitado: {moeda(seuQuitado)}
+                  Quitado: {money(seuQuitado)}
                 </span>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-bold">
                   <span className="w-1.5 h-1.5 rounded-full bg-secondary"/>
-                  Pendente: {moeda(suaParte)}
+                  Pendente: {money(suaParte)}
                 </span>
               </div>
             </div>
@@ -911,8 +666,8 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
                   <div className="h-full bg-primary-container rounded-full transition-all duration-500" style={{ width: `${liquidacao}%` }}/>
                 </div>
                 <div className="flex flex-wrap justify-between items-center gap-1 text-on-surface-variant font-label-sm text-label-sm mt-1.5">
-                  <span>{moeda(totalQuitado)} transferidos</span>
-                  <span className="font-bold text-primary">Faltam {moeda(totalFaltante)}</span>
+                  <span>{money(totalQuitado)} transferidos</span>
+                  <span className="font-bold text-primary">Faltam {money(totalFaltante)}</span>
                 </div>
               </div>
             </div>
@@ -987,12 +742,12 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
                             <>
                               <div>
                                 <span className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider block">Valor total</span>
-                                <span className="font-headline-sm text-headline-sm font-bold text-on-surface">{moeda(tarefa.valorTotal)}</span>
+                                <span className="font-headline-sm text-headline-sm font-bold text-on-surface">{money(tarefa.valorTotal)}</span>
                               </div>
                               <div className="text-right">
                                 <span className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider block">Por pessoa</span>
                                 <span className="font-label-md text-label-md font-semibold text-on-surface">
-                                  {quantidade > 0 ? `${moeda(share(tarefa.valorTotal, quantidade, quantidade - 1))} / ${quantidade} pax` : "Sem rateio"}
+                                  {quantidade > 0 ? `${money(share(tarefa.valorTotal, quantidade, quantidade - 1))} / ${quantidade} pax` : "Sem rateio"}
                                 </span>
                               </div>
                             </>
@@ -1013,7 +768,7 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
                       <div className="mt-space-md pt-space-sm flex items-center justify-between gap-2 w-full">
                         <div className="flex items-center gap-2 min-w-0">
                           <div className={`w-7 h-7 shrink-0 rounded-full font-label-sm text-label-sm font-bold flex items-center justify-center ${corAvatar(tarefa.responsavelId, participantesAtuais)}`}>
-                            {responsavel ? iniciais(responsavel.nome) : "?"}
+                            {responsavel ? initials(responsavel.nome) : "?"}
                           </div>
                           <div className="flex flex-col min-w-0">
                             <span className="font-label-sm text-label-sm text-on-surface font-semibold truncate">
@@ -1026,7 +781,7 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
                           <div className="flex -space-x-1.5" aria-label={`${quantidade} participantes`}>
                             {selecionados.slice(0, 3).map((p) => (
                               <div key={p.id} className="w-6 h-6 rounded-full bg-surface-container-high text-on-surface font-label-sm text-[10px] flex items-center justify-center font-bold ring-2 ring-surface-container-lowest">
-                                {iniciais(p.nome)}
+                                {initials(p.nome)}
                               </div>
                             ))}
                             {selecionados.length > 3 && (
@@ -1054,7 +809,7 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
               <div>
                 <h3 className="font-label-lg text-label-lg text-on-surface">
                   {suaParte > 0
-                    ? `Você possui ${moeda(suaParte)} pendente${credores.length === 1 ? ` para ${credores[0]}` : " no grupo"}`
+                    ? `Você possui ${money(suaParte)} pendente${credores.length === 1 ? ` para ${credores[0]}` : " no grupo"}`
                     : "Você não possui pendências neste grupo"}
                 </h3>
                 <p className="font-body-sm text-body-sm text-on-surface-variant">
@@ -1143,20 +898,20 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
                           {souPagador ? (
                             <>
                               <span className="font-label-sm text-label-sm text-on-surface-variant">Você recebe</span>
-                              <span className="font-headline-sm text-headline-sm text-primary font-bold">+ {moeda(aReceber)}</span>
+                              <span className="font-headline-sm text-headline-sm text-primary font-bold">+ {money(aReceber)}</span>
                             </>
                           ) : naoParticipa ? (
                             <>
                               <span className="font-label-sm text-label-sm text-outline">Sua cota</span>
-                              <span className="font-headline-sm text-headline-sm text-outline">{moeda(0)}</span>
+                              <span className="font-headline-sm text-headline-sm text-outline">{money(0)}</span>
                             </>
                           ) : (
                             <>
                               <span className="font-label-sm text-label-sm text-on-surface-variant">{pendente ? "Sua parte" : "Sua cota quitada"}</span>
-                              <span className={`font-headline-sm text-headline-sm font-bold ${pendente ? "text-secondary" : "text-on-surface"}`}>{moeda(minha?.valor ?? 0)}</span>
+                              <span className={`font-headline-sm text-headline-sm font-bold ${pendente ? "text-secondary" : "text-on-surface"}`}>{money(minha?.valor ?? 0)}</span>
                             </>
                           )}
-                          <span className="font-label-sm text-label-sm text-outline">Total: {moeda(tarefa.valorTotal)}</span>
+                          <span className="font-label-sm text-label-sm text-outline">Total: {money(tarefa.valorTotal)}</span>
                         </div>
                       ) : (
                         <div className="flex flex-col md:text-right">

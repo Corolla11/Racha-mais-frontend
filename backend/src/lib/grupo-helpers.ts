@@ -72,6 +72,23 @@ export function transacionarTarefa<T>(
   );
 }
 
+export async function exigirGrupoAberto(
+  db: Pick<Prisma.TransactionClient, "grupo">,
+  idGrupo: string,
+) {
+  const grupo = await db.grupo.findUnique({
+    where: { id: idGrupo },
+    select: { encerradoEm: true },
+  });
+  if (!grupo) throw new AppError(404, "Grupo não encontrado");
+  if (grupo.encerradoEm !== null) {
+    throw new AppError(
+      409,
+      "Este grupo foi encerrado e está em modo somente leitura",
+    );
+  }
+}
+
 export async function exigirMembro(idUser: string, idGrupo: string) {
   const membro = await prisma.membro.findUnique({
     where: { idUser_idGrupo: { idUser, idGrupo } },

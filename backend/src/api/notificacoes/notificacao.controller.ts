@@ -35,4 +35,19 @@ export const notificacaoController = {
     );
     res.json({ atualizadas: resultado.count });
   },
+
+  async salvarPreferencias(req: Request, res: Response) {
+    const schema = z
+      .object({
+        notificarDespesas: z.boolean("notificarDespesas deve ser booleano"),
+      })
+      .strict();
+    const { notificarDespesas } = schema.parse(req.body);
+    res.json(
+      await notificacaoService.salvarPreferencias(
+        res.locals.user.id,
+        notificarDespesas,
+      ),
+    );
+  },
 };

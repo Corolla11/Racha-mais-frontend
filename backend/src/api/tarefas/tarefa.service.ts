@@ -7,6 +7,7 @@ import {
   type TipoTarefa,
 } from "../../generated/prisma/enums.js";
 import {
+  exigirGrupoAberto,
   exigirMembro,
   transacionarTarefa,
 } from "../../lib/grupo-helpers.js";
@@ -44,6 +45,7 @@ async function exigirPermissaoEdicao(idUser: string, idTarefa: string) {
 export const tarefaService = {
   async criar(idUser: string, dados: CriarTarefaDados) {
     await exigirMembro(idUser, dados.idGrupo);
+    await exigirGrupoAberto(prisma, dados.idGrupo);
     return prisma.$transaction(async (tx) => {
       const tarefa = await tx.tarefa.create({ data: { ...dados, idUser } });
       const [grupo, membros] = await Promise.all([
@@ -52,7 +54,11 @@ export const tarefaService = {
           select: { nome: true },
         }),
         tx.membro.findMany({
-          where: { idGrupo: dados.idGrupo, idUser: { not: idUser } },
+          where: {
+            idGrupo: dados.idGrupo,
+            idUser: { not: idUser },
+            user: { notificarDespesas: true },
+          },
           select: { idUser: true },
         }),
       ]);
@@ -125,6 +131,7 @@ export const tarefaService = {
     dados: Partial<Omit<CriarTarefaDados, "idGrupo">>,
   ) {
     const tarefaAtual = await exigirPermissaoEdicao(idUser, idTarefa);
+    await exigirGrupoAberto(prisma, tarefaAtual.idGrupo);
 
     const dataInicio = dados.dataInicio ?? tarefaAtual.dataInicio;
     const dataFinal = dados.dataFinal ?? tarefaAtual.dataFinal;
@@ -157,7 +164,8 @@ export const tarefaService = {
   },
 
   async excluir(idUser: string, idTarefa: string) {
-    await exigirPermissaoEdicao(idUser, idTarefa);
+    const tarefaAtual = await exigirPermissaoEdicao(idUser, idTarefa);
+    await exigirGrupoAberto(prisma, tarefaAtual.idGrupo);
     await prisma.tarefa.delete({ where: { id: idTarefa } });
   },
 };

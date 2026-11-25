@@ -45,8 +45,9 @@ export const iaService = {
 
     const ai = new GoogleGenAI({ apiKey });
     let response: Awaited<ReturnType<typeof ai.models.generateContent>>;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     try {
-      response = await ai.models.generateContent({
+      const requisicao = ai.models.generateContent({
         model: "gemini-3.8-flash",
         contents: [
           "Crie um rascunho editável de um grupo para organizar despesas compartilhadas. " +
@@ -57,15 +58,32 @@ export const iaService = {
             `Descrição do usuário:\n${prompt}`,
         ],
         config: {
+          abortSignal: AbortSignal.timeout(15_000),
           responseMimeType: "application/json",
           responseJsonSchema: rascunhoJsonSchema,
           maxOutputTokens: 512,
           temperature: 0.4,
         },
       });
+      const tempoEsgotado = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(
+          () => reject(new AppError(504, "O Gemini demorou demais para responder")),
+          15_000,
+        );
+      });
+      response = await Promise.race([requisicao, tempoEsgotado]);
     } catch (error) {
+      if (error instanceof AppError) throw error;
+      if (
+        error instanceof Error &&
+        (error.name === "TimeoutError" || error.name === "AbortError")
+      ) {
+        throw new AppError(504, "O Gemini demorou demais para responder");
+      }
       console.error("Falha ao gerar rascunho com Gemini", error);
       throw new AppError(502, "Não foi possível gerar o rascunho com o Gemini");
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
     }
 
     if (!response.text) {

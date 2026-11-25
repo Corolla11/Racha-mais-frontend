@@ -7,6 +7,7 @@ import {
 } from "../../generated/prisma/enums.js";
 import {
   erroPrismaComCodigo,
+  exigirGrupoAberto,
   transacionarTarefa,
 } from "../../lib/grupo-helpers.js";
 import { prisma } from "../../lib/prisma.js";
@@ -98,6 +99,7 @@ export const parteService = {
         "Apenas o criador da tarefa ou o dono do grupo pode criar partes",
       );
     }
+    await exigirGrupoAberto(prisma, tarefa.idGrupo);
 
     if (!dados.idUser) {
       throw new AppError(400, "idUser é obrigatório");
@@ -114,11 +116,16 @@ export const parteService = {
     const valor = dados.valor!;
 
     return transacionarTarefa(idTarefa, async (tx) => {
+      const tarefaAtual = await tx.tarefa.findUnique({
+        where: { id: idTarefa },
+        select: { valorTotal: true },
+      });
+      if (!tarefaAtual) throw new AppError(404, "Tarefa não encontrada");
       const { _sum } = await tx.parte.aggregate({
         where: { idTarefa },
         _sum: { valor: true },
       });
-      validarSomaPartes(_sum.valor, valor, tarefa.valorTotal);
+      validarSomaPartes(_sum.valor, valor, tarefaAtual.valorTotal);
 
       const parte = await tx.parte.create({
         data: { idUser, idGrupo: tarefa.idGrupo, idTarefa, descricao, valor },
@@ -127,21 +134,27 @@ export const parteService = {
           tarefa: { select: { nome: true, idGrupo: true } },
         },
       });
-      await tx.notificacao.createMany({
-        data: [
-          {
-            idUser: parte.idUser,
-            tipo: TipoNotificacao.COBRANCA_CRIADA,
-            titulo: "Nova cobrança",
-            mensagem: `Você recebeu uma cobrança de ${Number(parte.valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} na tarefa "${parte.tarefa.nome}".`,
-            idGrupo: parte.tarefa.idGrupo,
-            idTarefa: parte.idTarefa,
-            idParte: parte.id,
-            chaveEvento: `cobranca-criada:${parte.id}`,
-          },
-        ],
-        skipDuplicates: true,
+      const destinatario = await tx.user.findUnique({
+        where: { id: parte.idUser },
+        select: { notificarDespesas: true },
       });
+      if (destinatario?.notificarDespesas !== false) {
+        await tx.notificacao.createMany({
+          data: [
+            {
+              idUser: parte.idUser,
+              tipo: TipoNotificacao.COBRANCA_CRIADA,
+              titulo: "Nova cobrança",
+              mensagem: `Você recebeu uma cobrança de ${Number(parte.valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} na tarefa "${parte.tarefa.nome}".`,
+              idGrupo: parte.tarefa.idGrupo,
+              idTarefa: parte.idTarefa,
+              idParte: parte.id,
+              chaveEvento: `cobranca-criada:${parte.id}`,
+            },
+          ],
+          skipDuplicates: true,
+        });
+      }
       const { tarefa: _tarefa, ...resposta } = parte;
       return resposta;
     });
@@ -195,10 +208,16 @@ export const parteService = {
         "Você só pode atualizar o status da sua própria parte",
       );
     }
+    await exigirGrupoAberto(prisma, tarefa.idGrupo);
 
     if (alteracoes.valor !== undefined) {
       const valorNovo = alteracoes.valor;
       return transacionarTarefa(parte.idTarefa, async (tx) => {
+        const tarefaAtual = await tx.tarefa.findUnique({
+          where: { id: parte.idTarefa },
+          select: { valorTotal: true },
+        });
+        if (!tarefaAtual) throw new AppError(404, "Tarefa não encontrada");
         const parteAtual = await tx.parte.findUnique({
           where: { id },
           select: { id: true, idUser: true, idTarefa: true, descricao: true, valor: true, status: true },
@@ -208,7 +227,7 @@ export const parteService = {
           where: { idTarefa: parte.idTarefa, id: { not: id } },
           _sum: { valor: true },
         });
-        validarSomaPartes(_sum.valor, valorNovo, tarefa.valorTotal);
+        validarSomaPartes(_sum.valor, valorNovo, tarefaAtual.valorTotal);
         return tx.parte.update({
           where: { id },
           data: alteracoes,
@@ -245,6 +264,7 @@ export const parteService = {
         "Apenas o criador da tarefa ou o dono do grupo pode remover partes",
       );
     }
+    await exigirGrupoAberto(prisma, tarefa.idGrupo);
     await prisma.parte.delete({ where: { id } }).catch((erro: unknown) => {
       if (erroPrismaComCodigo(erro, "P2025")) {
         throw new AppError(404, "Parte não encontrada");

@@ -108,16 +108,17 @@ function GrupoCriado() {
   return (
     <AppShell title="Grupo criado">
       <div className="relative isolate mx-auto w-full max-w-2xl py-space-md sm:py-space-lg">
-        <nav aria-label="Navegação estrutural" className="mb-space-lg flex flex-wrap items-center justify-center gap-space-xs text-center">
-          <Link to="/meus-grupos" className="font-label-sm text-label-sm text-outline transition-colors hover:text-on-surface">
-            Meus Grupos
+        <nav aria-label="Navegação estrutural" className="mb-space-lg flex flex-wrap items-center justify-center gap-space-xs text-center font-label-sm text-label-sm text-on-surface-variant">
+          <Link to="/meus-grupos" className="flex items-center gap-1 transition-colors hover:text-primary">
+            <Icon name="groups" size={16} />
+            <span>Meus Grupos</span>
           </Link>
           <Icon name="chevron_right" size={16} className="text-outline-variant" />
-          <Link to="/criar-grupo" className="font-label-sm text-label-sm text-outline transition-colors hover:text-on-surface">
+          <Link to="/criar-grupo" className="transition-colors hover:text-primary">
             Criar Novo Grupo
           </Link>
           <Icon name="chevron_right" size={16} className="text-outline-variant" />
-          <span className="font-label-sm text-label-sm font-semibold text-primary" aria-current="page">
+          <span className="font-semibold text-on-surface" aria-current="page">
             Grupo Criado
           </span>
         </nav>

@@ -5,6 +5,7 @@ import tailwindcss from '@tailwindcss/vite'
 const BACKEND_ROUTES = [
   '/api/auth',
   '/grupos',
+  '/convites',
   '/tarefas',
   '/partes',
   '/chaves-pix',

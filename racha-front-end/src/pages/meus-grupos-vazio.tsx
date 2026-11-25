@@ -285,7 +285,7 @@ export default function MeusGruposVazio() {
             <button
               type="submit"
               disabled={!codigo.trim()}
-              className="h-12 cursor-pointer whitespace-nowrap rounded-lg bg-primary px-space-lg font-label-md text-label-md text-on-primary shadow-sm transition-colors hover:bg-on-primary-container disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-12 cursor-pointer whitespace-nowrap rounded-lg bg-primary px-space-lg font-label-md text-label-md text-on-primary shadow-sm transition-colors hover:bg-primary-container disabled:cursor-not-allowed disabled:opacity-60"
             >
               Ingressar
             </button>

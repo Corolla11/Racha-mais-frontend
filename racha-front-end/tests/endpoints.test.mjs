@@ -12,4 +12,21 @@ test("ENDPOINTS aplica encodeURIComponent em identificadores dinâmicos", () => 
   assert.equal(ENDPOINTS.tarefas.partes("t/9"), "/tarefas/t%2F9/partes");
   assert.equal(ENDPOINTS.partes.byId("p?2"), "/partes/p%3F2");
   assert.equal(ENDPOINTS.chavesPix.byId("c#3"), "/chaves-pix/c%233");
+  assert.equal(ENDPOINTS.assinaturas.doGrupo("g/1"), "/assinaturas/grupos/g%2F1");
+  assert.equal(
+    ENDPOINTS.assinaturas.checkoutPro("g?2"),
+    "/assinaturas/grupos/g%3F2/pro/checkout",
+  );
+  assert.equal(
+    ENDPOINTS.assinaturas.cancelar("g#3"),
+    "/assinaturas/grupos/g%233/cancel",
+  );
+  assert.equal(
+    ENDPOINTS.grupos.convites("g/1"),
+    "/grupos/g%2F1/convites",
+  );
+  assert.equal(
+    ENDPOINTS.convites.aceitar("t/1?x"),
+    "/convites/t%2F1%3Fx/aceitar",
+  );
 });

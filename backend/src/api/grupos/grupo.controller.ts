@@ -34,6 +34,11 @@ export const grupoController = {
     res.json(grupo);
   },
 
+  async encerrar(req: Request, res: Response) {
+    const id = String(req.params.id);
+    res.json(await grupoService.encerrar(res.locals.user.id, id));
+  },
+
   async excluir(req: Request, res: Response) {
     const id = String(req.params.id);
     await grupoService.excluir(res.locals.user.id, id);

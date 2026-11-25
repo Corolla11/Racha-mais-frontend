@@ -112,20 +112,28 @@ export const notificacaoService = {
     });
   },
 
-  async emitirLembretesDePrazo(agora = new Date()) {
-    const [{ locked }] = await prisma.$queryRaw<{ locked: boolean }[]>`
-      SELECT pg_try_advisory_lock(${LOCK_ID_LEMBRETES}) AS locked
-    `;
-    if (!locked) return { count: 0 };
+  salvarPreferencias(idUser: string, notificarDespesas: boolean) {
+    return prisma.user.update({
+      where: { id: idUser },
+      data: { notificarDespesas },
+      select: { notificarDespesas: true },
+    });
+  },
 
-    try {
+  async emitirLembretesDePrazo(agora = new Date()) {
+    return prisma.$transaction(async (tx) => {
+      const [{ locked }] = await tx.$queryRaw<{ locked: boolean }[]>`
+        SELECT pg_try_advisory_xact_lock(${LOCK_ID_LEMBRETES}) AS locked
+      `;
+      if (!locked) return { count: 0 };
+
       const fimProximoPrazo = new Date(
         agora.getTime() + HORAS_AVISO_PRAZO * 60 * 60 * 1000,
       );
       const inicioAtrasoRecente = new Date(
         agora.getTime() - HORAS_JANELA_ATRASO * 60 * 60 * 1000,
       );
-      const partes = await prisma.parte.findMany({
+      const partes = await tx.parte.findMany({
         where: {
           status: { notIn: ["FINALIZADA", "CANCELADA"] },
           tarefa: {
@@ -143,13 +151,11 @@ export const notificacaoService = {
 
       const notificacoes = construirLembretesDePrazo(partes, agora);
       if (notificacoes.length === 0) return { count: 0 };
-      return await prisma.notificacao.createMany({
+      return tx.notificacao.createMany({
         data: notificacoes,
         skipDuplicates: true,
       });
-    } finally {
-      await prisma.$queryRaw`SELECT pg_advisory_unlock(${LOCK_ID_LEMBRETES})`.catch(() => {});
-    }
+    });
   },
 };
 

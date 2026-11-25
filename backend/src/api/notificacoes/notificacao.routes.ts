@@ -6,5 +6,6 @@ export const notificacaoRoutes = Router();
 
 notificacaoRoutes.use(requireAuth);
 notificacaoRoutes.get("/", notificacaoController.listar);
+notificacaoRoutes.put("/preferencias", notificacaoController.salvarPreferencias);
 notificacaoRoutes.patch("/lidas", notificacaoController.marcarTodasLidas);
 notificacaoRoutes.patch("/:id/lida", notificacaoController.marcarLida);

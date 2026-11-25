@@ -594,28 +594,6 @@ export default function Faq() {
                   Não encontrou o que precisava? Nossa equipe está disponível para ajudar você e seu grupo.
                 </p>
 
-                <div className="flex flex-col gap-space-sm rounded-xl bg-surface-container-low p-space-md">
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 font-label-md text-label-md text-on-surface">
-                      <Icon name="chat" size={20} className="text-[#25D366]" />
-                      WhatsApp Oficial
-                    </span>
-                    <Etiqueta>Em breve</Etiqueta>
-                  </div>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant">
-                    Tire dúvidas sobre pagamentos, chaves e faturamento diretamente no app.
-                  </p>
-                  <button
-                    type="button"
-                    disabled
-                    title="O número oficial de WhatsApp ainda não foi definido."
-                    className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg bg-primary-container px-4 py-2.5 font-label-md text-label-md text-on-primary opacity-60 shadow-sm"
-                  >
-                    <Icon name="send" size={18} />
-                    Iniciar conversa no WhatsApp
-                  </button>
-                </div>
-
                 <div className="flex flex-col gap-space-xs rounded-xl bg-surface-container-low p-space-md">
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2 font-label-md text-label-md text-on-surface">
@@ -737,25 +715,25 @@ function PlanosResposta() {
   const navigate = useNavigate();
   const planos = [
     {
-      nome: "Plano Pro",
-      selo: "Popular",
-      corSelo: "bg-primary-fixed text-primary",
-      preco: "R$ 12",
-      periodo: "/mês ou R$ 80/ano",
-      itens: ["Até 15 grupos ativos", "Armazenamento de 500 comprovantes em HD", "Exportação completa em PDF e Excel"],
+      nome: "Plano Gratuito",
+      selo: "Grátis",
+      corSelo: "bg-surface-container-high text-on-surface-variant",
+      preco: "R$ 0,00",
+      periodo: "/mês",
+      itens: ["Até 2 grupos ativos simultâneos", "Até 10 membros por grupo", "Divisão igualitária de despesas e Pix"],
       fundo: "bg-surface-container-low",
       acao: "Ver detalhes",
       destaque: false,
     },
     {
-      nome: "Plano Pro+",
-      selo: "Ilimitado",
-      corSelo: "bg-tertiary-container text-on-tertiary",
-      preco: "R$ 20",
-      periodo: "/mês ou R$ 200/ano",
-      itens: ["Grupos ilimitados e membros sem teto", "Comprovantes e fotos sem limite", "Conciliação bancária assistida via IA"],
+      nome: "Plano Pro",
+      selo: "Popular",
+      corSelo: "bg-primary-fixed text-primary",
+      preco: "R$ 4,90",
+      periodo: "/mês ou R$ 49,90/ano",
+      itens: ["Mais grupos e membros por grupo", "Divisão por participantes selecionados", "Comprovantes e organização completa"],
       fundo: "bg-surface-container",
-      acao: "Assinar Pro+",
+      acao: "Conhecer o Pro",
       destaque: true,
     },
   ];

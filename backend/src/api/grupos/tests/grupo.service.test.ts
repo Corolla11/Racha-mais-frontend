@@ -104,4 +104,46 @@ describe("grupoService", () => {
     await esperarAppError(() => grupoService.excluir("u-dono", "g1"), 409);
     assert.equal(deleteCalls, 0);
   });
+
+  it("impede exclusão de grupo com cobranças e permite encerrar para manter histórico", async () => {
+    let deleteCalls = 0;
+    let encerradoAtualizado = false;
+    mockProp(prisma.membro, "findUnique", async () => ({
+      idUser: "u-dono",
+      idGrupo: "g1",
+      funcao: Funcao.dono,
+    }));
+    mockProp(prisma, "$transaction", async (cb: (tx: unknown) => Promise<unknown>) =>
+      cb({
+        $executeRaw: async () => 1,
+        membro: {
+          findUnique: async () => ({
+            idUser: "u-dono",
+            idGrupo: "g1",
+            funcao: Funcao.dono,
+          }),
+        },
+        assinaturaPro: { count: async () => 0 },
+        parte: { count: async () => 1 },
+        tarefa: { count: async () => 0 },
+        grupo: {
+          findUniqueOrThrow: async () => ({ id: "g1", encerradoEm: null }),
+          update: async ({ data }: { data: { encerradoEm?: Date } }) => {
+            encerradoAtualizado = data.encerradoEm instanceof Date;
+            return { id: "g1", encerradoEm: data.encerradoEm };
+          },
+          delete: async () => {
+            deleteCalls += 1;
+            return {};
+          },
+        },
+      }),
+    );
+
+    await esperarAppError(() => grupoService.excluir("u-dono", "g1"), 409);
+    assert.equal(deleteCalls, 0);
+
+    await grupoService.encerrar("u-dono", "g1");
+    assert.equal(encerradoAtualizado, true);
+  });
 });

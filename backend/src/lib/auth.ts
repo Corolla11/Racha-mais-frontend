@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { APIError } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { emailOTP, openAPI } from "better-auth/plugins";
 import {
@@ -31,6 +32,24 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+
+  databaseHooks: {
+    session: {
+      create: {
+        before: async (session) => {
+          const usuario = await prisma.user.findUnique({
+            where: { id: session.userId },
+            select: { deletedAt: true },
+          });
+          if (!usuario || usuario.deletedAt !== null) {
+            throw new APIError("FORBIDDEN", {
+              message: "Esta conta foi desativada.",
+            });
+          }
+        },
+      },
+    },
+  },
 
   emailVerification: {
     sendOnSignUp: true,

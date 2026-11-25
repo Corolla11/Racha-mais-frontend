@@ -1,8 +1,10 @@
 import { Fragment, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/auth-context";
 import { ApiError, apiRequest } from "../lib/api";
 import { ENDPOINTS, type ChavePixApi, type TipoChavePix } from "../lib/endpoints";
+import { gerarBrCode } from "../lib/brcode";
+import { formatarChavePix, META_TIPO_PIX, validarChavePix } from "../lib/pix-format";
 import Icon from "./icon";
 import Overlay from "./overlay";
 import PixPreview from "./pix-preview";
@@ -152,26 +154,33 @@ function PasswordInput({ id, name, label, placeholder, show, onToggle, onChange 
 }
 
 export default function AccountPanels({ panel }: { panel: "pix" | "security" }) {
-  const { user, changePassword } = useAuth();
+  const navigate = useNavigate();
+  const { user, changePassword, signOut } = useAuth();
   const [message, setMessage] = useState("");
   const [chaves, setChaves] = useState<ChavePixApi[]>([]);
   const [key, setKey] = useState("");
   const [keyType, setKeyType] = useState<TipoChavePix>("telefone");
+  const [keyError, setKeyError] = useState("");
   const [editing, setEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [remove, setRemove] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [removed, setRemoved] = useState(false);
   const [confirmation, setConfirmation] = useState("");
-  const [suggestPix, setSuggestPix] = useState(true);
-  const [whatsappReminders, setWhatsappReminders] = useState(true);
-  const [savedPrefs, setSavedPrefs] = useState({ suggestPix: true, whatsappReminders: true });
   const [newPassword, setNewPassword] = useState("");
   const [visible, setVisible] = useState({ old: false, new: false, confirm: false });
   const ids = useId();
 
   const principal = chaves[0];
-  const saved = principal?.chave ?? "";
+  const saved = principal ? formatarChavePix(principal.tipoChave, principal.chave) : "";
   const titular = user?.name || "Titular da conta";
+  const brCode = principal
+    ? gerarBrCode({
+        chave: principal.chave,
+        tipoChave: principal.tipoChave,
+        nomeRecebedor: titular,
+      })
+    : "";
 
   useEffect(() => {
     if (panel !== "pix" || !user) return;
@@ -181,7 +190,7 @@ export default function AccountPanels({ panel }: { panel: "pix" | "security" }) 
         if (!ativo) return;
         setChaves(lista);
         if (lista[0]) {
-          setKey(lista[0].chave);
+          setKey(formatarChavePix(lista[0].tipoChave, lista[0].chave));
           setKeyType(lista[0].tipoChave);
         }
       })
@@ -194,6 +203,14 @@ export default function AccountPanels({ panel }: { panel: "pix" | "security" }) 
   async function salvarChave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
+    setKeyError("");
+    const formatada = formatarChavePix(keyType, key);
+    const erroValidacao = validarChavePix(keyType, formatada);
+    if (erroValidacao) {
+      setKeyError(erroValidacao);
+      return;
+    }
+    setKey(formatada);
     if (!user) {
       setEditing(false);
       setMessage("Chave atualizada na demonstração.");
@@ -204,13 +221,13 @@ export default function AccountPanels({ panel }: { panel: "pix" | "security" }) 
       if (alvoId) {
         const atualizada = await apiRequest<ChavePixApi>(ENDPOINTS.chavesPix.byId(alvoId), {
           method: "PATCH",
-          body: { tipoChave: keyType, chave: key.trim() },
+          body: { tipoChave: keyType, chave: formatada },
         });
         setChaves((ant) => ant.map((c) => (c.id === atualizada.id ? atualizada : c)));
       } else {
         const criada = await apiRequest<ChavePixApi>(ENDPOINTS.chavesPix.base, {
           method: "POST",
-          body: { tipoChave: keyType, chave: key.trim() },
+          body: { tipoChave: keyType, chave: formatada },
         });
         setChaves((ant) => [criada, ...ant]);
       }
@@ -218,7 +235,7 @@ export default function AccountPanels({ panel }: { panel: "pix" | "security" }) 
       setEditingId(null);
       setMessage("Chave Pix salva com sucesso.");
     } catch (err) {
-      setMessage(err instanceof ApiError ? err.message : "Não foi possível salvar a chave Pix.");
+      setKeyError(err instanceof ApiError ? err.message : "Não foi possível salvar a chave Pix.");
     }
   }
 
@@ -261,10 +278,18 @@ export default function AccountPanels({ panel }: { panel: "pix" | "security" }) 
   }
 
   function abrirEdicao(alvo?: ChavePixApi) {
+    const tipo = alvo?.tipoChave ?? "telefone";
     setEditingId(alvo?.id ?? null);
-    setKey(alvo?.chave ?? "");
-    setKeyType(alvo?.tipoChave ?? "telefone");
+    setKeyType(tipo);
+    setKey(alvo ? formatarChavePix(tipo, alvo.chave) : "");
+    setKeyError("");
     setEditing(true);
+  }
+
+  function alterarTipoChave(novoTipo: TipoChavePix) {
+    setKeyType(novoTipo);
+    setKey((atual) => (atual ? formatarChavePix(novoTipo, atual) : ""));
+    setKeyError("");
   }
 
   async function copy() {
@@ -311,45 +336,106 @@ export default function AccountPanels({ panel }: { panel: "pix" | "security" }) 
           </div>
         </div>
         {editing && (
-          <form className="bg-surface-container-lowest rounded-xl p-space-md md:p-space-lg shadow-sm grid grid-cols-1 md:grid-cols-[200px_1fr] gap-space-md" onSubmit={salvarChave}>
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor={`${ids}-type`} className="font-label-md text-label-md text-on-surface">Tipo de chave</label>
-              <select id={`${ids}-type`} value={keyType} onChange={event => setKeyType(event.target.value as TipoChavePix)} className={`${inputClass} cursor-pointer`}>
-                <option value="telefone">Celular</option><option value="email">E-mail</option><option value="cpf">CPF</option><option value="aleatoria">Aleatória</option>
-              </select>
+          <form className="bg-surface-container-lowest rounded-xl p-space-md md:p-space-lg shadow-sm flex flex-col gap-space-md" onSubmit={salvarChave} noValidate>
+            <div className="flex flex-col gap-2">
+              <span id={`${ids}-type-label`} className="font-label-md text-label-md text-on-surface">
+                Tipo de chave Pix
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2" role="radiogroup" aria-labelledby={`${ids}-type-label`}>
+                {(Object.keys(META_TIPO_PIX) as TipoChavePix[]).map((tipo) => {
+                  const meta = META_TIPO_PIX[tipo];
+                  const ativo = keyType === tipo;
+                  return (
+                    <button
+                      key={tipo}
+                      type="button"
+                      role="radio"
+                      aria-checked={ativo}
+                      onClick={() => alterarTipoChave(tipo)}
+                      className={`min-h-11 px-3 py-2 rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                        ativo
+                          ? "bg-primary-fixed text-on-primary-fixed ring-2 ring-primary-container font-bold"
+                          : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container"
+                      }`}
+                    >
+                      <Icon name={meta.icon} size={18} />
+                      <span>{meta.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={`${ids}-key`} className="font-label-md text-label-md text-on-surface">Chave para recebimento</label>
-              <input id={`${ids}-key`} type={keyType === "email" ? "email" : "text"} required minLength={3} value={key} onChange={event => setKey(event.target.value)} className={inputClass}/>
+              <label htmlFor={`${ids}-key`} className="font-label-md text-label-md text-on-surface">
+                Chave ({META_TIPO_PIX[keyType].label})
+              </label>
+              <input
+                id={`${ids}-key`}
+                type={keyType === "email" ? "email" : "text"}
+                inputMode={META_TIPO_PIX[keyType].inputMode}
+                maxLength={META_TIPO_PIX[keyType].maxLength}
+                placeholder={META_TIPO_PIX[keyType].placeholder}
+                required
+                value={key}
+                onChange={(event) => {
+                  setKey(formatarChavePix(keyType, event.target.value));
+                  if (keyError) setKeyError("");
+                }}
+                aria-invalid={Boolean(keyError)}
+                className={inputClass}
+              />
+              {keyError ? (
+                <p role="alert" className="font-label-sm text-label-sm text-error flex items-center gap-1">
+                  <Icon name="error" size={16} />
+                  <span>{keyError}</span>
+                </p>
+              ) : (
+                <p className="font-label-sm text-label-sm text-on-surface-variant">
+                  {META_TIPO_PIX[keyType].hint}
+                </p>
+              )}
             </div>
-            <div className="md:col-span-2 flex flex-wrap items-center justify-end gap-space-sm">
-              <button type="button" className={secondaryButton} onClick={() => { setEditing(false); setEditingId(null); }}>Cancelar</button>
+            <div className="flex flex-wrap items-center justify-end gap-space-sm">
+              <button type="button" className={secondaryButton} onClick={() => { setEditing(false); setEditingId(null); setKeyError(""); }}>Cancelar</button>
               <button type="submit" className={primaryButton}><Icon name="check" size={18}/>Salvar chave</button>
             </div>
           </form>
         )}
       </section>
 
-      {/* Preferências de recebimento */}
+      {/* Prévia do QR Code */}
       <section className="space-y-space-md">
-        <SectionTitle icon="tune" title="Preferências de Recebimento & Liquidação" description="Automatize cobranças e facilite a quitação das despesas para todos os participantes."/>
-        <div className="bg-surface-container-lowest rounded-xl p-space-md md:p-space-lg shadow-sm space-y-space-lg">
-          <ToggleRow icon="qr_code_2" title="Sugerir minha chave Pix padrão em todas as despesas que eu pagar no caixa" description="Gera automaticamente o payload Pix Copia e Cola nos comprovantes do grupo, acelerando seu reembolso imediato." checked={suggestPix} onChange={setSuggestPix}/>
+        <SectionTitle icon="qr_code_2" title="Recebimento via Pix" description="Sua chave Pix cadastrada é exibida aos participantes na liquidação das despesas."/>
+        <div className="bg-surface-container-lowest rounded-xl p-space-md md:p-space-lg shadow-sm">
           <div className="flex flex-col sm:flex-row items-center gap-space-lg p-space-md rounded-xl bg-surface-container-low">
-            <div className="bg-surface-container-lowest p-3 rounded-xl shadow-sm shrink-0"><PixPreview size={132}/></div>
+            <div className="bg-white p-2 rounded-xl shadow-sm shrink-0"><PixPreview size={132} payload={brCode} label={`QR Code Pix de ${titular}`}/></div>
             <div className="flex-1 space-y-space-xs text-center sm:text-left">
-              <span className="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold">Prévia do QR Code de Cobrança</span>
-              <p className="font-label-lg text-label-lg text-on-surface">Racha Fácil · {titular}</p>
-              <p className="font-body-sm text-body-sm text-on-surface-variant">Este código é anexado a qualquer cobrança que você disparar via WhatsApp ou link direto.</p>
+              <span className="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold">QR Code Pix Padrão</span>
+              <p className="font-label-lg text-label-lg text-on-surface">Racha+ · {titular}</p>
+              <p className="font-body-sm text-body-sm text-on-surface-variant">Este código segue o padrão BR Code e é exibido para os participantes ao quitar despesas no grupo.</p>
               <div className="flex flex-wrap justify-center sm:justify-start gap-space-xs pt-space-xs">
-                <button type="button" className={`${smallButton} bg-surface-container-lowest`} onClick={() => setMessage("QR Code ilustrativo. Não há um código de pagamento real para baixar.")}><Icon name="download" size={16}/><span>Baixar Placa QR</span></button>
-                <button type="button" className={`${smallButton} bg-surface-container-lowest`} onClick={copy}><Icon name="content_copy" size={16}/><span>Copiar chave</span></button>
+                <button
+                  type="button"
+                  disabled={!brCode}
+                  className={`${smallButton} bg-surface-container-lowest disabled:opacity-50`}
+                  onClick={async () => {
+                    if (!brCode) return;
+                    const { default: QRCode } = await import("qrcode");
+                    const url = await QRCode.toDataURL(brCode, { errorCorrectionLevel: "M", margin: 3, width: 512, color: { dark: "#121c2a", light: "#ffffff" } });
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = "pix-racha-mais.png";
+                    link.click();
+                  }}
+                >
+                  <Icon name="download" size={16}/><span>Baixar Placa QR</span>
+                </button>
+                <button type="button" disabled={!brCode} className={`${smallButton} bg-surface-container-lowest disabled:opacity-50`} onClick={async () => { if (!brCode) return; try { await navigator.clipboard.writeText(brCode); setMessage("Pix Copia e Cola copiado."); } catch { setMessage("Não foi possível copiar o código."); } }}><Icon name="content_copy" size={16}/><span>Copiar Pix Copia e Cola</span></button>
+                <button type="button" disabled={!saved} className={`${smallButton} bg-surface-container-lowest disabled:opacity-50`} onClick={copy}><Icon name="key" size={16}/><span>Copiar chave</span></button>
               </div>
-              <p className="font-label-sm text-label-sm text-outline">QR Code demonstrativo, sem valor financeiro.</p>
+              <p className="font-label-sm text-label-sm text-outline">{brCode ? "Padrão EMV / BR Code sem valor definido (valor aberto)." : "Cadastre uma chave Pix acima para gerar o QR Code."}</p>
             </div>
           </div>
-          <div className="w-full h-px bg-surface-container-low"/>
-          <ToggleRow icon="chat" title="Lembretes automáticos amigáveis via WhatsApp quando faltar 24h para o rateio" description="O Racha+ envia uma notificação cortês no WhatsApp dos participantes pendentes sem constrangimentos." checked={whatsappReminders} onChange={setWhatsappReminders}/>
         </div>
       </section>
 
@@ -374,22 +460,6 @@ export default function AccountPanels({ panel }: { panel: "pix" | "security" }) 
           </Link>
         </div>
       </section>
-
-      {/* Barra de ações */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-space-md bg-surface-container-lowest/90 backdrop-blur-md p-space-md rounded-xl shadow-md">
-        <div className="flex items-center gap-space-sm">
-          <div className="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center shrink-0"><Icon name="verified_user" size={18} className="text-on-primary-fixed"/></div>
-          <p className="font-body-sm text-body-sm text-on-surface-variant">
-            O Pix é destinado diretamente ao recebedor. A prévia não realiza movimentações financeiras. <Link to="/faq" className="text-primary font-semibold hover:underline whitespace-nowrap">Termos de uso e segurança</Link>
-          </p>
-        </div>
-        <div className="flex items-center gap-space-sm w-full sm:w-auto">
-          <button type="button" className="w-1/2 sm:w-auto px-space-lg py-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors" onClick={() => { setSuggestPix(savedPrefs.suggestPix); setWhatsappReminders(savedPrefs.whatsappReminders); }}>Descartar</button>
-          <button type="button" className="w-1/2 sm:w-auto px-space-xl py-space-sm rounded-lg bg-primary-container hover:bg-primary-container/90 text-on-primary font-label-md text-label-md shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-space-xs" onClick={() => { setSavedPrefs({ suggestPix, whatsappReminders }); setMessage("Preferências salvas nesta demonstração."); }}>
-            <Icon name="check" size={18}/><span>Salvar Preferências</span>
-          </button>
-        </div>
-      </div>
     </div>
   );
 
@@ -467,16 +537,29 @@ export default function AccountPanels({ panel }: { panel: "pix" | "security" }) 
       </section>
 
       {remove && (
-        <Overlay title={removed ? "Conta excluída · prévia" : "Confirmar exclusão definitiva?"} onClose={() => setRemove(false)} footer={!removed && <>
-          <button type="button" className="px-space-md h-10 rounded-lg bg-surface-container-high hover:bg-surface-container text-on-surface font-label-md text-label-md transition-colors" onClick={() => setRemove(false)}>Cancelar</button>
-          <button type="button" className="px-space-md h-10 rounded-lg bg-secondary hover:bg-secondary/90 text-on-secondary font-label-md text-label-md transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" disabled={confirmation !== "EXCLUIR"} onClick={() => setRemoved(true)}>
-            <Icon name="delete" size={18}/><span>Confirmar e Encerrar</span>
+        <Overlay title={removed ? "Conta desativada" : "Confirmar desativação da conta?"} onClose={() => !removing && setRemove(false)} footer={!removed && <>
+          <button type="button" disabled={removing} className="px-space-md h-10 rounded-lg bg-surface-container-high hover:bg-surface-container text-on-surface font-label-md text-label-md transition-colors disabled:opacity-60" onClick={() => setRemove(false)}>Cancelar</button>
+          <button type="button" className="px-space-md h-10 rounded-lg bg-secondary hover:bg-secondary/90 text-on-secondary font-label-md text-label-md transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled={confirmation !== "EXCLUIR" || removing} onClick={async () => {
+            if (!user) { setRemoved(true); return; }
+            setRemoving(true);
+            try {
+              await apiRequest(ENDPOINTS.users.me, { method: "DELETE" });
+              await signOut().catch(() => {});
+              navigate("/login", { replace: true });
+            } catch (err) {
+              setMessage(err instanceof ApiError ? err.message : "Não foi possível desativar a conta.");
+              setRemove(false);
+            } finally {
+              setRemoving(false);
+            }
+          }}>
+            <Icon name="delete" size={18}/><span>{removing ? "Desativando..." : "Confirmar e Desativar"}</span>
           </button>
         </>}>
           {removed
-            ? <p className="flex items-start gap-space-xs p-space-md rounded-lg bg-surface-container-low font-body-sm text-body-sm text-on-surface" role="status"><Icon name="task_alt" size={18} className="text-primary shrink-0"/>Estado de sucesso da demonstração. Nenhuma conta real foi excluída.</p>
+            ? <p className="flex items-start gap-space-xs p-space-md rounded-lg bg-surface-container-low font-body-sm text-body-sm text-on-surface" role="status"><Icon name="task_alt" size={18} className="text-primary shrink-0"/>Estado de demonstração. Nenhuma conta real foi alterada.</p>
             : <>
-              <p className="font-body-sm text-body-sm text-on-surface-variant">O histórico financeiro compartilhado será preservado. Para revisar esta confirmação, digite a palavra <strong>EXCLUIR</strong> abaixo:</p>
+              <p className="font-body-sm text-body-sm text-on-surface-variant">Sua conta ficará inacessível, mas o histórico financeiro nos grupos será preservado conforme a legislação. Para confirmar, digite <strong>EXCLUIR</strong> abaixo:</p>
               <label htmlFor={`${ids}-confirmation`} className="sr-only">Confirmação</label>
               <input id={`${ids}-confirmation`} value={confirmation} onChange={event => setConfirmation(event.target.value)} placeholder="Digite EXCLUIR" className="mt-space-md w-full h-11 px-4 rounded-lg bg-surface-container-low text-on-surface placeholder:text-outline font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-secondary transition-all"/>
             </>}

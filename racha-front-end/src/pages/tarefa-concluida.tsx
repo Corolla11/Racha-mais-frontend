@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import Icon from "../components/icon";
+import { money } from "../lib/finance";
 import type { Tarefa } from "./tarefa";
 
 interface TarefaConcluidaProps {
@@ -9,10 +10,6 @@ interface TarefaConcluidaProps {
   onFechar: () => void;
   onPagamento?: () => void;
   onReabrir?: (tarefa: Tarefa) => void;
-}
-
-function moeda(valor: number) {
-  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 export default function TarefaConcluida({
@@ -171,7 +168,7 @@ export default function TarefaConcluida({
               </div>
               <div className="flex flex-col min-w-0">
                 <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Valor Total</span>
-                <span className="font-numeric-stat text-numeric-stat text-on-surface truncate">{moeda(despesa.valorTotal)}</span>
+                <span className="font-numeric-stat text-numeric-stat text-on-surface truncate">{money(despesa.valorTotal)}</span>
                 <span className="font-label-sm text-label-sm text-on-surface-variant">{despesa.categoria ? `Categoria: ${despesa.categoria}` : "Despesa categorizada"}</span>
               </div>
             </div>
@@ -182,7 +179,7 @@ export default function TarefaConcluida({
               <div className="flex flex-col min-w-0">
                 <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Divisão Igual</span>
                 <span className="font-numeric-stat text-numeric-stat text-on-surface truncate">{participantesRateio.length} Membros</span>
-                <span className="font-label-sm text-label-sm text-on-surface-variant">{moeda(valorIndividual)} por pessoa</span>
+                <span className="font-label-sm text-label-sm text-on-surface-variant">{money(valorIndividual)} por pessoa</span>
               </div>
             </div>
             <div className={`rounded-xl p-5 shadow-sm flex items-center gap-4 ${todosPagos ? "bg-emerald-50" : "bg-surface-container-lowest"}`}>
@@ -191,9 +188,9 @@ export default function TarefaConcluida({
               </div>
               <div className="flex flex-col min-w-0">
                 <span className={`font-label-sm text-label-sm uppercase tracking-wider ${todosPagos ? "text-emerald-800" : "text-on-surface-variant"}`}>Total Quitado</span>
-                <span className={`font-numeric-stat text-numeric-stat truncate ${todosPagos ? "text-emerald-800" : "text-on-surface"}`}>{moeda(totalPago)}</span>
+                <span className={`font-numeric-stat text-numeric-stat truncate ${todosPagos ? "text-emerald-800" : "text-on-surface"}`}>{money(totalPago)}</span>
                 <span className={`font-label-sm text-label-sm font-semibold ${todosPagos ? "text-emerald-700" : "text-secondary"}`}>
-                  {todosPagos ? "Zero pendências" : `Faltam ${moeda(faltante)}`}
+                  {todosPagos ? "Zero pendências" : `Faltam ${money(faltante)}`}
                 </span>
               </div>
             </div>
@@ -265,7 +262,7 @@ export default function TarefaConcluida({
                             </span>
                           </div>
                         </div>
-                        <span className="font-headline-sm text-headline-sm text-on-surface font-bold self-end sm:self-center">{moeda(valorIndividual)}</span>
+                        <span className="font-headline-sm text-headline-sm text-on-surface font-bold self-end sm:self-center">{money(valorIndividual)}</span>
                       </div>
                     );
                   })}

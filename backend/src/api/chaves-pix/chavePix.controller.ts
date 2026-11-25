@@ -9,6 +9,14 @@ const chavePixSchema = z.object({
   chave: z.string("A chave Pix é obrigatória").trim().min(1, "A chave Pix é obrigatória").max(100, "A chave Pix deve ter no máximo 100 caracteres"),
 });
 
+const atualizarChavePixSchema = chavePixSchema
+  .omit({ idUser: true })
+  .partial()
+  .refine(
+    (d) => d.tipoChave !== undefined || d.chave !== undefined,
+    "Informe tipoChave ou chave para atualizar",
+  );
+
 export const chavePixController = {
   async criar(req: Request, res: Response) {
     const dados = chavePixSchema.omit({ idUser: true }).parse(req.body);
@@ -31,7 +39,7 @@ export const chavePixController = {
   },
 
   async atualizar(req: Request, res: Response) {
-    const dados = chavePixSchema.omit({ idUser: true }).partial().parse(req.body);
+    const dados = atualizarChavePixSchema.parse(req.body);
     const chavePix = await chavePixService.atualizar(
       res.locals.user.id,
       String(req.params.id),

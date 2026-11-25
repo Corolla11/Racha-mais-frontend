@@ -445,8 +445,11 @@ function Home() {
             <span className="font-headline-sm text-headline-sm text-on-surface font-bold">Racha+</span>
             <span className="font-body-sm text-body-sm text-on-surface-variant">— Gestão social de despesas e tarefas em grupo</span>
           </div>
-          <div className="font-body-sm text-body-sm text-on-surface-variant">
-            © {new Date().getFullYear()} Racha+. Todos os direitos reservados.
+          <div className="flex flex-wrap items-center justify-center gap-space-md font-body-sm text-body-sm text-on-surface-variant">
+            <Link className="inline-flex items-center min-h-11 px-2 hover:text-primary transition-colors" to="/faq#termos">Termos</Link>
+            <Link className="inline-flex items-center min-h-11 px-2 hover:text-primary transition-colors" to="/faq#privacidade">Privacidade</Link>
+            <Link className="inline-flex items-center min-h-11 px-2 hover:text-primary transition-colors" to="/faq">Ajuda</Link>
+            <span>© {new Date().getFullYear()} Racha+. Todos os direitos reservados.</span>
           </div>
         </div>
       </footer>

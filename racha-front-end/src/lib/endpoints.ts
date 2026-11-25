@@ -15,9 +15,17 @@ export const ENDPOINTS = {
   grupos: {
     base: "/grupos",
     byId: (id: string) => `/grupos/${encodeURIComponent(id)}`,
+    encerrar: (id: string) => `/grupos/${encodeURIComponent(id)}/encerrar`,
     membros: (idGrupo: string) => `/grupos/${encodeURIComponent(idGrupo)}/membros`,
     membroById: (idGrupo: string, idUser: string) =>
       `/grupos/${encodeURIComponent(idGrupo)}/membros/${encodeURIComponent(idUser)}`,
+    convites: (idGrupo: string) => `/grupos/${encodeURIComponent(idGrupo)}/convites`,
+    conviteById: (idGrupo: string, idConvite: string) =>
+      `/grupos/${encodeURIComponent(idGrupo)}/convites/${encodeURIComponent(idConvite)}`,
+  },
+  convites: {
+    porToken: (token: string) => `/convites/${encodeURIComponent(token)}`,
+    aceitar: (token: string) => `/convites/${encodeURIComponent(token)}/aceitar`,
   },
   tarefas: {
     base: "/tarefas",
@@ -36,12 +44,12 @@ export const ENDPOINTS = {
   planos: {
     base: "/planos",
   },
-  pagamentos: {
-    base: "/pagamentos",
-    informar: "/pagamentos/informar",
-    confirmar: (id: string) => `/pagamentos/${encodeURIComponent(id)}/confirmar`,
-    contestar: (id: string) => `/pagamentos/${encodeURIComponent(id)}/contestar`,
-    assinatura: "/pagamentos/assinatura",
+  assinaturas: {
+    doGrupo: (idGrupo: string) => `/assinaturas/grupos/${encodeURIComponent(idGrupo)}`,
+    checkoutPro: (idGrupo: string) =>
+      `/assinaturas/grupos/${encodeURIComponent(idGrupo)}/pro/checkout`,
+    cancelar: (idGrupo: string) =>
+      `/assinaturas/grupos/${encodeURIComponent(idGrupo)}/cancel`,
   },
   ia: {
     sugerirGrupo: "/ia/grupos/rascunho",
@@ -62,6 +70,10 @@ export type UserProfileApi = {
   name: string;
   email: string;
   image: string | null;
+  bio?: string;
+  cidade?: string;
+  telefone?: string;
+  notificarDespesas?: boolean;
   createdAt: string;
   chavesPix: ChavePixApi[];
 };
@@ -102,6 +114,18 @@ export type PlanoApi = {
   beneficios: string[];
 };
 
+export type AssinaturaGrupoApi = {
+  isPro: boolean;
+  assinatura: {
+    ciclo: "mensal" | "anual";
+    status: "PENDENTE" | "ATIVA" | "CANCELADA" | "FALHOU";
+    valorCentavos: number;
+    checkoutUrl: string | null;
+    createdAt: string;
+    updatedAt: string;
+  } | null;
+};
+
 export type IaSugestaoGrupo = {
   nome?: string;
   categoria?: string;
@@ -123,16 +147,6 @@ export const futureModules = {
       apiRequest<void>(ENDPOINTS.notificacoes.marcarLida(id), { method: "PATCH" }),
     marcarTodasLidas: () =>
       apiRequest<{ atualizadas: number }>(ENDPOINTS.notificacoes.marcarTodasLidas, { method: "PATCH" }),
-    salvarPreferencias: (prefs: Record<string, boolean>) =>
-      apiRequest(ENDPOINTS.notificacoes.preferencias, { method: "PUT", body: prefs }),
-  },
-  pagamentos: {
-    informar: (payload: { idParte?: string; idTarefa: string; idUser: string; comprovante?: string }) =>
-      apiRequest(ENDPOINTS.pagamentos.informar, { method: "POST", body: payload }),
-    confirmar: (id: string) =>
-      apiRequest(ENDPOINTS.pagamentos.confirmar(id), { method: "PATCH" }),
-    contestar: (id: string, motivo: string) =>
-      apiRequest(ENDPOINTS.pagamentos.contestar(id), { method: "PATCH", body: { motivo } }),
   },
   ia: {
     sugerirGrupo: (prompt: string) =>

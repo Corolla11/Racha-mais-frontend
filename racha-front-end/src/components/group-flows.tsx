@@ -1,10 +1,12 @@
 import { initialGroupSettings, type GroupSettings } from "../lib/group-design";
 import { useEffect,useImperativeHandle,useState,type Dispatch,type Ref,type SetStateAction } from "react";
 import { ApiError, apiRequest } from "../lib/api";
-import { ENDPOINTS, futureModules, type ChavePixApi } from "../lib/endpoints";
+import { ENDPOINTS, type ChavePixApi, type TipoChavePix } from "../lib/endpoints";
+import { gerarBrCode } from "../lib/brcode";
+import { formatarChavePix } from "../lib/pix-format";
 import { canCloseGroup,money,paymentLabels,share,type Payment,type PaymentStatus } from "../lib/finance";
 import type { DadosTarefa } from "../pages/editar-tarefa";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { GroupAudit, GroupEditForm, PaymentBadge, PaymentManagement } from "./group-panels";
 import Icon from "./icon";
 import Overlay from "./overlay";
@@ -16,6 +18,7 @@ export interface GroupFlowControl { openPayments: (taskId?: string) => void }
 interface Props { idGrupo?: string; currentUserId?: string; adminName?: string; parteIds?: Record<string, string>; taskEvents: Activity[]; tasks: DadosTarefa[]; name: string; onName: (name: string) => void; closed: boolean; onCloseGroup: () => void; memberMode: boolean; payments: Record<string, Payment>; setPayments: Dispatch<SetStateAction<Record<string, Payment>>>; ref?: Ref<GroupFlowControl> }
 
 export default function GroupFlows({ idGrupo, currentUserId = "", adminName, parteIds = {}, taskEvents, tasks, name, onName, closed, onCloseGroup, memberMode, payments, setPayments, ref }: Props) {
+  const navigate = useNavigate();
   const [view, setView] = useState<"payments" | "members" | "edit" | "close" | "leave" | null>(null);
   const [tab, setTab] = useState("tasks");
   const [memberTab, setMemberTab] = useState("members");
@@ -33,7 +36,11 @@ export default function GroupFlows({ idGrupo, currentUserId = "", adminName, par
   const [invites, setInvites] = useState<string[]>([]);
   const [receiptView, setReceiptView] = useState<Payment | null>(null);
   // Chave Pix do recebedor, guardada junto do id para não exibir a de outra tarefa
-  const [recipientPixState, setRecipientPixState] = useState<{ idUser: string; chave: string | null } | null>(null);
+  const [recipientPixState, setRecipientPixState] = useState<{
+    idUser: string;
+    chave: string | null;
+    tipoChave?: TipoChavePix;
+  } | null>(null);
 
   useEffect(() => {
     if (!idGrupo) return;
@@ -79,7 +86,13 @@ export default function GroupFlows({ idGrupo, currentUserId = "", adminName, par
       `${ENDPOINTS.chavesPix.base}?idUser=${encodeURIComponent(payerId)}`,
     )
       .then((chaves) => {
-        if (ativo) setRecipientPixState({ idUser: payerId, chave: chaves[0]?.chave ?? null });
+        if (ativo) {
+          setRecipientPixState({
+            idUser: payerId,
+            chave: chaves[0]?.chave ?? null,
+            tipoChave: chaves[0]?.tipoChave,
+          });
+        }
       })
       .catch(() => {
         if (ativo) setRecipientPixState({ idUser: payerId, chave: null });
@@ -88,7 +101,10 @@ export default function GroupFlows({ idGrupo, currentUserId = "", adminName, par
       ativo = false;
     };
   }, [idGrupo, payerId]);
-  const recipientPix = idGrupo && payerId && recipientPixState?.idUser === payerId ? recipientPixState.chave : null;
+  const recipientPix =
+    idGrupo && payerId && recipientPixState?.idUser === payerId
+      ? recipientPixState
+      : null;
 
   const visibleEntries = memberMode ? entries.filter(e => e.person.id === currentUserId) : entries;
   const canClose = canCloseGroup(tasks.map(t => t.concluida), entries);
@@ -97,23 +113,28 @@ export default function GroupFlows({ idGrupo, currentUserId = "", adminName, par
   const activeMembers = members.filter(member => member.active);
   function log(text: string) { setEvents(old => [{ text, date: new Date().toISOString() }, ...old]); }
   function dismiss() { setView(null); setRemove(null); setConfirmClose(false); setMessage(""); }
-  function updatePayment(key: string, status: PaymentStatus) {
+  async function updatePayment(key: string, status: PaymentStatus) {
     const entry = entries.find(e => e.key === key);
     if (!entry || closed) return;
     if (status === "confirmado" && (memberMode || entry.payment.status !== "informado")) return;
     if (status === "contestado" && (memberMode || !reason.trim())) { setMessage("Informe o motivo da contestação."); return; }
+    const previousPayment = payments[key];
     setPayments(old => ({ ...old, [key]: { ...entry.payment, status, ...(status === "informado" ? { receipt: receipt?.data, receiptName: receipt?.name } : {}), ...(status === "contestado" ? { reason } : {}) } }));
     const idParte = parteIds[key];
     if (idGrupo && idParte) {
       const apiStatus = status === "confirmado" ? "FINALIZADA" : status === "informado" ? "EM_ANDAMENTO" : "AGENDADA";
-      void apiRequest(ENDPOINTS.partes.byId(idParte), { method: "PATCH", body: { status: apiStatus } }).catch(() => {});
-    }
-    if (status === "informado") {
-      void futureModules.pagamentos.informar({ idParte, idTarefa: entry.task.id, idUser: entry.person.id, comprovante: receipt?.data }).catch(() => {});
-    } else if (status === "confirmado") {
-      void futureModules.pagamentos.confirmar(idParte ?? key).catch(() => {});
-    } else if (status === "contestado") {
-      void futureModules.pagamentos.contestar(idParte ?? key, reason).catch(() => {});
+      try {
+        await apiRequest(ENDPOINTS.partes.byId(idParte), { method: "PATCH", body: { status: apiStatus } });
+      } catch (err) {
+        setPayments(old => {
+          const next = { ...old };
+          if (previousPayment) next[key] = previousPayment;
+          else delete next[key];
+          return next;
+        });
+        setMessage(err instanceof ApiError ? err.message : "Não foi possível atualizar o pagamento.");
+        return;
+      }
     }
     log(`${paymentLabels[status]} · ${entry.person.nome} · ${entry.task.titulo}`);
     setMessage(paymentLabels[status]); setReceipt(null); setReason("");
@@ -131,9 +152,22 @@ export default function GroupFlows({ idGrupo, currentUserId = "", adminName, par
     reader.readAsDataURL(file);
   }
   const canInform = active && !closed && (active.person.id === currentUserId || !memberMode) && ["pendente", "contestado"].includes(active.payment.status);
-  const pixDisplay = recipientPix || "";
-  const pixCopyValue = recipientPix || "";
   const payer = active?.task.participantes.find(p => p.id === active.task.pagadorId);
+  const pixDisplay =
+    recipientPix?.chave && recipientPix.tipoChave
+      ? formatarChavePix(recipientPix.tipoChave, recipientPix.chave)
+      : recipientPix?.chave || "";
+  const pixCopyValue = recipientPix?.chave || "";
+  const brCode =
+    active && recipientPix?.chave
+      ? gerarBrCode({
+          chave: recipientPix.chave,
+          tipoChave: recipientPix.tipoChave,
+          nomeRecebedor: payer?.nome ?? "Recebedor",
+          valor: active.amount,
+          txid: active.task.id,
+        })
+      : "";
   const activeShares = active ? active.task.participantes.filter(p => p.selecionado).length : 0;
   const expenses = tasks.filter(task => task.possuiDespesa).sort((a, b) => b.valorTotal - a.valorTotal);
   const timeline = [...events, ...taskEvents].sort((a, b) => b.date.localeCompare(a.date));
@@ -208,17 +242,22 @@ export default function GroupFlows({ idGrupo, currentUserId = "", adminName, par
         </div>
         <div className="grid grid-cols-1 items-center gap-space-lg md:grid-cols-12">
           <div className="flex flex-col items-center justify-center rounded-xl bg-surface-container-low p-space-md shadow-sm md:col-span-5">
-            <div className="relative flex flex-col items-center rounded-lg bg-surface-container-lowest p-space-sm shadow-sm"><PixPreview size={148}/></div>
-            <span className="mt-space-sm flex items-center gap-1 text-center font-label-sm text-label-sm font-medium text-on-surface-variant"><Icon name="photo_camera" size={16} className="text-primary"/>QR Code ilustrativo</span>
+            <div className="relative flex flex-col items-center rounded-lg bg-white p-space-xs shadow-sm"><PixPreview size={148} payload={brCode} label={`QR Code Pix para ${payer?.nome ?? "recebedor"}`}/></div>
+            <span className="mt-space-sm flex items-center gap-1 text-center font-label-sm text-label-sm font-medium text-on-surface-variant"><Icon name="qr_code_2" size={16} className="text-primary"/>{brCode ? "QR Code Pix (BR Code)" : "Sem chave Pix"}</span>
           </div>
           <div className="flex flex-col gap-space-md md:col-span-7">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="pix-key" className="flex items-center justify-between font-label-sm text-label-sm font-semibold text-on-surface"><span>Chave Pix</span><span className="text-[11px] font-bold uppercase text-tertiary">{recipientPix ? "Cadastrada" : "Indisponível"}</span></label>
+              <label htmlFor="pix-key" className="flex items-center justify-between font-label-sm text-label-sm font-semibold text-on-surface"><span>Chave Pix</span><span className="text-[11px] font-bold uppercase text-tertiary">{recipientPix?.chave ? "Cadastrada" : "Indisponível"}</span></label>
               <div className="flex items-center gap-space-xs rounded-lg bg-surface-container p-1">
                 <div className="flex min-w-0 grow items-center gap-space-xs px-space-sm py-1.5"><Icon name="smartphone" size={20} className="shrink-0 text-on-surface-variant"/><input id="pix-key" readOnly value={pixDisplay || "Nenhuma chave cadastrada"} className="w-full bg-transparent font-label-md text-label-md font-semibold text-on-surface focus:outline-none"/></div>
                 <button type="button" disabled={!pixCopyValue} onClick={() => copy(pixCopyValue)} className="flex shrink-0 items-center gap-1 rounded-md bg-surface-container-lowest px-space-md py-1.5 font-label-sm text-label-sm font-semibold text-on-surface shadow-sm transition-all hover:bg-surface-container-high active:scale-95 disabled:opacity-50"><Icon name="content_copy" size={16}/>Copiar Chave</button>
               </div>
             </div>
+            {brCode && (
+              <button type="button" onClick={() => copy(brCode)} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-primary-fixed px-space-md py-2 font-label-md text-label-md text-on-primary-fixed transition-colors hover:bg-primary-fixed-dim cursor-pointer">
+                <Icon name="qr_code" size={18}/><span>Copiar Pix Copia e Cola ({money(active.amount)})</span>
+              </button>
+            )}
           </div>
         </div>
         {active.payment.reason && <p className="flex items-start gap-2 rounded-xl bg-error-container/50 p-space-md font-body-sm text-body-sm text-on-error-container" role="alert"><Icon name="report" size={20} className="shrink-0 text-error"/>Motivo da contestação: {active.payment.reason}</p>}
@@ -241,9 +280,9 @@ export default function GroupFlows({ idGrupo, currentUserId = "", adminName, par
         </div>}
         <div className="flex items-start gap-space-sm rounded-xl bg-surface-container p-space-md"><Icon name="verified_user" size={20} className="mt-0.5 shrink-0 text-primary"/><div className="flex flex-col"><span className="font-label-sm text-label-sm font-bold text-on-surface">Auditoria e confirmação colaborativa</span><p className="font-body-sm text-body-sm leading-snug text-on-surface-variant">Informar o pagamento não quita a cota. O status só será marcado como <strong className="font-semibold text-on-surface">Confirmado</strong> após {payer?.nome ?? "o responsável"} verificar o crédito e validar o comprovante.</p></div></div>
         <details className="group rounded-xl bg-surface-container-low p-space-md"><summary className="flex cursor-pointer list-none items-center justify-between font-label-md text-label-md text-on-surface"><span className="flex items-center gap-space-xs"><Icon name="history" size={18} className="text-primary"/>Histórico de pagamentos desta tarefa</span><Icon name="expand_more" size={20} className="text-on-surface-variant transition-transform group-open:rotate-180"/></summary><div className="mt-space-sm flex flex-col gap-space-xs">{events.some(event => event.text.includes(active.task.titulo)) ? events.filter(event => event.text.includes(active.task.titulo)).map((event, index) => <p key={index} className="flex flex-col font-body-sm text-body-sm text-on-surface">{event.text}<small className="font-label-sm text-label-sm text-on-surface-variant">{new Date(event.date).toLocaleString("pt-BR")}</small></p>) : <p className="font-body-sm text-body-sm text-on-surface-variant">Nenhum pagamento anterior registrado nesta tarefa.</p>}</div></details>
-        <div className="flex flex-wrap items-center justify-between gap-space-sm"><small className="flex items-center gap-1 font-label-sm text-label-sm text-outline"><Icon name="lock" size={15} className="text-tertiary"/>Pix ilustrativo · não realize uma transferência.</small><button type="button" className="inline-flex items-center gap-1 font-label-sm text-label-sm font-semibold text-primary hover:underline" onClick={() => setSelected("")}><Icon name="arrow_back" size={14}/>Voltar aos pagamentos</button></div>
+        <div className="flex flex-wrap items-center justify-between gap-space-sm"><small className="flex items-center gap-1 font-label-sm text-label-sm text-outline"><Icon name="lock" size={15} className="text-tertiary"/>{brCode ? "Transferência direta via Pix no app do seu banco." : "Solicite ao responsável que cadastre uma chave Pix."}</small><button type="button" className="inline-flex items-center gap-1 font-label-sm text-label-sm font-semibold text-primary hover:underline" onClick={() => setSelected("")}><Icon name="arrow_back" size={14}/>Voltar aos pagamentos</button></div>
       </>}
-      {view === "edit" && <GroupEditForm name={name} settings={settings} onSave={(updatedName, updatedSettings) => { onName(updatedName); setSettings(updatedSettings); if (idGrupo) { void apiRequest(ENDPOINTS.grupos.byId(idGrupo), { method: "PATCH", body: { nome: updatedName, descricao: updatedSettings.description } }).catch(() => {}); } log("Informações do grupo atualizadas"); dismiss(); }}/>}
+      {view === "edit" && <GroupEditForm name={name} settings={settings} onSave={async (updatedName, updatedSettings) => { if (idGrupo) { try { await apiRequest(ENDPOINTS.grupos.byId(idGrupo), { method: "PATCH", body: { nome: updatedName, descricao: updatedSettings.description } }); } catch (err) { setMessage(err instanceof ApiError ? err.message : "Não foi possível atualizar o grupo."); return; } } onName(updatedName); setSettings(updatedSettings); log("Informações do grupo atualizadas"); dismiss(); }}/>}
       {view === "members" && <>
         <div className="flex w-fit items-center gap-1 rounded-xl bg-surface-container-low p-1" role="group" aria-label="Seções de membros">
           <button type="button" aria-pressed={memberTab === "members"} onClick={() => setMemberTab("members")} className={`inline-flex items-center gap-1.5 rounded-lg px-space-md py-1.5 font-label-md text-label-md transition-all ${memberTab === "members" ? "bg-surface-container-lowest text-on-surface shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}><Icon name="group" size={18}/>Membros Atuais<span className="rounded-full bg-surface-container px-2 py-0.5 font-label-sm text-label-sm">{activeMembers.length}</span></button>
@@ -259,10 +298,10 @@ export default function GroupFlows({ idGrupo, currentUserId = "", adminName, par
             </div>
           </div>
           <div className="flex items-center gap-space-sm self-end sm:self-auto">{member.id === currentUserId ? <><span className="rounded-full bg-primary-fixed px-2.5 py-0.5 font-label-sm text-label-sm font-semibold text-on-primary-fixed-variant">Admin · Criador</span><Icon name="lock" size={18} className="text-outline" title="Permissão fixa"/></> : !closed && !memberMode && member.active ? <>
-            <div className="relative flex items-center"><select aria-label={`Permissão de ${member.nome}`} value={member.admin ? "admin" : "member"} onChange={event => { const isAdmin = event.target.value === "admin"; setMembers(old => old.map(item => item.id === member.id ? { ...item, admin: isAdmin } : item)); if (idGrupo) { void apiRequest(ENDPOINTS.grupos.membroById(idGrupo, member.id), { method: "PATCH", body: { funcao: isAdmin ? "dono" : "membro" } }).catch(() => {}); } log(`Permissão atualizada · ${member.nome}`); }} className="appearance-none rounded-lg bg-surface-container-low py-2 pl-3 pr-9 font-label-sm text-label-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"><option value="member">Membro</option><option value="admin">Administrador</option></select><Icon name="expand_more" size={18} className="pointer-events-none absolute right-2 text-on-surface-variant"/></div>
+            <div className="relative flex items-center"><select aria-label={`Permissão de ${member.nome}`} value={member.admin ? "admin" : "member"} onChange={async event => { const isAdmin = event.target.value === "admin"; if (idGrupo) { try { await apiRequest(ENDPOINTS.grupos.membroById(idGrupo, member.id), { method: "PATCH", body: { funcao: isAdmin ? "dono" : "membro" } }); } catch (err) { setMessage(err instanceof ApiError ? err.message : "Não foi possível alterar a permissão."); return; } } setMembers(old => old.map(item => item.id === member.id ? { ...item, admin: isAdmin } : item)); log(`Permissão atualizada · ${member.nome}`); }} className="appearance-none rounded-lg bg-surface-container-low py-2 pl-3 pr-9 font-label-sm text-label-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"><option value="member">Membro</option><option value="admin">Administrador</option></select><Icon name="expand_more" size={18} className="pointer-events-none absolute right-2 text-on-surface-variant"/></div>
             <button type="button" aria-label={`Remover ${member.nome}`} onClick={() => setRemove(member)} className="flex h-9 w-9 items-center justify-center rounded-lg text-error transition-colors hover:bg-error-container/30"><Icon name="person_remove" size={20}/></button>
           </> : <span className="rounded-full bg-surface-container px-2.5 py-0.5 font-label-sm text-label-sm font-semibold text-on-surface-variant">{member.admin ? "Administrador" : "Membro"}</span>}</div>
-        </div>)}</div> : <form className="flex flex-col items-center gap-space-md rounded-xl bg-surface-container-low p-space-lg text-center" onSubmit={async event => { event.preventDefault(); if (invites.includes(invite)) { setMessage("Já existe um convite para este e-mail."); return; } if (idGrupo) { try { const novo = await apiRequest<{ idUser: string; funcao: "dono" | "membro"; user?: { name?: string } }>(ENDPOINTS.grupos.membros(idGrupo), { method: "POST", body: { email: invite } }); setMembers(old => [...old, { id: novo.idUser, nome: novo.user?.name || invite.split("@")[0], admin: novo.funcao === "dono", active: true, email: invite }]); log(`Membro adicionado · ${invite}`); setInvite(""); setMessage("Participante adicionado ao grupo."); return; } catch (err) { if (err instanceof ApiError && err.status !== 404) { setMessage(err.message); return; } } } setInvites(old => [...old, invite]); log(`Convite preparado · ${invite}`); setInvite(""); setMessage("Convite preparado na demonstração. Nenhum e-mail foi enviado."); }}>
+        </div>)}</div> : <form className="flex flex-col items-center gap-space-md rounded-xl bg-surface-container-low p-space-lg text-center" onSubmit={async event => { event.preventDefault(); const emailLimpo = invite.trim().toLowerCase(); if (!emailLimpo) return; if (invites.includes(emailLimpo)) { setMessage("Já existe um convite pendente para este e-mail."); return; } if (idGrupo) { try { const novo = await apiRequest<{ idUser: string; funcao: "dono" | "membro"; user?: { name?: string } }>(ENDPOINTS.grupos.membros(idGrupo), { method: "POST", body: { email: emailLimpo } }); setMembers(old => [...old, { id: novo.idUser, nome: novo.user?.name || emailLimpo.split("@")[0], admin: novo.funcao === "dono", active: true, email: emailLimpo }]); log(`Membro adicionado · ${emailLimpo}`); setInvite(""); setMessage("Participante adicionado ao grupo."); return; } catch (err) { if (err instanceof ApiError && err.status === 404) { try { await apiRequest(ENDPOINTS.grupos.convites(idGrupo), { method: "POST", body: { email: emailLimpo } }); setInvites(old => [...old, emailLimpo]); log(`Convite enviado por e-mail · ${emailLimpo}`); setInvite(""); setMessage("Convite enviado por e-mail."); } catch (inviteErr) { setMessage(inviteErr instanceof ApiError ? inviteErr.message : "Não foi possível enviar o convite."); } return; } setMessage(err instanceof ApiError ? err.message : "Não foi possível adicionar o participante."); return; } } setInvites(old => [...old, emailLimpo]); log(`Convite preparado · ${emailLimpo}`); setInvite(""); setMessage("Convite preparado na demonstração."); }}>
           <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-fixed text-primary"><Icon name="mail" size={24}/></span>
           <div><h3 className="font-headline-sm text-headline-sm text-on-surface">Chame seus amigos para o racha</h3><p className="font-body-sm text-body-sm text-on-surface-variant">Compartilhe as tarefas e acompanhe cada acerto em um só lugar.</p></div>
           <div className="flex w-full flex-col gap-1.5 text-left"><label htmlFor="invite-email" className="font-label-md text-label-md text-on-surface">E-mail do participante</label><div className="relative flex items-center"><Icon name="alternate_email" size={18} className="pointer-events-none absolute left-3 text-outline"/><input id="invite-email" type="email" required placeholder="amigo@exemplo.com" value={invite} onChange={event => setInvite(event.target.value)} className="w-full rounded-lg bg-surface-container-lowest py-2.5 pl-10 pr-4 font-body-md text-body-md text-on-surface shadow-sm outline-none transition-all placeholder:text-outline focus:ring-2 focus:ring-primary/20"/></div></div>
@@ -273,18 +312,18 @@ export default function GroupFlows({ idGrupo, currentUserId = "", adminName, par
           <div className="flex items-center gap-space-xs text-error"><Icon name="warning" size={20}/><h3 className="font-label-lg text-label-lg font-bold">Remover {remove.nome}?</h3></div>
           <p className="font-body-sm text-body-sm text-on-surface-variant">O acesso será revogado; as obrigações e o histórico financeiro serão preservados.</p>
           <p className="font-label-md text-label-md text-on-error-container">Pendências: {money(entries.filter(entry => entry.person.id === remove.id && entry.payment.status !== "confirmado").reduce((sum, entry) => sum + entry.amount, 0))}</p>
-          <div className="flex flex-wrap items-center gap-space-sm pt-1"><button type="button" className="rounded-lg bg-surface-container-lowest px-3.5 py-2 font-label-sm text-label-sm text-on-surface shadow-sm transition-colors hover:bg-surface-container" onClick={() => setRemove(null)}>Cancelar</button><button type="button" className="flex items-center gap-1.5 rounded-lg bg-error px-3.5 py-2 font-label-sm text-label-sm text-on-error shadow-sm transition-colors hover:bg-error/90" onClick={() => { if (idGrupo) { void apiRequest(ENDPOINTS.grupos.membroById(idGrupo, remove.id), { method: "DELETE" }).catch(() => {}); } setMembers(old => old.map(member => member.id === remove.id ? { ...member, active: false } : member)); log(`Participante removido · ${remove.nome}`); setRemove(null); }}><Icon name="delete_forever" size={16}/>Confirmar remoção</button></div>
+          <div className="flex flex-wrap items-center gap-space-sm pt-1"><button type="button" className="rounded-lg bg-surface-container-lowest px-3.5 py-2 font-label-sm text-label-sm text-on-surface shadow-sm transition-colors hover:bg-surface-container" onClick={() => setRemove(null)}>Cancelar</button><button type="button" className="flex items-center gap-1.5 rounded-lg bg-error px-3.5 py-2 font-label-sm text-label-sm text-on-error shadow-sm transition-colors hover:bg-error/90" onClick={async () => { if (idGrupo) { try { await apiRequest(ENDPOINTS.grupos.membroById(idGrupo, remove.id), { method: "DELETE" }); } catch (err) { setMessage(err instanceof ApiError ? err.message : "Não foi possível remover o participante."); setRemove(null); return; } } setMembers(old => old.map(member => member.id === remove.id ? { ...member, active: false } : member)); log(`Participante removido · ${remove.nome}`); setRemove(null); }}><Icon name="delete_forever" size={16}/>Confirmar remoção</button></div>
         </div>}
       </>}
       {view === "leave" && <>
         <div className="flex items-start gap-space-md rounded-xl bg-surface-container-low p-space-md"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-secondary-fixed text-secondary"><Icon name="logout" size={24}/></span><div className="flex flex-col"><h3 className="font-label-lg text-label-lg font-bold text-on-surface">{name}</h3><p className="font-body-sm text-body-sm text-on-surface-variant">Você perderá acesso às ações do grupo. Seu histórico financeiro será preservado.</p></div></div>
         <p className="flex items-center gap-2 rounded-xl bg-tertiary-fixed/40 p-space-md font-label-md text-label-md text-on-tertiary-fixed"><Icon name="account_balance_wallet" size={20} className="text-tertiary"/>Suas pendências: {money(myPending)}.</p>
         {onlyAdmin && <p className="flex items-start gap-2 rounded-xl bg-error-container/50 p-space-md font-body-sm text-body-sm text-on-error-container" role="alert"><Icon name="warning" size={20} className="shrink-0 text-error"/>Você é o único administrador. Promova outro participante em Membros antes de sair.</p>}
-        <div className="flex flex-col-reverse gap-space-sm sm:flex-row sm:justify-end"><button type="button" className={btnSecondary} onClick={dismiss}>Cancelar</button>{!onlyAdmin && <Link className={btnDanger} to="/meus-grupos" onClick={() => { if (idGrupo) { void apiRequest(ENDPOINTS.grupos.membroById(idGrupo, currentUserId), { method: "DELETE" }).catch(() => {}); } log("Saiu do grupo"); }}><Icon name="logout" size={18}/>Confirmar saída</Link>}</div>
+        <div className="flex flex-col-reverse gap-space-sm sm:flex-row sm:justify-end"><button type="button" className={btnSecondary} onClick={dismiss}>Cancelar</button>{!onlyAdmin && <button type="button" className={btnDanger} onClick={async () => { if (idGrupo) { try { await apiRequest(ENDPOINTS.grupos.membroById(idGrupo, currentUserId), { method: "DELETE" }); } catch (err) { setMessage(err instanceof ApiError ? err.message : "Não foi possível sair do grupo."); return; } } log("Saiu do grupo"); navigate("/meus-grupos", { replace: true }); }}><Icon name="logout" size={18}/>Confirmar saída</button>}</div>
       </>}
       </div>
     </Overlay>}
-    {confirmClose && <Overlay title="Confirmar encerramento do grupo?" description={name} onClose={() => setConfirmClose(false)} footer={<><button type="button" className={btnSecondary} onClick={() => setConfirmClose(false)}>Cancelar e Voltar</button><button type="button" className="inline-flex items-center justify-center gap-space-xs rounded-lg bg-secondary px-space-lg py-2.5 font-label-md text-label-md font-bold text-on-secondary shadow-md transition-all hover:bg-secondary/90 disabled:cursor-not-allowed disabled:opacity-50" disabled={!canClose} onClick={() => { if (!canClose) return; onCloseGroup(); log("Grupo encerrado · todos os pagamentos confirmados"); dismiss(); }}><Icon name="lock" size={18}/>Confirmar Encerramento Definitivo</button></>}>
+    {confirmClose && <Overlay title="Confirmar encerramento do grupo?" description={name} onClose={() => setConfirmClose(false)} footer={<><button type="button" className={btnSecondary} onClick={() => setConfirmClose(false)}>Cancelar e Voltar</button><button type="button" className="inline-flex items-center justify-center gap-space-xs rounded-lg bg-secondary px-space-lg py-2.5 font-label-md text-label-md font-bold text-on-secondary shadow-md transition-all hover:bg-secondary/90 disabled:cursor-not-allowed disabled:opacity-50" disabled={!canClose} onClick={async () => { if (!canClose) return; if (idGrupo) { try { await apiRequest(ENDPOINTS.grupos.encerrar(idGrupo), { method: "POST" }); } catch (err) { setMessage(err instanceof ApiError ? err.message : "Não foi possível encerrar o grupo."); setConfirmClose(false); return; } } onCloseGroup(); log("Grupo encerrado · todos os pagamentos confirmados"); dismiss(); }}><Icon name="lock" size={18}/>Confirmar Encerramento Definitivo</button></>}>
       <div className="flex flex-col gap-space-md">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary-fixed text-secondary shadow-sm"><Icon name="lock" size={32}/></div>
         <p className="font-body-md text-body-md text-on-surface-variant">O grupo ficará disponível no <strong className="text-on-surface">histórico em modo somente leitura</strong>, com todas as tarefas e pagamentos preservados.</p>

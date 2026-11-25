@@ -5,8 +5,9 @@ import AccountPanels, { SettingsBreadcrumb, SettingsTabs, StatusToast, ToggleRow
 import AppShell from "../components/app-shell";
 import Icon from "../components/icon";
 import { PageHeading } from "../components/ui";
-import { apiRequest } from "../lib/api";
-import { ENDPOINTS, futureModules, type ChavePixApi, type TipoChavePix, type UserProfileApi } from "../lib/endpoints";
+import { ApiError, apiRequest } from "../lib/api";
+import { ENDPOINTS, type ChavePixApi, type TipoChavePix, type UserProfileApi } from "../lib/endpoints";
+import { formatarChavePix } from "../lib/pix-format";
 
 type Panel = "profile" | "notifications" | "security" | "pix";
 
@@ -26,7 +27,7 @@ const panelInfo: Record<Panel, { crumb: string; width: string; eyebrow?: string;
 
 function Perfil() {
   const [params, setParams] = useSearchParams();
-  const { user } = useAuth();
+  const { user, refreshSession } = useAuth();
   const initial = params.get("aba");
   const panel: Panel = initial === "pix" || initial === "security" || initial === "notifications" ? initial : "profile";
   function setPanel(value: "profile" | "notifications" | "security" | "pix") {
@@ -36,9 +37,8 @@ function Perfil() {
       return next;
     }, { replace: true });
   }
-  const [lembreteWhatsApp, setLembreteWhatsApp] = useState(true);
   const [notificarDespesas, setNotificarDespesas] = useState(true);
-  const [resumoSemanal, setResumoSemanal] = useState(false);
+  const [salvandoPrefs, setSalvandoPrefs] = useState(false);
   const [perfil, setPerfil] = useState<UserProfileApi | null>(null);
   const [aviso, setAviso] = useState("");
   const info = panelInfo[panel];
@@ -48,7 +48,11 @@ function Perfil() {
     let ativo = true;
     apiRequest<UserProfileApi>(ENDPOINTS.users.me)
       .then((dados) => {
-        if (ativo) setPerfil(dados);
+        if (!ativo) return;
+        setPerfil(dados);
+        if (typeof dados.notificarDespesas === "boolean") {
+          setNotificarDespesas(dados.notificarDespesas);
+        }
       })
       .catch(() => {});
     return () => {
@@ -58,15 +62,19 @@ function Perfil() {
 
   async function salvarPreferencias() {
     setAviso("");
+    setSalvandoPrefs(true);
     try {
-      await futureModules.notificacoes.salvarPreferencias({
-        whatsapp: lembreteWhatsApp,
-        despesas: notificarDespesas,
-        resumoSemanal,
-      });
+      const res = await apiRequest<{ notificarDespesas: boolean }>(
+        ENDPOINTS.notificacoes.preferencias,
+        { method: "PUT", body: { notificarDespesas } },
+      );
+      setNotificarDespesas(res.notificarDespesas);
+      setPerfil((ant) => (ant ? { ...ant, notificarDespesas: res.notificarDespesas } : ant));
       setAviso("Preferências salvas com sucesso.");
-    } catch {
-      setAviso("Preferências atualizadas localmente.");
+    } catch (err) {
+      setAviso(err instanceof ApiError ? err.message : "Não foi possível salvar as preferências.");
+    } finally {
+      setSalvandoPrefs(false);
     }
   }
 
@@ -93,7 +101,17 @@ function Perfil() {
           {(panel === "security" || panel === "pix") && <AccountPanels key={panel} panel={panel}/>}
 
           <div hidden={panel !== "profile"}>
-            <ProfilePanel key={user?.id ?? "guest"} user={user} chavePix={perfil?.chavesPix?.[0]} onManageKeys={() => setPanel("pix")}/>
+            <ProfilePanel
+              key={`${user?.id ?? "guest"}-${perfil?.id ?? "init"}`}
+              user={user}
+              perfil={perfil}
+              chavePix={perfil?.chavesPix?.[0]}
+              onSaved={(atualizado) => {
+                setPerfil(atualizado);
+                void refreshSession().catch(() => {});
+              }}
+              onManageKeys={() => setPanel("pix")}
+            />
           </div>
 
           {panel === "notifications" && (
@@ -101,18 +119,14 @@ function Perfil() {
               <StatusToast message={aviso} onDone={() => setAviso("")}/>
               <div>
                 <h2 className="font-headline-sm text-headline-sm text-on-surface flex items-center gap-space-xs"><Icon name="notifications_active" size={22} className="text-primary"/><span>Notificações e Avisos</span></h2>
-                <p className="font-body-sm text-body-sm text-on-surface-variant">Defina quais lembretes e resumos você quer receber.</p>
+                <p className="font-body-sm text-body-sm text-on-surface-variant">Defina quais avisos você quer receber no app.</p>
               </div>
-              <div className="bg-surface-container-lowest rounded-xl p-space-md md:p-space-lg shadow-sm space-y-space-lg">
-                <ToggleRow icon="chat" title="Lembretes por WhatsApp" description="Lembretes sobre vencimentos e acertos." checked={lembreteWhatsApp} onChange={setLembreteWhatsApp}/>
-                <div className="w-full h-px bg-surface-container-low"/>
-                <ToggleRow icon="notifications" title="Novas tarefas e despesas" description="Avisos quando você for incluído em uma tarefa." checked={notificarDespesas} onChange={setNotificarDespesas}/>
-                <div className="w-full h-px bg-surface-container-low"/>
-                <ToggleRow icon="mail" title="Resumo semanal" description="Resumo das atividades financeiras dos grupos." checked={resumoSemanal} onChange={setResumoSemanal}/>
+              <div className="bg-surface-container-lowest rounded-xl p-space-md md:p-space-lg shadow-sm">
+                <ToggleRow icon="notifications" title="Novas tarefas e despesas" description="Avisos no app quando você for incluído em uma tarefa ou cobrança." checked={notificarDespesas} onChange={setNotificarDespesas}/>
               </div>
               <div className="flex justify-end">
-                <button type="button" className="px-space-xl py-2.5 rounded-lg bg-primary-container hover:bg-primary-container/90 text-on-primary font-label-md text-label-md shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-space-xs" onClick={() => void salvarPreferencias()}>
-                  <Icon name="check" size={18}/><span>Salvar Preferências</span>
+                <button type="button" disabled={salvandoPrefs} className="min-h-11 px-space-xl py-2.5 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-label-md text-label-md shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-space-xs cursor-pointer disabled:opacity-60" onClick={() => void salvarPreferencias()}>
+                  <Icon name="check" size={18}/><span>{salvandoPrefs ? "Salvando..." : "Salvar Preferências"}</span>
                 </button>
               </div>
             </section>
@@ -130,15 +144,76 @@ const emptyProfile: ProfileForm = { name: "", handle: "", bio: "", city: "", ema
 const fieldClass = "w-full py-3 rounded-lg bg-surface-container-low text-on-surface placeholder:text-outline font-body-md text-body-md focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary-container transition-all";
 const labelClass = "font-label-md text-label-md text-on-surface font-medium flex items-center justify-between gap-space-sm";
 
-function ProfilePanel({ user, chavePix, onManageKeys }: { user: AuthUser | null; chavePix?: ChavePixApi; onManageKeys: () => void }) {
+function ProfilePanel({
+  user,
+  perfil,
+  chavePix,
+  onSaved,
+  onManageKeys,
+}: {
+  user: AuthUser | null;
+  perfil: UserProfileApi | null;
+  chavePix?: ChavePixApi;
+  onSaved: (atualizado: UserProfileApi) => void;
+  onManageKeys: () => void;
+}) {
   const ids = useId();
-  const [saved, setSaved] = useState<ProfileForm>(() => user ? { name: user.name, handle: user.email.split("@")[0], bio: "", city: "", email: user.email, phone: "" } : emptyProfile);
-  const [form, setForm] = useState<ProfileForm>(saved);
+  const base: ProfileForm = perfil
+    ? {
+        name: perfil.name,
+        handle: perfil.email.split("@")[0],
+        bio: perfil.bio ?? "",
+        city: perfil.cidade ?? "",
+        email: perfil.email,
+        phone: perfil.telefone ?? "",
+      }
+    : user
+      ? { name: user.name, handle: user.email.split("@")[0], bio: "", city: "", email: user.email, phone: "" }
+      : emptyProfile;
+  const [saved, setSaved] = useState<ProfileForm>(base);
+  const [form, setForm] = useState<ProfileForm>(base);
+  const [salvando, setSalvando] = useState(false);
   const [message, setMessage] = useState("");
-  const pixKey = chavePix?.chave ?? "";
+  const pixKey = chavePix ? formatarChavePix(chavePix.tipoChave, chavePix.chave) : "";
   const pixType = chavePix ? LABELS_PIX[chavePix.tipoChave] ?? chavePix.tipoChave : "Celular";
   const dirty = (Object.keys(form) as (keyof ProfileForm)[]).some(field => form[field] !== saved[field]);
   function update(field: keyof ProfileForm, value: string) { setForm(previous => ({ ...previous, [field]: value })); }
+
+  async function salvarPerfil() {
+    if (!form.name.trim()) {
+      setMessage("Informe seu nome de exibição.");
+      return;
+    }
+    setSalvando(true);
+    setMessage("");
+    try {
+      const atualizado = await apiRequest<UserProfileApi>(ENDPOINTS.users.me, {
+        method: "PATCH",
+        body: {
+          name: form.name.trim(),
+          bio: form.bio.trim(),
+          cidade: form.city.trim(),
+          telefone: form.phone.trim(),
+        },
+      });
+      const proximo: ProfileForm = {
+        name: atualizado.name,
+        handle: atualizado.email.split("@")[0],
+        bio: atualizado.bio ?? "",
+        city: atualizado.cidade ?? "",
+        email: atualizado.email,
+        phone: atualizado.telefone ?? "",
+      };
+      setSaved(proximo);
+      setForm(proximo);
+      onSaved(atualizado);
+      setMessage("Alterações salvas com sucesso.");
+    } catch (err) {
+      setMessage(err instanceof ApiError ? err.message : "Não foi possível salvar o perfil.");
+    } finally {
+      setSalvando(false);
+    }
+  }
   async function copyKey() {
     try { await navigator.clipboard.writeText(pixKey); setMessage("Chave Pix copiada."); } catch { setMessage("Selecione a chave exibida para copiar."); }
   }
@@ -223,12 +298,12 @@ function ProfilePanel({ user, chavePix, onManageKeys }: { user: AuthUser | null;
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label htmlFor={`${ids}-phone`} className={labelClass}><span>WhatsApp / Celular</span></label>
+                <label htmlFor={`${ids}-phone`} className={labelClass}><span>Telefone de contato</span></label>
                 <div className="relative flex items-center">
                   <Icon name="phone_iphone" size={20} className="absolute left-space-md text-outline pointer-events-none"/>
                   <input id={`${ids}-phone`} type="tel" autoComplete="tel" placeholder="(00) 00000-0000" value={form.phone} onChange={event => update("phone", event.target.value)} className={`${fieldClass} pl-11 pr-space-md`}/>
                 </div>
-                <p className="font-label-sm text-label-sm text-on-surface-variant">Usado para receber lembretes de rateios e comprovantes de Pix.</p>
+                <p className="font-label-sm text-label-sm text-on-surface-variant">Informação opcional exibida apenas para referência de contato.</p>
               </div>
               <div className="space-y-1.5">
                 <label htmlFor={`${ids}-cpf`} className="font-label-md text-label-md text-on-surface font-medium flex items-center gap-1.5"><span>CPF</span><Icon name="lock" size={16} className="text-tertiary"/></label>
@@ -286,8 +361,8 @@ function ProfilePanel({ user, chavePix, onManageKeys }: { user: AuthUser | null;
         </div>
         <div className="flex items-center gap-space-sm w-full sm:w-auto justify-end">
           <button type="button" disabled={!dirty} className="w-full sm:w-auto px-space-lg py-2.5 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed" onClick={() => setForm(saved)}>Descartar</button>
-          <button type="button" disabled={!dirty} className="w-full sm:w-auto px-space-xl py-2.5 rounded-lg bg-primary-container hover:bg-primary-container/90 text-on-primary font-label-md text-label-md shadow-[0_4px_14px_rgba(255,140,66,0.35)] active:scale-[0.98] transition-all flex items-center justify-center gap-space-xs disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100" onClick={() => { setSaved(form); setMessage("Alterações salvas nesta demonstração. Nenhum dado real foi modificado."); }}>
-            <Icon name="check" size={18}/><span>Salvar Alterações</span>
+          <button type="button" disabled={!dirty || salvando} className="w-full sm:w-auto px-space-xl py-2.5 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-label-md text-label-md shadow-[0_4px_14px_rgba(255,140,66,0.35)] active:scale-[0.98] transition-all flex items-center justify-center gap-space-xs disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 cursor-pointer" onClick={() => void salvarPerfil()}>
+            <Icon name="check" size={18}/><span>{salvando ? "Salvando..." : "Salvar Alterações"}</span>
           </button>
         </div>
       </div>

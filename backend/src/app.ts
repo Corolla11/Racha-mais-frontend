@@ -23,7 +23,9 @@ app.post(
 app.use(express.json());
 
 // Documentação da API com Swagger UI
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+if (process.env.NODE_ENV !== "production") {
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+}
 
 app.use("/planos", planoRoutes);
 app.use("/assinaturas", assinaturaRoutes);

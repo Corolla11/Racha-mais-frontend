@@ -14,6 +14,7 @@ function mockProp(obj: object, prop: string, value: unknown) {
 }
 
 const origTarefa = { ...prisma.tarefa };
+const origGrupo = { ...prisma.grupo };
 const origMembro = { ...prisma.membro };
 const origParte = { ...prisma.parte };
 const origTx = prisma.$transaction;
@@ -29,6 +30,7 @@ async function esperarAppError(operacao: () => Promise<unknown>, statusCode: num
 describe("parteService", () => {
   afterEach(() => {
     Object.assign(prisma.tarefa, origTarefa);
+    Object.assign(prisma.grupo, origGrupo);
     Object.assign(prisma.membro, origMembro);
     Object.assign(prisma.parte, origParte);
     mockProp(prisma, "$transaction", origTx);
@@ -69,9 +71,13 @@ describe("parteService", () => {
       idGrupo: "g1",
       funcao: where.idUser_idGrupo.idUser === "criador" ? Funcao.dono : Funcao.membro,
     }));
+    mockProp(prisma.grupo, "findUnique", async () => ({ encerradoEm: null }));
     mockProp(prisma, "$transaction", async (cb: (tx: unknown) => Promise<unknown>) =>
       cb({
         $executeRaw: async () => 1,
+        tarefa: {
+          findUnique: async () => ({ valorTotal: new Prisma.Decimal("100.00") }),
+        },
         parte: {
           aggregate: async () => ({ _sum: { valor: new Prisma.Decimal("80.00") } }),
         },
@@ -80,6 +86,39 @@ describe("parteService", () => {
 
     await esperarAppError(
       () => parteService.criar("criador", "t1", { idUser: "u2", valor: "25.00" }),
+      409,
+    );
+  });
+
+  it("revalida valorTotal da tarefa dentro da transação contra redução concorrente", async () => {
+    mockProp(prisma.tarefa, "findUnique", async () => ({
+      id: "t1",
+      idGrupo: "g1",
+      idUser: "criador",
+      nome: "Mercado",
+      dataFinal: new Date(),
+      valorTotal: new Prisma.Decimal("100.00"),
+    }));
+    mockProp(prisma.membro, "findUnique", async ({ where }: { where: { idUser_idGrupo: { idUser: string } } }) => ({
+      idUser: where.idUser_idGrupo.idUser,
+      idGrupo: "g1",
+      funcao: where.idUser_idGrupo.idUser === "criador" ? Funcao.dono : Funcao.membro,
+    }));
+    mockProp(prisma.grupo, "findUnique", async () => ({ encerradoEm: null }));
+    mockProp(prisma, "$transaction", async (cb: (tx: unknown) => Promise<unknown>) =>
+      cb({
+        $executeRaw: async () => 1,
+        tarefa: {
+          findUnique: async () => ({ valorTotal: new Prisma.Decimal("90.00") }),
+        },
+        parte: {
+          aggregate: async () => ({ _sum: { valor: new Prisma.Decimal("80.00") } }),
+        },
+      }),
+    );
+
+    await esperarAppError(
+      () => parteService.criar("criador", "t1", { idUser: "u2", valor: "15.00" }),
       409,
     );
   });
@@ -109,6 +148,7 @@ describe("parteService", () => {
       idGrupo: "g1",
       funcao: Funcao.membro,
     }));
+    mockProp(prisma.grupo, "findUnique", async () => ({ encerradoEm: null }));
     mockProp(prisma.parte, "update", async () => {
       updateCalls += 1;
       return { id: "p1", status: StatusAndamento.EM_ANDAMENTO };

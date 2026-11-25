@@ -23,7 +23,10 @@ export default function VerificarEmail() {
   const navigate = useNavigate();
   const { user, sendEmailVerificationOtp, verifyEmailOtp } = useAuth();
   const [parametros] = useSearchParams();
-  const estado = useLocation().state as { email?: unknown } | null;
+  const estado = useLocation().state as {
+    email?: unknown;
+    from?: { pathname?: unknown };
+  } | null;
 
   const emailInicial =
     (typeof estado?.email === "string" && estado.email) ||
@@ -242,7 +245,19 @@ export default function VerificarEmail() {
               </p>
               <button
                 type="button"
-                onClick={() => navigate(user ? "/meus-grupos" : "/login", { replace: true })}
+                onClick={() => {
+                  const origem = estado?.from?.pathname;
+                  const destino =
+                    typeof origem === "string" && origem.startsWith("/") ? origem : null;
+                  if (user) {
+                    navigate(destino ?? "/meus-grupos", { replace: true });
+                  } else {
+                    navigate("/login", {
+                      replace: true,
+                      state: destino ? { from: { pathname: destino } } : undefined,
+                    });
+                  }
+                }}
                 className="w-full py-3.5 px-6 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-label-lg text-label-lg font-semibold shadow-sm hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
               >
                 <span>{user ? "Ir para meus grupos" : "Ir para o login"}</span>
@@ -288,7 +303,7 @@ export default function VerificarEmail() {
                     <button
                       type="button"
                       onClick={salvarEmail}
-                      className="shrink-0 cursor-pointer rounded-lg bg-primary px-3 py-2.5 font-label-md text-label-md text-on-primary transition-colors hover:bg-on-primary-container"
+                      className="shrink-0 cursor-pointer rounded-lg bg-primary px-3 py-2.5 font-label-md text-label-md text-on-primary transition-colors hover:bg-primary-container"
                     >
                       {email ? "Atualizar" : "Enviar código"}
                     </button>
@@ -304,7 +319,7 @@ export default function VerificarEmail() {
                       setNovoEmail(email);
                       setEditandoEmail(true);
                     }}
-                    className="ml-1 cursor-pointer font-label-sm text-xs font-semibold text-primary underline decoration-primary/40 underline-offset-2 transition-colors hover:text-on-primary-container"
+                    className="ml-1 cursor-pointer font-label-sm text-xs font-semibold text-primary underline decoration-primary/40 underline-offset-2 transition-colors hover:text-on-surface"
                   >
                     Alterar
                   </button>
@@ -397,7 +412,7 @@ export default function VerificarEmail() {
                     type="button"
                     onClick={reenviar}
                     disabled={!email}
-                    className="flex cursor-pointer items-center gap-1.5 font-label-md text-label-md text-primary transition-colors hover:text-on-primary-container disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex cursor-pointer items-center gap-1.5 font-label-md text-label-md text-primary transition-colors hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <Icon name="sync" size={18} />
                     Reenviar código agora

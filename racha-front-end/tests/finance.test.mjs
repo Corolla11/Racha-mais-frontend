@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { share, canCloseGroup } from '../src/lib/finance.ts';
+import { share, canCloseGroup, initials } from '../src/lib/finance.ts';
 
 test('rateios preservam o total em centavos, inclusive em divisões não exatas', () => {
   for (const cents of [1, 2, 99, 100, 101, 10000, 45001, 999999]) {
@@ -23,4 +23,10 @@ test('pagamentos confirmados não substituem a conclusão da atividade', () => {
 });
 test('encerramento exige todas as atividades concluídas e todos os pagamentos confirmados', () => {
   assert.equal(canCloseGroup([true, true], [{ payment: { status: 'confirmado' } }, { payment: { status: 'confirmado' } }]), true);
+});
+test('initials extrai até duas iniciais ignorando espaços extras', () => {
+  assert.equal(initials(''), '?');
+  assert.equal(initials('   '), '?');
+  assert.equal(initials('Ana'), 'AN');
+  assert.equal(initials('Ana   Maria  Silva'), 'AS');
 });

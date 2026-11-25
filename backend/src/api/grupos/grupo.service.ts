@@ -3,6 +3,7 @@ import { Funcao } from "../../generated/prisma/enums.js";
 import {
   exigirDono,
   exigirDonoNaTransacao,
+  exigirGrupoAberto,
   exigirMembro,
   transacionarGrupo,
 } from "../../lib/grupo-helpers.js";
@@ -75,7 +76,23 @@ export const grupoService = {
       throw new AppError(400, "Informe nome ou descrição para atualizar");
     }
 
+    await exigirGrupoAberto(prisma, idGrupo);
     return prisma.grupo.update({ where: { id: idGrupo }, data: alteracoes });
+  },
+
+  async encerrar(idUser: string, idGrupo: string) {
+    await exigirDono(idUser, idGrupo);
+    return transacionarGrupo(idGrupo, async (tx) => {
+      await exigirDonoNaTransacao(tx, idUser, idGrupo);
+      const atual = await tx.grupo.findUniqueOrThrow({
+        where: { id: idGrupo },
+      });
+      if (atual.encerradoEm !== null) return atual;
+      return tx.grupo.update({
+        where: { id: idGrupo },
+        data: { encerradoEm: new Date() },
+      });
+    });
   },
 
   async excluir(idUser: string, idGrupo: string) {
@@ -92,6 +109,16 @@ export const grupoService = {
         throw new AppError(
           409,
           "Cancele o checkout ou a assinatura Pro antes de excluir o grupo",
+        );
+      }
+      const [partesCount, tarefasComValorCount] = await Promise.all([
+        tx.parte.count({ where: { tarefa: { idGrupo } } }),
+        tx.tarefa.count({ where: { idGrupo, valorTotal: { gt: 0 } } }),
+      ]);
+      if (partesCount > 0 || tarefasComValorCount > 0) {
+        throw new AppError(
+          409,
+          "Grupos com cobranças ou pagamentos não podem ser excluídos; encerre o grupo para manter o histórico",
         );
       }
       await tx.grupo.delete({ where: { id: idGrupo } });
