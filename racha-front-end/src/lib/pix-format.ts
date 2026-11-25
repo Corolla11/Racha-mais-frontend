@@ -55,6 +55,21 @@ function extrairDigitosTelefoneLocal(valor: string): string {
   return d.slice(0, 11);
 }
 
+export function normalizarChavePix(tipo: TipoChavePix, valor: string): string {
+  const limpa = valor.trim();
+  if (tipo === "telefone") {
+    const d = extrairDigitosTelefoneLocal(limpa);
+    return d ? `+55${d}` : "";
+  }
+  if (tipo === "cpf") {
+    return limpa.replace(/\D/g, "").slice(0, 11);
+  }
+  if (tipo === "email") {
+    return limpa.replace(/\s+/g, "").toLowerCase().slice(0, 77);
+  }
+  return limpa.toLowerCase();
+}
+
 export function formatarChavePix(tipo: TipoChavePix, valor: string): string {
   if (tipo === "telefone") {
     const d = extrairDigitosTelefoneLocal(valor);

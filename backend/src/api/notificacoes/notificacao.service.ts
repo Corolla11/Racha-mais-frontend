@@ -136,9 +136,11 @@ export const notificacaoService = {
       const partes = await tx.parte.findMany({
         where: {
           status: { notIn: ["FINALIZADA", "CANCELADA"] },
+          user: { notificarDespesas: true, deletedAt: null },
           tarefa: {
             dataFinal: { gt: inicioAtrasoRecente, lte: fimProximoPrazo },
             statusAndamento: { notIn: ["FINALIZADA", "CANCELADA"] },
+            grupo: { encerradoEm: null },
           },
         },
         select: {

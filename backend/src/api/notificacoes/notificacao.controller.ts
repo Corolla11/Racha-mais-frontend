@@ -1,7 +1,17 @@
+import { timingSafeEqual } from "node:crypto";
 import type { Request, Response } from "express";
 import { z } from "zod";
 import { AppError } from "../../errors/AppError.js";
 import { notificacaoService } from "./notificacao.service.js";
+
+export function verificarCronSecret(authorization: string | undefined): boolean {
+  const esperado = process.env.CRON_SECRET?.trim();
+  if (!esperado || !authorization?.startsWith("Bearer ")) return false;
+  const recebido = authorization.slice("Bearer ".length);
+  const bufA = Buffer.from(recebido);
+  const bufB = Buffer.from(esperado);
+  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
+}
 
 export const notificacaoController = {
   async listar(req: Request, res: Response) {
@@ -49,5 +59,13 @@ export const notificacaoController = {
         notificarDespesas,
       ),
     );
+  },
+
+  async executarCronLembretes(req: Request, res: Response) {
+    if (!verificarCronSecret(req.get("authorization"))) {
+      return res.status(401).json({ error: "Não autorizado" });
+    }
+    const resultado = await notificacaoService.emitirLembretesDePrazo();
+    res.status(200).json({ ok: true, count: resultado.count });
   },
 };

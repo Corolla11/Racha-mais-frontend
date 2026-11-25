@@ -25,6 +25,13 @@ const atualizarPerfilSchema = z
       .trim()
       .max(20, "O telefone deve ter no máximo 20 caracteres")
       .optional(),
+    image: z
+      .string("A imagem deve ser um texto")
+      .trim()
+      .min(1)
+      .max(255)
+      .nullable()
+      .optional(),
   })
   .strict()
   .refine(
@@ -32,7 +39,8 @@ const atualizarPerfilSchema = z
       d.name !== undefined ||
       d.bio !== undefined ||
       d.cidade !== undefined ||
-      d.telefone !== undefined,
+      d.telefone !== undefined ||
+      d.image !== undefined,
     "Informe ao menos um campo para atualizar",
   );
 
@@ -54,6 +62,12 @@ export const userController = {
   async obter(req: Request, res: Response) {
     res.json(
       await userService.obter(res.locals.user.id, String(req.params.id)),
+    );
+  },
+
+  async obterAvatar(req: Request, res: Response) {
+    res.json(
+      await userService.obterAvatar(res.locals.user.id, String(req.params.id)),
     );
   },
 };

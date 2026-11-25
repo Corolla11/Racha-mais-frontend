@@ -66,5 +66,17 @@ describe("tarefaController", () => {
       () => tarefaController.atualizar(reqInvalido, res),
       (err: unknown) => err instanceof ZodError,
     );
+
+    await assert.rejects(
+      () =>
+        tarefaController.atualizar(
+          {
+            params: { id: "t-1" },
+            body: { partes: [{ idUser: "u-1", valor: "0.00" }] },
+          } as unknown as Request,
+          res,
+        ),
+      (err: unknown) => err instanceof ZodError,
+    );
   });
 });

@@ -9,4 +9,5 @@ userRoutes.use(requireAuth);
 userRoutes.get("/me", userController.obterPerfil);
 userRoutes.patch("/me", userController.atualizarPerfil);
 userRoutes.delete("/me", userController.desativarConta);
+userRoutes.get("/:id/avatar", userController.obterAvatar);
 userRoutes.get("/:id", userController.obter);

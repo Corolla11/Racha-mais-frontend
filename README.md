@@ -123,9 +123,7 @@ cross-origin ainda não está implementada.
 
 O helper `src/lib/api.ts` centraliza requests JSON, cookies de sessão e erros
 HTTP. Login, cadastro, consulta de sessão, logout e proteção das páginas do
-front-end usam as rotas BetterAuth existentes. O CRUD de Tarefas ainda não está
-implementado no backend; a migration que relaciona Parte e Tarefa precisa ser
-alinhada com a pessoa responsável por esse CRUD antes de ser aplicada.
+front-end usam as rotas BetterAuth existentes.
 
 Para desenvolvimento, inicie `npm run dev` tanto em `backend` quanto em
 `racha-front-end`. As rotas de grupos, membros e partes exigem sessão autenticada.

@@ -23,9 +23,26 @@ const listarTarefasSchema = tarefaBaseSchema
   .pick({ idGrupo: true, tipoTarefa: true, statusAndamento: true })
   .partial();
 
+const parteSyncSchema = z
+  .object({
+    idUser: z.string().trim().min(1, "idUser é obrigatório"),
+    valor: z
+      .string()
+      .regex(/^\d+(?:\.\d{1,2})?$/, "Valor de parte inválido")
+      .refine(
+        (v) => Number(v) > 0 && Number(v) <= 9_999_999_999.99,
+        "O valor da parte deve ser maior que zero e respeitar o limite permitido",
+      ),
+    descricao: z.string().trim().optional(),
+  })
+  .strict();
+
 const atualizarTarefaSchema = tarefaBaseSchema
   .omit({ idGrupo: true })
   .partial()
+  .extend({
+    partes: z.array(parteSyncSchema).optional(),
+  })
   .refine(
     (d) => !d.dataInicio || !d.dataFinal || d.dataFinal >= d.dataInicio,
     "A data final deve ser igual ou posterior à data inicial",

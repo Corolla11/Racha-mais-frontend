@@ -9,6 +9,7 @@ import { userRoutes } from "./api/users/user.routes.js";
 import { grupoRoutes } from "./api/grupos/grupo.routes.js";
 import { membroRoutes } from "./api/membros/membro.routes.js";
 import { parteRoutes, parteTarefaRoutes } from "./api/partes/parte.routes.js";
+import { uploadRoutes } from "./api/uploads/upload.routes.js";
 
 export const routes = Router();
 
@@ -25,3 +26,4 @@ routes.use("/partes", parteRoutes);
 routes.use("/tarefas", tarefaRoutes);
 routes.use("/chaves-pix", chavePixRoutes);
 routes.use("/users", userRoutes);
+routes.use("/uploads", uploadRoutes);

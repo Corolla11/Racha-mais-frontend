@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import AppShell from "../components/app-shell";
 import Icon from "../components/icon";
+import UserAvatar from "../components/user-avatar";
 import { Link, useParams } from "react-router-dom";
 import { ApiError, apiRequest } from "../lib/api";
 import { initials, money } from "../lib/finance";
@@ -302,17 +303,16 @@ export default function Partes() {
                       <div className="flex items-start justify-between gap-space-sm">
                         <div className="flex min-w-0 items-start gap-space-sm">
                           <div className="relative shrink-0">
-                            {parte.user.image ? (
-                              <img
-                                src={parte.user.image}
-                                alt=""
-                                className="h-11 w-11 rounded-full object-cover"
-                              />
-                            ) : (
-                              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-container-high text-[15px] font-bold text-primary">
-                                {initials(parte.user.name)}
-                              </span>
-                            )}
+                            <UserAvatar
+                              userId={parte.idUser}
+                              image={parte.user.image}
+                              className="h-11 w-11 rounded-full object-cover"
+                              fallback={
+                                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-container-high text-[15px] font-bold text-primary">
+                                  {initials(parte.user.name)}
+                                </span>
+                              }
+                            />
                             <span
                               className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full shadow-sm ${visual.selo}`}
                             >

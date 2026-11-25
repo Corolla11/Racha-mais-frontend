@@ -1,5 +1,3 @@
-import { apiRequest } from "./api.ts";
-
 /**
  * Pontos de entrada centralizados para todas as rotas do backend.
  */
@@ -7,6 +5,7 @@ export const ENDPOINTS = {
   users: {
     me: "/users/me",
     byId: (id: string) => `/users/${encodeURIComponent(id)}`,
+    avatar: (id: string) => `/users/${encodeURIComponent(id)}/avatar`,
   },
   chavesPix: {
     base: "/chaves-pix",
@@ -34,6 +33,10 @@ export const ENDPOINTS = {
   },
   partes: {
     byId: (id: string) => `/partes/${encodeURIComponent(id)}`,
+    comprovante: (id: string) => `/partes/${encodeURIComponent(id)}/comprovante`,
+  },
+  uploads: {
+    presign: "/uploads/presign",
   },
   notificacoes: {
     base: "/notificacoes",
@@ -124,35 +127,4 @@ export type AssinaturaGrupoApi = {
     createdAt: string;
     updatedAt: string;
   } | null;
-};
-
-export type IaSugestaoGrupo = {
-  nome?: string;
-  categoria?: string;
-  descricao?: string;
-  itens?: { titulo: string; valor: number }[];
-};
-
-export const futureModules = {
-  notificacoes: {
-    listar: (params?: { naoLidas?: boolean; pagina?: number; limite?: number }) => {
-      const qs = new URLSearchParams();
-      if (params?.naoLidas) qs.set("naoLidas", "true");
-      if (params?.pagina) qs.set("pagina", String(params.pagina));
-      if (params?.limite) qs.set("limite", String(params.limite));
-      const suffix = qs.toString() ? `?${qs.toString()}` : "";
-      return apiRequest<NotificacoesResponseApi>(`${ENDPOINTS.notificacoes.base}${suffix}`);
-    },
-    marcarLida: (id: string | number) =>
-      apiRequest<void>(ENDPOINTS.notificacoes.marcarLida(id), { method: "PATCH" }),
-    marcarTodasLidas: () =>
-      apiRequest<{ atualizadas: number }>(ENDPOINTS.notificacoes.marcarTodasLidas, { method: "PATCH" }),
-  },
-  ia: {
-    sugerirGrupo: (prompt: string) =>
-      apiRequest<IaSugestaoGrupo>(ENDPOINTS.ia.sugerirGrupo, {
-        method: "POST",
-        body: { prompt },
-      }),
-  },
 };

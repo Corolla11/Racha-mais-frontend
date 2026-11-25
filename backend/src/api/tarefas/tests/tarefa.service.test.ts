@@ -119,8 +119,64 @@ describe("tarefaService", () => {
           idUser: true,
           valor: true,
           status: true,
+          comprovanteKey: true,
+          comprovanteNome: true,
+          motivoContestacao: true,
         },
       },
     });
+  });
+
+  it("sincroniza partes atomicamente dentro de transacionarTarefa ao atualizar", async () => {
+    let removidos: string[] = [];
+    let criados = 0;
+    mockProp(prisma.tarefa, "findUniqueOrThrow", async () => ({
+      id: "t1",
+      idGrupo: "g1",
+      idUser: "u1",
+      valorTotal: new Prisma.Decimal("100.00"),
+      dataInicio: new Date("2026-03-01T00:00:00Z"),
+      dataFinal: new Date("2026-03-02T00:00:00Z"),
+    }));
+    mockProp(prisma.membro, "findUnique", async () => ({
+      idUser: "u1",
+      idGrupo: "g1",
+      funcao: Funcao.dono,
+    }));
+    mockProp(prisma.grupo, "findUnique", async () => ({ encerradoEm: null }));
+    mockProp(prisma, "$transaction", async (cb: (tx: unknown) => Promise<unknown>) =>
+      cb({
+        $executeRaw: async () => 1,
+        membro: { count: async () => 2 },
+        parte: {
+          findMany: async () => [
+            { id: "p1", idUser: "u1" },
+            { id: "p-antiga", idUser: "u-removido" },
+          ],
+          deleteMany: async ({ where }: { where: { id: { in: string[] } } }) => {
+            removidos = where.id.in;
+            return { count: 1 };
+          },
+          update: async () => ({}),
+          createMany: async ({ data }: { data: unknown[] }) => {
+            criados = data.length;
+            return { count: data.length };
+          },
+        },
+        tarefa: {
+          update: async () => ({ id: "t1", partes: [] }),
+        },
+      }),
+    );
+
+    await tarefaService.atualizar("u1", "t1", {
+      valorTotal: 80,
+      partes: [
+        { idUser: "u1", valor: "40.00" },
+        { idUser: "u2", valor: "40.00" },
+      ],
+    });
+    assert.deepEqual(removidos, ["p-antiga"]);
+    assert.equal(criados, 1);
   });
 });

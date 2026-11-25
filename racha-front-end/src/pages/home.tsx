@@ -5,6 +5,7 @@ import { useAuth } from "../auth/auth-context";
 import Aba from "../components/aba-perfil";
 import BrandLogo from "../components/brand-logo";
 import Icon from "../components/icon";
+import UserAvatar from "../components/user-avatar";
 
 const NAVEGACAO = [
   { href: "#como-funciona", rotulo: "Como Funciona" },
@@ -120,11 +121,11 @@ function Home() {
                   aria-label="Abrir opções do perfil"
                   className="w-8 h-8 rounded-full bg-primary flex items-center justify-center overflow-hidden cursor-pointer ring-2 ring-transparent hover:ring-primary-container/40 transition"
                 >
-                  {user.image ? (
-                    <img src={user.image} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <Icon name="person" size={18} className="text-on-primary" />
-                  )}
+                  <UserAvatar
+                    userId={user.id}
+                    image={user.image}
+                    fallback={<Icon name="person" size={18} className="text-on-primary" />}
+                  />
                 </button>
               </>
             ) : (

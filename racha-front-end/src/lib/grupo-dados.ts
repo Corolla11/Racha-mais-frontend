@@ -1,4 +1,4 @@
-import { initials, share, type Payment } from "./finance";
+import { initials, share, type Payment } from "./finance.ts";
 import type { DadosTarefa, ParticipanteTarefa } from "../pages/editar-tarefa";
 import type { Tarefa, ParticipanteTarefa as ParticipanteVisualizacao } from "../pages/tarefa";
 
@@ -29,6 +29,9 @@ export type TarefaDetalheApi = {
     idUser: string | null;
     valor: string | number;
     status: "AGENDADA" | "EM_ANDAMENTO" | "FINALIZADA" | "ATRASADA" | "CANCELADA";
+    comprovanteKey?: string | null;
+    comprovanteNome?: string | null;
+    motivoContestacao?: string | null;
   }[];
 };
 
@@ -192,6 +195,19 @@ export function statusItem(tarefa: DadosTarefa, quitado: boolean) {
   return { texto: "Pendente", icone: "hourglass_empty", classe: "bg-amber-100 text-amber-900" };
 }
 
+function formatarPrazoLocal(iso: string): { dataLimite: string; horario: string } {
+  if (!iso) return { dataLimite: "", horario: "09:00" };
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) {
+    return { dataLimite: iso.slice(0, 10), horario: iso.slice(11, 16) || "09:00" };
+  }
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return {
+    dataLimite: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+    horario: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+  };
+}
+
 export function mapearTarefasDoGrupo(
   detalhes: TarefaDetalheApi[],
   listaParticipantes: ParticipanteTarefa[],
@@ -207,15 +223,23 @@ export function mapearTarefasDoGrupo(
       partes.map((p) => p.idUser).filter((id): id is string => Boolean(id)),
     );
     const responsavel = t.idUser ?? listaParticipantes[0]?.id ?? currentUserId;
+    const { dataLimite, horario } = formatarPrazoLocal(t.dataFinal);
 
     for (const p of partes) {
       if (p.idUser) {
         const key = `${t.id}:${p.idUser}`;
         novasPartes[key] = p.id;
+        const extras: Pick<Payment, "receiptKey" | "receiptName" | "reason"> = {
+          ...(p.comprovanteKey ? { receiptKey: p.comprovanteKey } : {}),
+          ...(p.comprovanteNome ? { receiptName: p.comprovanteNome } : {}),
+          ...(p.motivoContestacao ? { reason: p.motivoContestacao } : {}),
+        };
         if (p.status === "FINALIZADA") {
-          novosPagamentos[key] = { status: "confirmado" };
+          novosPagamentos[key] = { status: "confirmado", ...extras };
         } else if (p.status === "EM_ANDAMENTO") {
-          novosPagamentos[key] = { status: "informado" };
+          novosPagamentos[key] = { status: "informado", ...extras };
+        } else if (p.motivoContestacao) {
+          novosPagamentos[key] = { status: "contestado", ...extras };
         }
       }
     }
@@ -224,8 +248,8 @@ export function mapearTarefasDoGrupo(
       id: t.id,
       titulo: t.nome,
       descricao: t.descricao ?? "",
-      dataLimite: t.dataFinal ? t.dataFinal.slice(0, 10) : "",
-      horario: t.dataFinal ? t.dataFinal.slice(11, 16) || "09:00" : "09:00",
+      dataLimite,
+      horario,
       responsavelId: responsavel,
       participantes: listaParticipantes.map((m) => ({
         ...m,

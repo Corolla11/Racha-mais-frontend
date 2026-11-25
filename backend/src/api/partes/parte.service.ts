@@ -11,18 +11,25 @@ import {
   transacionarTarefa,
 } from "../../lib/grupo-helpers.js";
 import { prisma } from "../../lib/prisma.js";
+import { criarUrlLeituraAssinada } from "../../lib/s3.js";
 
 type DadosParte = {
   idUser?: string;
   descricao?: string;
   valor?: string;
   status?: StatusAndamento;
+  comprovanteKey?: string | null;
+  comprovanteNome?: string | null;
+  motivoContestacao?: string | null;
 };
 
 type AlteracoesParte = {
   descricao?: string;
   valor?: string;
   status?: StatusAndamento;
+  comprovanteKey?: string | null;
+  comprovanteNome?: string | null;
+  motivoContestacao?: string | null;
 };
 
 export function validarSomaPartes(
@@ -86,6 +93,9 @@ const selecaoParte = {
   descricao: true,
   valor: true,
   status: true,
+  comprovanteKey: true,
+  comprovanteNome: true,
+  motivoContestacao: true,
   user: { select: { id: true, name: true, image: true } },
 };
 
@@ -179,6 +189,25 @@ export const parteService = {
     return parte;
   },
 
+  async obterComprovante(idSolicitante: string, id: string) {
+    const parte = await prisma.parte.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        idTarefa: true,
+        comprovanteKey: true,
+        comprovanteNome: true,
+      },
+    });
+    if (!parte) throw new AppError(404, "Parte não encontrada");
+    await exigirMembroDaTarefa(idSolicitante, parte.idTarefa);
+    if (!parte.comprovanteKey) {
+      throw new AppError(404, "Esta parte não possui comprovante");
+    }
+    const url = await criarUrlLeituraAssinada({ key: parte.comprovanteKey });
+    return { url, nome: parte.comprovanteNome };
+  },
+
   async atualizar(idSolicitante: string, id: string, dados: DadosParte) {
     const parte = await prisma.parte.findUnique({
       where: { id },
@@ -192,20 +221,40 @@ export const parteService = {
     if (dados.descricao !== undefined) alteracoes.descricao = dados.descricao;
     if (dados.valor !== undefined) alteracoes.valor = dados.valor;
     if (dados.status !== undefined) alteracoes.status = dados.status;
+    if (dados.comprovanteKey !== undefined) {
+      if (
+        dados.comprovanteKey !== null &&
+        !dados.comprovanteKey.startsWith(`comprovantes/${id}/`)
+      ) {
+        throw new AppError(400, "Chave de comprovante inválida para esta parte");
+      }
+      alteracoes.comprovanteKey = dados.comprovanteKey;
+    }
+    if (dados.comprovanteNome !== undefined) {
+      alteracoes.comprovanteNome = dados.comprovanteNome;
+    }
+    if (dados.motivoContestacao !== undefined) {
+      alteracoes.motivoContestacao = dados.motivoContestacao;
+    }
     if (Object.keys(alteracoes).length === 0) {
-      throw new AppError(400, "Informe descrição, valor ou status para atualizar");
+      throw new AppError(400, "Informe descrição, valor, status ou comprovante para atualizar");
     }
 
     const podeGerenciarParte = podeGerenciar(idSolicitante, tarefa, membro);
-    const somenteStatus =
-      Object.keys(alteracoes).length === 1 && alteracoes.status !== undefined;
+    const somenteAtualizacaoPropria = Object.keys(alteracoes).every(
+      (k) =>
+        k === "status" ||
+        k === "comprovanteKey" ||
+        k === "comprovanteNome" ||
+        (k === "motivoContestacao" && alteracoes.motivoContestacao === null),
+    );
     if (!podeGerenciarParte && !membro) {
       throw new AppError(403, "Você não participa do grupo desta tarefa");
     }
-    if (!podeGerenciarParte && !(idSolicitante === parte.idUser && somenteStatus)) {
+    if (!podeGerenciarParte && !(idSolicitante === parte.idUser && somenteAtualizacaoPropria)) {
       throw new AppError(
         403,
-        "Você só pode atualizar o status da sua própria parte",
+        "Você só pode atualizar o status e o comprovante da sua própria parte",
       );
     }
     await exigirGrupoAberto(prisma, tarefa.idGrupo);

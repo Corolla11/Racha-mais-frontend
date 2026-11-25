@@ -1,5 +1,5 @@
 export type PaymentStatus = "pendente" | "informado" | "confirmado" | "contestado";
-export interface Payment { status: PaymentStatus; receipt?: string; receiptName?: string; reason?: string }
+export interface Payment { status: PaymentStatus; receipt?: string; receiptKey?: string; receiptName?: string; reason?: string }
 export const paymentLabels: Record<PaymentStatus, string> = { pendente: "Pagamento pendente", informado: "Aguardando confirmação", confirmado: "Pagamento confirmado", contestado: "Pagamento contestado" };
 export const money = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 export function initials(nome: string): string {

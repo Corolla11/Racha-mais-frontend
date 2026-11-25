@@ -106,6 +106,9 @@ export const tarefaService = {
             idUser: true,
             valor: true,
             status: true,
+            comprovanteKey: true,
+            comprovanteNome: true,
+            motivoContestacao: true,
           },
         },
       },
@@ -128,7 +131,9 @@ export const tarefaService = {
   async atualizar(
     idUser: string,
     idTarefa: string,
-    dados: Partial<Omit<CriarTarefaDados, "idGrupo">>,
+    dados: Partial<Omit<CriarTarefaDados, "idGrupo">> & {
+      partes?: { idUser: string; valor: string; descricao?: string }[];
+    },
   ) {
     const tarefaAtual = await exigirPermissaoEdicao(idUser, idTarefa);
     await exigirGrupoAberto(prisma, tarefaAtual.idGrupo);
@@ -142,8 +147,102 @@ export const tarefaService = {
       );
     }
 
-    if (dados.valorTotal !== undefined) {
-      const novoValorTotal = new Prisma.Decimal(dados.valorTotal);
+    const { partes, ...dadosTarefa } = dados;
+
+    if (partes !== undefined) {
+      const idsDesejados = partes.map((p) => p.idUser);
+      if (new Set(idsDesejados).size !== idsDesejados.length) {
+        throw new AppError(400, "Participantes duplicados nas partes da tarefa");
+      }
+      const valorTotalFinal = new Prisma.Decimal(
+        dadosTarefa.valorTotal ?? tarefaAtual.valorTotal,
+      );
+      const somaPartes = partes.reduce(
+        (acc, p) => acc.plus(p.valor),
+        new Prisma.Decimal(0),
+      );
+      if (somaPartes.gt(valorTotalFinal)) {
+        throw new AppError(
+          409,
+          "A soma das partes não pode ultrapassar o valor total da tarefa",
+        );
+      }
+
+      return transacionarTarefa(idTarefa, async (tx) => {
+        if (idsDesejados.length > 0) {
+          const membrosValidos = await tx.membro.count({
+            where: { idGrupo: tarefaAtual.idGrupo, idUser: { in: idsDesejados } },
+          });
+          if (membrosValidos !== idsDesejados.length) {
+            throw new AppError(
+              400,
+              "Todos os participantes das partes devem ser membros do grupo",
+            );
+          }
+        }
+
+        const atuais = await tx.parte.findMany({
+          where: { idTarefa },
+          select: { id: true, idUser: true },
+        });
+        const desejadosPorUser = new Map(partes.map((p) => [p.idUser, p]));
+        const idsAtuais = new Set(atuais.map((p) => p.idUser));
+
+        const idsRemover = atuais
+          .filter((p) => !desejadosPorUser.has(p.idUser))
+          .map((p) => p.id);
+        if (idsRemover.length > 0) {
+          await tx.parte.deleteMany({ where: { id: { in: idsRemover } } });
+        }
+
+        for (const p of atuais) {
+          const novo = desejadosPorUser.get(p.idUser);
+          if (novo) {
+            await tx.parte.update({
+              where: { id: p.id },
+              data: {
+                valor: novo.valor,
+                ...(novo.descricao !== undefined ? { descricao: novo.descricao } : {}),
+              },
+            });
+          }
+        }
+
+        const paraCriar = partes.filter((p) => !idsAtuais.has(p.idUser));
+        if (paraCriar.length > 0) {
+          await tx.parte.createMany({
+            data: paraCriar.map((p) => ({
+              idUser: p.idUser,
+              idGrupo: tarefaAtual.idGrupo,
+              idTarefa,
+              descricao: p.descricao ?? "",
+              valor: p.valor,
+            })),
+          });
+        }
+
+        return tx.tarefa.update({
+          where: { id: idTarefa },
+          data: dadosTarefa,
+          include: {
+            partes: {
+              select: {
+                id: true,
+                idUser: true,
+                valor: true,
+                status: true,
+                comprovanteKey: true,
+                comprovanteNome: true,
+                motivoContestacao: true,
+              },
+            },
+          },
+        });
+      });
+    }
+
+    if (dadosTarefa.valorTotal !== undefined) {
+      const novoValorTotal = new Prisma.Decimal(dadosTarefa.valorTotal);
       return transacionarTarefa(idTarefa, async (tx) => {
         const { _sum } = await tx.parte.aggregate({
           where: { idTarefa },
@@ -156,11 +255,11 @@ export const tarefaService = {
             "O valor total da tarefa não pode ser menor que a soma das partes cadastradas",
           );
         }
-        return tx.tarefa.update({ where: { id: idTarefa }, data: dados });
+        return tx.tarefa.update({ where: { id: idTarefa }, data: dadosTarefa });
       });
     }
 
-    return prisma.tarefa.update({ where: { id: idTarefa }, data: dados });
+    return prisma.tarefa.update({ where: { id: idTarefa }, data: dadosTarefa });
   },
 
   async excluir(idUser: string, idTarefa: string) {

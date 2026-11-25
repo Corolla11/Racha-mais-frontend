@@ -6,6 +6,7 @@ import { ENDPOINTS, type NotificacoesResponseApi } from "../lib/endpoints";
 import Aba from "./aba-perfil";
 import { BrandMark } from "./brand-logo";
 import Icon from "./icon";
+import UserAvatar from "./user-avatar";
 
 const navigation = [
   { path: "/meus-grupos", label: "Meus Grupos", match: ["/meus-grupos", "/grupo", "/criar-grupo", "/tarefas", "/convite", "/grupos"] },
@@ -138,7 +139,11 @@ export default function AppShell({ title, children, bare = false }: { title: str
             </Link>
             <button type="button" className="flex items-center gap-space-sm min-h-11 px-1.5 group cursor-pointer" aria-label="Menu do perfil" aria-expanded={profile} onClick={() => setProfile(!profile)}>
               <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center overflow-hidden">
-                {user?.image ? <img src={user.image} alt="" className="w-full h-full object-cover"/> : <Icon name="person" size={18} className="text-on-primary"/>}
+                <UserAvatar
+                  userId={user?.id}
+                  image={user?.image}
+                  fallback={<Icon name="person" size={18} className="text-on-primary" />}
+                />
               </div>
               <span className="hidden lg:block font-label-md text-label-md text-on-surface group-hover:text-primary transition-colors">{shortName}</span>
               <Icon name="expand_more" size={18} className={`text-on-surface-variant group-hover:text-on-surface transition-transform ${profile ? "rotate-180" : ""}`}/>

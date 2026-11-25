@@ -45,17 +45,39 @@ describe("membroService", () => {
     );
   });
 
-  it("retorna 404 ao adicionar usuário inexistente", async () => {
+  it("retorna 404 ao adicionar usuário inexistente e normaliza e-mail em minúsculas", async () => {
+    let emailBuscado: string | undefined;
     mockProp(prisma.membro, "findUnique", async () => ({
       idUser: "dono",
       idGrupo: "g1",
       funcao: Funcao.dono,
     }));
-    mockProp(prisma.user, "findUnique", async () => null);
+    mockProp(prisma.user, "findUnique", async ({ where }: { where: { email?: string } }) => {
+      emailBuscado = where.email;
+      return null;
+    });
 
     await esperarAppError(
-      () => membroService.adicionar("dono", "g1", { email: "naoexiste@teste.com" }),
+      () => membroService.adicionar("dono", "g1", { email: "  NaoExiste@Teste.COM " }),
       404,
+    );
+    assert.equal(emailBuscado, "naoexiste@teste.com");
+  });
+
+  it("rejeita com 409 ao adicionar conta desativada", async () => {
+    mockProp(prisma.membro, "findUnique", async () => ({
+      idUser: "dono",
+      idGrupo: "g1",
+      funcao: Funcao.dono,
+    }));
+    mockProp(prisma.user, "findUnique", async () => ({
+      id: "u-off",
+      deletedAt: new Date("2026-01-01T00:00:00Z"),
+    }));
+
+    await esperarAppError(
+      () => membroService.adicionar("dono", "g1", { email: "off@teste.com" }),
+      409,
     );
   });
 

@@ -9,6 +9,7 @@ parteTarefaRoutes.get("/", parteController.listar);
 
 export const parteRoutes = Router();
 parteRoutes.use(requireAuth);
+parteRoutes.get("/:id/comprovante", parteController.obterComprovante);
 parteRoutes.get("/:id", parteController.obter);
 parteRoutes.patch("/:id", parteController.atualizar);
 parteRoutes.delete("/:id", parteController.remover);

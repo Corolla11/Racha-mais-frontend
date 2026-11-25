@@ -4,6 +4,7 @@ import { useAuth, type AuthUser } from "../auth/auth-context";
 import AccountPanels, { SettingsBreadcrumb, SettingsTabs, StatusToast, ToggleRow } from "../components/account-panels";
 import AppShell from "../components/app-shell";
 import Icon from "../components/icon";
+import UserAvatar from "../components/user-avatar";
 import { PageHeading } from "../components/ui";
 import { ApiError, apiRequest } from "../lib/api";
 import { ENDPOINTS, type ChavePixApi, type TipoChavePix, type UserProfileApi } from "../lib/endpoints";
@@ -214,6 +215,55 @@ function ProfilePanel({
       setSalvando(false);
     }
   }
+  async function enviarAvatar(file?: File) {
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      setMessage("Selecione uma imagem JPG, PNG ou WebP de até 5 MB.");
+      return;
+    }
+    setSalvando(true);
+    setMessage("");
+    try {
+      const presign = await apiRequest<{ uploadUrl: string; objectKey: string }>(
+        ENDPOINTS.uploads.presign,
+        { method: "POST", body: { tipo: "avatar", contentType: file.type, sizeBytes: file.size } },
+      );
+      const putRes = await fetch(presign.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!putRes.ok) throw new ApiError("Não foi possível enviar a foto.", putRes.status);
+      const atualizado = await apiRequest<UserProfileApi>(ENDPOINTS.users.me, {
+        method: "PATCH",
+        body: { image: presign.objectKey },
+      });
+      onSaved(atualizado);
+      setMessage("Foto de perfil atualizada.");
+    } catch (err) {
+      setMessage(err instanceof ApiError ? err.message : "Não foi possível atualizar a foto.");
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  async function removerAvatar() {
+    setSalvando(true);
+    setMessage("");
+    try {
+      const atualizado = await apiRequest<UserProfileApi>(ENDPOINTS.users.me, {
+        method: "PATCH",
+        body: { image: null },
+      });
+      onSaved(atualizado);
+      setMessage("Foto de perfil removida.");
+    } catch (err) {
+      setMessage(err instanceof ApiError ? err.message : "Não foi possível remover a foto.");
+    } finally {
+      setSalvando(false);
+    }
+  }
+
   async function copyKey() {
     try { await navigator.clipboard.writeText(pixKey); setMessage("Chave Pix copiada."); } catch { setMessage("Selecione a chave exibida para copiar."); }
   }
@@ -229,7 +279,12 @@ function ProfilePanel({
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-space-md text-center sm:text-left">
               <div className="relative shrink-0">
                 <div className="w-24 h-24 rounded-full overflow-hidden shadow-md bg-primary-container flex items-center justify-center">
-                  {user?.image ? <img className="w-full h-full object-cover" src={user.image} alt={`Foto de ${saved.name}`}/> : <Icon name="person" size={48} className="text-on-primary"/>}
+                  <UserAvatar
+                    userId={user?.id}
+                    image={perfil?.image ?? user?.image}
+                    alt={`Foto de ${saved.name}`}
+                    fallback={<Icon name="person" size={48} className="text-on-primary" />}
+                  />
                 </div>
                 <span className="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-emerald-500 ring-4 ring-surface-container-lowest flex items-center justify-center" title="Online no Racha+"><span className="w-1.5 h-1.5 rounded-full bg-white"/></span>
               </div>
@@ -242,10 +297,11 @@ function ProfilePanel({
               </div>
             </div>
             <div className="flex flex-row sm:flex-col items-center gap-space-xs shrink-0">
-              <button type="button" className="flex items-center gap-space-xs px-space-md min-h-11 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors cursor-pointer" onClick={() => setMessage("O envio de fotos ainda não está disponível nesta versão.")}>
+              <label className="relative flex items-center gap-space-xs px-space-md min-h-11 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors cursor-pointer">
                 <Icon name="photo_camera" size={18}/><span>Alterar Foto</span>
-              </button>
-              <button type="button" className="px-space-md min-h-11 py-2 text-on-surface-variant hover:text-error font-label-sm text-label-sm transition-colors cursor-pointer" onClick={() => setMessage("A remoção de fotos ainda não está disponível nesta versão.")}>Remover</button>
+                <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={event => void enviarAvatar(event.target.files?.[0])}/>
+              </label>
+              <button type="button" disabled={salvando || !(perfil?.image ?? user?.image)} className="px-space-md min-h-11 py-2 text-on-surface-variant hover:text-error font-label-sm text-label-sm transition-colors cursor-pointer disabled:opacity-40" onClick={() => void removerAvatar()}>Remover</button>
             </div>
           </div>
 

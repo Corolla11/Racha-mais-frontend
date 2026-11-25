@@ -1,11 +1,13 @@
 import { AppError } from "../../errors/AppError.js";
 import { prisma } from "../../lib/prisma.js";
+import { criarUrlLeituraAssinada } from "../../lib/s3.js";
 
 export type AtualizarPerfilDados = {
   name?: string;
   bio?: string;
   cidade?: string;
   telefone?: string;
+  image?: string | null;
 };
 
 const usuarioPublico = {
@@ -34,9 +36,17 @@ export const userService = {
       dados.name === undefined &&
       dados.bio === undefined &&
       dados.cidade === undefined &&
-      dados.telefone === undefined
+      dados.telefone === undefined &&
+      dados.image === undefined
     ) {
       throw new AppError(400, "Informe ao menos um campo para atualizar");
+    }
+    if (
+      dados.image !== undefined &&
+      dados.image !== null &&
+      !dados.image.startsWith(`avatares/${idUser}/`)
+    ) {
+      throw new AppError(400, "Chave de avatar inválida");
     }
     return prisma.user.update({
       where: { id: idUser },
@@ -67,5 +77,23 @@ export const userService = {
       },
       select: usuarioPublico,
     });
+  },
+
+  async obterAvatar(idUser: string, idAlvo: string) {
+    const usuario = await prisma.user.findFirstOrThrow({
+      where: {
+        id: idAlvo,
+        deletedAt: null,
+        OR: [
+          { id: idUser },
+          { membros: { some: { grupo: { membros: { some: { idUser } } } } } },
+        ],
+      },
+      select: { image: true },
+    });
+    if (!usuario.image?.startsWith("avatares/")) {
+      throw new AppError(404, "Usuário não possui avatar");
+    }
+    return { url: await criarUrlLeituraAssinada({ key: usuario.image }) };
   },
 };

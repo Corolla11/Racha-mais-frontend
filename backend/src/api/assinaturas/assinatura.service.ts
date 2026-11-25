@@ -261,8 +261,8 @@ export const assinaturaService = {
         moeda: "BRL",
       };
     } catch (error) {
-      await prisma.assinaturaPro.update({
-        where: { idGrupo },
+      await prisma.assinaturaPro.updateMany({
+        where: { idGrupo, status: StatusAssinaturaPro.PENDENTE },
         data: { status: StatusAssinaturaPro.FALHOU },
       });
       throw error;

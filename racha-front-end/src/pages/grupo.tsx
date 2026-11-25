@@ -252,6 +252,7 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
 
           if (atualizada.possuiDespesa && atualizada.valorTotal > 0) {
             const selecionados = atualizada.participantes.filter((p) => p.selecionado);
+            const novasPartes: Record<string, string> = {};
             for (let i = 0; i < selecionados.length; i++) {
               const cota = share(atualizada.valorTotal, selecionados.length, i);
               if (cota > 0) {
@@ -265,26 +266,52 @@ export default function Grupo({ memberMode: initialMemberMode = false }: { membe
                       valor: cota.toFixed(2),
                     },
                   },
-                ).catch(() => null);
-                if (parte?.id) {
-                  setParteIds((old) => ({
-                    ...old,
-                    [`${idFinal}:${selecionados[i].id}`]: parte.id,
-                  }));
-                }
+                );
+                novasPartes[`${idFinal}:${selecionados[i].id}`] = parte.id;
               }
+            }
+            if (Object.keys(novasPartes).length > 0) {
+              setParteIds((old) => ({ ...old, ...novasPartes }));
             }
           }
         } else {
-          await apiRequest(ENDPOINTS.tarefas.byId(atualizada.id), {
+          const valorNovo = atualizada.possuiDespesa ? atualizada.valorTotal : 0;
+          const selecionados = atualizada.possuiDespesa && valorNovo > 0
+            ? atualizada.participantes.filter((p) => p.selecionado)
+            : [];
+          const partesSync = selecionados
+            .map((p, i) => ({
+              idUser: p.id,
+              descricao: `Cota: ${atualizada.titulo}`,
+              valor: share(valorNovo, selecionados.length, i).toFixed(2),
+            }))
+            .filter((p) => Number(p.valor) > 0);
+
+          const tarefaAtualizada = await apiRequest<{
+            partes?: { id: string; idUser: string | null }[];
+          }>(ENDPOINTS.tarefas.byId(atualizada.id), {
             method: "PATCH",
             body: {
               nome: atualizada.titulo,
               descricao: atualizada.descricao,
-              valorTotal: atualizada.possuiDespesa ? atualizada.valorTotal : 0,
+              valorTotal: valorNovo,
               dataFinal: dataFinal.toISOString(),
               statusAndamento: atualizada.concluida ? "FINALIZADA" : "EM_ANDAMENTO",
+              partes: partesSync,
             },
+          });
+
+          const mapaAtualizado: Record<string, string> = {};
+          for (const p of tarefaAtualizada.partes ?? []) {
+            if (p.idUser) mapaAtualizado[`${atualizada.id}:${p.idUser}`] = p.id;
+          }
+
+          setParteIds((old) => {
+            const next: Record<string, string> = {};
+            for (const [k, v] of Object.entries(old)) {
+              if (!k.startsWith(`${atualizada.id}:`)) next[k] = v;
+            }
+            return { ...next, ...mapaAtualizado };
           });
         }
       } catch (err) {

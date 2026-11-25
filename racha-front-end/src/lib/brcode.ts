@@ -1,4 +1,5 @@
 import type { TipoChavePix } from "./endpoints.ts";
+import { normalizarChavePix } from "./pix-format.ts";
 
 export type DadosBrCode = {
   chave: string;
@@ -46,24 +47,7 @@ export function normalizarChaveParaBrCode(
   chave: string,
   tipoChave?: TipoChavePix,
 ): string {
-  const limpa = chave.trim();
-  if (tipoChave === "telefone") {
-    let d = limpa.replace(/\D/g, "");
-    if ((d.length === 12 || d.length === 13) && d.startsWith("55")) {
-      d = d.slice(2);
-    }
-    return `+55${d}`;
-  }
-  if (tipoChave === "cpf") {
-    return limpa.replace(/\D/g, "");
-  }
-  if (tipoChave === "email") {
-    return limpa.toLowerCase().slice(0, 77);
-  }
-  if (tipoChave === "aleatoria") {
-    return limpa.toLowerCase();
-  }
-  return limpa;
+  return tipoChave ? normalizarChavePix(tipoChave, chave) : chave.trim();
 }
 
 export function normalizarTxid(txid?: string): string {

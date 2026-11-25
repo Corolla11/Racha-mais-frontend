@@ -5,6 +5,7 @@ import { TipoNotificacao } from "../../../generated/prisma/enums.js";
 process.env.DATABASE_URL ??= "postgresql://localhost:5432/racha_test";
 
 const { prisma } = await import("../../../lib/prisma.js");
+const { verificarCronSecret } = await import("../notificacao.controller.js");
 const { construirLembretesDePrazo, notificacaoService } = await import(
   "../notificacao.service.js"
 );
@@ -79,26 +80,30 @@ test("emitirLembretesDePrazo usa lock transacional em $transaction", async (t) =
     assert.equal(consultouPartes, false);
   });
 
-  await t.test("insere notificações quando lock transacional é obtido", async () => {
+  await t.test("insere notificações quando lock transacional é obtido e filtra usuário/grupo ativo", async () => {
     let inseridos = 0;
+    let whereRecebido: unknown = null;
     const agora = new Date("2026-03-01T12:00:00.000Z");
     Object.defineProperty(prisma, "$transaction", {
       value: async (cb: (tx: unknown) => Promise<unknown>) =>
         cb({
           $queryRaw: async () => [{ locked: true }],
           parte: {
-            findMany: async () => [
-              {
-                id: "parte-1",
-                idUser: "user-1",
-                idTarefa: "tarefa-1",
-                tarefa: {
-                  idGrupo: "grupo-1",
-                  nome: "Aluguel",
-                  dataFinal: new Date(agora.getTime() + 60_000),
+            findMany: async (args: { where?: unknown }) => {
+              whereRecebido = args.where;
+              return [
+                {
+                  id: "parte-1",
+                  idUser: "user-1",
+                  idTarefa: "tarefa-1",
+                  tarefa: {
+                    idGrupo: "grupo-1",
+                    nome: "Aluguel",
+                    dataFinal: new Date(agora.getTime() + 60_000),
+                  },
                 },
-              },
-            ],
+              ];
+            },
           },
           notificacao: {
             createMany: async ({ data }: { data: unknown[] }) => {
@@ -114,6 +119,14 @@ test("emitirLembretesDePrazo usa lock transacional em $transaction", async (t) =
     const resultado = await notificacaoService.emitirLembretesDePrazo(agora);
     assert.deepEqual(resultado, { count: 1 });
     assert.equal(inseridos, 1);
+    assert.deepEqual((whereRecebido as { user?: unknown }).user, {
+      notificarDespesas: true,
+      deletedAt: null,
+    });
+    assert.deepEqual(
+      (whereRecebido as { tarefa?: { grupo?: unknown } }).tarefa?.grupo,
+      { encerradoEm: null },
+    );
   });
 });
 
@@ -140,4 +153,21 @@ test("salvarPreferencias atualiza notificarDespesas no usuário", async (t) => {
     data: { notificarDespesas: false },
     select: { notificarDespesas: true },
   });
+});
+
+test("verificarCronSecret valida Bearer CRON_SECRET em tempo constante", (t) => {
+  const original = process.env.CRON_SECRET;
+  t.after(() => {
+    if (original === undefined) delete process.env.CRON_SECRET;
+    else process.env.CRON_SECRET = original;
+  });
+
+  process.env.CRON_SECRET = "segredo-super-forte-123";
+  assert.equal(verificarCronSecret("Bearer segredo-super-forte-123"), true);
+  assert.equal(verificarCronSecret("Bearer errado"), false);
+  assert.equal(verificarCronSecret("segredo-super-forte-123"), false);
+  assert.equal(verificarCronSecret(undefined), false);
+
+  delete process.env.CRON_SECRET;
+  assert.equal(verificarCronSecret("Bearer "), false);
 });

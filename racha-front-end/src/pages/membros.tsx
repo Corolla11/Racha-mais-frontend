@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import AppShell from "../components/app-shell";
 import Icon from "../components/icon";
 import Overlay from "../components/overlay";
+import UserAvatar from "../components/user-avatar";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ApiError, apiRequest } from "../lib/api";
 import { ENDPOINTS } from "../lib/endpoints";
@@ -356,19 +357,18 @@ export default function Membros() {
                   >
                     <div className="flex min-w-0 items-center gap-4">
                       <div className="relative shrink-0">
-                        {membro.user.image ? (
-                          <img
-                            src={membro.user.image}
-                            alt=""
-                            className={`h-12 w-12 rounded-full object-cover shadow-sm ${dono ? "ring-2 ring-primary-container" : ""}`}
-                          />
-                        ) : (
-                          <span
-                            className={`flex h-12 w-12 items-center justify-center rounded-full font-headline-sm text-headline-sm font-bold shadow-sm ${dono ? "bg-primary-fixed text-on-primary-fixed-variant ring-2 ring-primary-container" : "bg-secondary-container text-on-secondary"}`}
-                          >
-                            {initials(membro.user.name)}
-                          </span>
-                        )}
+                        <UserAvatar
+                          userId={membro.idUser}
+                          image={membro.user.image}
+                          className={`h-12 w-12 rounded-full object-cover shadow-sm ${dono ? "ring-2 ring-primary-container" : ""}`}
+                          fallback={
+                            <span
+                              className={`flex h-12 w-12 items-center justify-center rounded-full font-headline-sm text-headline-sm font-bold shadow-sm ${dono ? "bg-primary-fixed text-on-primary-fixed-variant ring-2 ring-primary-container" : "bg-secondary-container text-on-secondary"}`}
+                            >
+                              {initials(membro.user.name)}
+                            </span>
+                          }
+                        />
                         {dono && (
                           <span
                             className="absolute -bottom-1 -right-1 rounded-full bg-primary p-0.5 text-on-primary"

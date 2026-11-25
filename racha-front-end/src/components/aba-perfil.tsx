@@ -2,6 +2,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/auth-context";
 import Icon from "./icon";
+import UserAvatar from "./user-avatar";
 
 interface ProfileMenuProps {
   onClose?: () => void;
@@ -77,7 +78,12 @@ export default function Aba({ onClose }: ProfileMenuProps) {
             <div className="flex items-start justify-between gap-space-sm mb-space-sm">
               <Link to="/perfil" onClick={onClose} className="relative shrink-0" aria-label="Abrir meu perfil">
                 <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-md overflow-hidden ring-4 ring-surface-container-lowest">
-                  {user?.image ? <img src={user.image} alt={`Foto de ${name}`} className="w-full h-full object-cover"/> : <Icon name="person" size={32} className="text-on-primary"/>}
+                  <UserAvatar
+                    userId={user?.id}
+                    image={user?.image}
+                    alt={`Foto de ${name}`}
+                    fallback={<Icon name="person" size={32} className="text-on-primary" />}
+                  />
                 </div>
                 <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-2 ring-surface-container-lowest" title="Disponível"/>
               </Link>

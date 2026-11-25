@@ -146,4 +146,38 @@ describe("grupoService", () => {
     await grupoService.encerrar("u-dono", "g1");
     assert.equal(encerradoAtualizado, true);
   });
+
+  it("bloqueia encerramento para não-dono e é idempotente quando já encerrado", async () => {
+    let updateCalls = 0;
+    mockProp(prisma.membro, "findUnique", async ({ where }: { where: { idUser_idGrupo: { idUser: string } } }) =>
+      where.idUser_idGrupo.idUser === "u-membro"
+        ? { idUser: "u-membro", idGrupo: "g1", funcao: Funcao.membro }
+        : { idUser: "u-dono", idGrupo: "g1", funcao: Funcao.dono },
+    );
+    const jaEncerrado = { id: "g1", encerradoEm: new Date("2026-01-01T00:00:00Z") };
+    mockProp(prisma, "$transaction", async (cb: (tx: unknown) => Promise<unknown>) =>
+      cb({
+        $executeRaw: async () => 1,
+        membro: {
+          findUnique: async () => ({
+            idUser: "u-dono",
+            idGrupo: "g1",
+            funcao: Funcao.dono,
+          }),
+        },
+        grupo: {
+          findUniqueOrThrow: async () => jaEncerrado,
+          update: async () => {
+            updateCalls += 1;
+            return jaEncerrado;
+          },
+        },
+      }),
+    );
+
+    await esperarAppError(() => grupoService.encerrar("u-membro", "g1"), 403);
+    const res = await grupoService.encerrar("u-dono", "g1");
+    assert.equal(res, jaEncerrado);
+    assert.equal(updateCalls, 0);
+  });
 });

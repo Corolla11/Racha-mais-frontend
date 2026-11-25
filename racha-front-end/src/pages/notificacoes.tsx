@@ -5,7 +5,6 @@ import Icon from "../components/icon";
 import { ApiError, apiRequest } from "../lib/api";
 import {
   ENDPOINTS,
-  futureModules,
   type NotificacaoApi,
   type NotificacoesResponseApi,
   type TipoNotificacaoApi,
@@ -145,7 +144,7 @@ export default function Notificacoes() {
 
   async function marcarLida(id: string) {
     try {
-      await futureModules.notificacoes.marcarLida(id);
+      await apiRequest<void>(ENDPOINTS.notificacoes.marcarLida(id), { method: "PATCH" });
       const agora = new Date().toISOString();
       setNotificacoes((ant) =>
         ant.map((n) => (n.id === id ? { ...n, lidaEm: n.lidaEm ?? agora } : n)),
@@ -157,7 +156,9 @@ export default function Notificacoes() {
 
   async function marcarTodasComoLidas() {
     try {
-      await futureModules.notificacoes.marcarTodasLidas();
+      await apiRequest<{ atualizadas: number }>(ENDPOINTS.notificacoes.marcarTodasLidas, {
+        method: "PATCH",
+      });
       const agora = new Date().toISOString();
       setNotificacoes((ant) => ant.map((n) => ({ ...n, lidaEm: n.lidaEm ?? agora })));
       setAviso("Todas as notificações foram marcadas como lidas.");

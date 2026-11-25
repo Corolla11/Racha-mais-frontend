@@ -26,6 +26,27 @@ const atualizarParteSchema = z
     descricao: z.string("A descrição deve ser um texto").trim().optional(),
     valor: valorSchema.optional(),
     status: z.enum(StatusAndamento, "Status inválido").optional(),
+    comprovanteKey: z
+      .string("A chave do comprovante deve ser um texto")
+      .trim()
+      .min(1)
+      .max(255)
+      .nullable()
+      .optional(),
+    comprovanteNome: z
+      .string("O nome do comprovante deve ser um texto")
+      .trim()
+      .min(1)
+      .max(150)
+      .nullable()
+      .optional(),
+    motivoContestacao: z
+      .string("O motivo deve ser um texto")
+      .trim()
+      .min(1)
+      .max(300)
+      .nullable()
+      .optional(),
   })
   .strict();
 
@@ -52,6 +73,15 @@ export const parteController = {
   async obter(req: Request, res: Response) {
     res.json(
       await parteService.obter(res.locals.user.id, String(req.params.id)),
+    );
+  },
+
+  async obterComprovante(req: Request, res: Response) {
+    res.json(
+      await parteService.obterComprovante(
+        res.locals.user.id,
+        String(req.params.id),
+      ),
     );
   },
 

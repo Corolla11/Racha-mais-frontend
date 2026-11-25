@@ -26,7 +26,7 @@ function validarDestino(
   }
   return temId
     ? { tipo: "id", valor: campo.trim() }
-    : { tipo: "email", valor: campo.trim() };
+    : { tipo: "email", valor: campo.trim().toLowerCase() };
 }
 
 export const membroService = {
@@ -39,9 +39,12 @@ export const membroService = {
     const destino = validarDestino(dados);
     const usuario =
       destino.tipo === "id"
-        ? await prisma.user.findUnique({ where: { id: destino.valor }, select: { id: true } })
-        : await prisma.user.findUnique({ where: { email: destino.valor }, select: { id: true } });
+        ? await prisma.user.findUnique({ where: { id: destino.valor }, select: { id: true, deletedAt: true } })
+        : await prisma.user.findUnique({ where: { email: destino.valor }, select: { id: true, deletedAt: true } });
     if (!usuario) throw new AppError(404, "Usuário não encontrado");
+    if (usuario.deletedAt !== null) {
+      throw new AppError(409, "Esta conta foi desativada");
+    }
 
     return transacionarGrupo(idGrupo, async (tx) => {
       await exigirDonoNaTransacao(tx, idSolicitante, idGrupo);
